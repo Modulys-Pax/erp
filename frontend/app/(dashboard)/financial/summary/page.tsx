@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
   ACCOUNT_PAYABLE_STATUS_LABELS,
   ACCOUNT_PAYABLE_STATUS_COLORS,
@@ -42,12 +43,13 @@ export default function FinancialSummaryPage() {
   const [receivablePage, setReceivablePage] = useState(1);
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [filterDateType, setFilterDateType] = useState<'dueDate' | 'createdAt'>('dueDate');
   const limit = 10;
 
   const filterBranchId = effectiveBranchId || undefined;
 
   const { data: summaryData, isLoading } = useQuery({
-    queryKey: ['financial-summary', filterBranchId, startDate, endDate, payablePage, receivablePage],
+    queryKey: ['financial-summary', filterBranchId, startDate, endDate, filterDateType, payablePage, receivablePage],
     queryFn: () =>
       accountPayableApi.getSummary(
         filterBranchId,
@@ -56,13 +58,14 @@ export default function FinancialSummaryPage() {
         payablePage,
         receivablePage,
         limit,
+        filterDateType,
       ),
   });
 
   useEffect(() => {
     setPayablePage(1);
     setReceivablePage(1);
-  }, [effectiveBranchId, startDate, endDate]);
+  }, [effectiveBranchId, startDate, endDate, filterDateType]);
 
   const formatNumber = (value: number | undefined | null) => {
     const n = typeof value === 'number' && !Number.isNaN(value) ? value : 0;
@@ -78,7 +81,25 @@ export default function FinancialSummaryPage() {
 
       {/* Filtros de Período */}
       <SectionCard title="Filtros">
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-2 block">
+              Filtrar por
+            </label>
+            <SearchableSelect
+              options={[
+                { value: 'dueDate', label: 'Data de vencimento' },
+                { value: 'createdAt', label: 'Data de cadastro' },
+              ]}
+              value={filterDateType}
+              onChange={(v) => {
+                setFilterDateType(v as 'dueDate' | 'createdAt');
+                setPayablePage(1);
+                setReceivablePage(1);
+              }}
+              placeholder="Tipo de filtro"
+            />
+          </div>
           <div>
             <label className="text-sm font-medium text-muted-foreground mb-2 block">
               Data Inicial
@@ -314,6 +335,15 @@ export default function FinancialSummaryPage() {
                     ),
                   },
                   {
+                    key: 'createdAt',
+                    header: 'Cadastro',
+                    render: (account) => (
+                      <span className="text-muted-foreground text-sm">
+                        {account.createdAt ? formatDate(account.createdAt) : '-'}
+                      </span>
+                    ),
+                  },
+                  {
                     key: 'status',
                     header: 'Status',
                     render: (account) => (
@@ -392,6 +422,15 @@ export default function FinancialSummaryPage() {
                           {formatDate(account.dueDate)}
                         </span>
                       </div>
+                    ),
+                  },
+                  {
+                    key: 'createdAt',
+                    header: 'Cadastro',
+                    render: (account) => (
+                      <span className="text-muted-foreground text-sm">
+                        {account.createdAt ? formatDate(account.createdAt) : '-'}
+                      </span>
                     ),
                   },
                   {

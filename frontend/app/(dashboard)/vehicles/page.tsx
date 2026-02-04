@@ -2,7 +2,12 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { vehicleApi, Vehicle } from '@/lib/api/vehicle';
+import {
+  vehicleApi,
+  Vehicle,
+  VEHICLE_PLATE_TYPES,
+  type VehiclePlateType,
+} from '@/lib/api/vehicle';
 import { useEffectiveBranch } from '@/lib/hooks/use-effective-branch';
 import { PageHeader } from '@/components/layout/page-header';
 import { SectionCard } from '@/components/ui/section-card';
@@ -37,12 +42,21 @@ import {
 } from 'lucide-react';
 import { ExportButton } from '@/components/ui/export-button';
 import { Can } from '@/components/auth/permission-gate';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+
+const PLATE_TYPE_LABELS: Record<VehiclePlateType, string> = {
+  CAVALO: 'Cavalo',
+  PRIMEIRA_CARRETA: 'Primeira Carreta',
+  DOLLY: 'Dolly',
+  SEGUNDA_CARRETA: 'Segunda Carreta',
+};
 
 export default function VehiclesPage() {
   const queryClient = useQueryClient();
   const { branchId: effectiveBranchId } = useEffectiveBranch();
   const [showDeleted, setShowDeleted] = useState(false);
   const [page, setPage] = useState(1);
+  const [plateTypeFilter, setPlateTypeFilter] = useState<string>('');
   const limit = 10;
 
   const { data: response, isLoading } = useQuery({
@@ -101,6 +115,15 @@ export default function VehiclesPage() {
     return new Intl.NumberFormat('pt-BR').format(value);
   };
 
+  // Filtrar veículos por tipo de placa (client-side)
+  const filteredData = useMemo(() => {
+    const data = response?.data || [];
+    if (!plateTypeFilter) return data;
+    return data.filter((v) =>
+      v.plates?.some((p) => p.type === plateTypeFilter)
+    );
+  }, [response?.data, plateTypeFilter]);
+
   const columns = [
     {
       key: 'plate',
@@ -111,7 +134,11 @@ export default function VehiclesPage() {
             <Truck className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="font-semibold text-foreground">{vehicle.plate}</p>
+            <p className="font-semibold text-foreground">
+              {vehicle.plates?.length
+                ? vehicle.plates.map((p) => p.plate).join(' / ')
+                : vehicle.plate}
+            </p>
             {(vehicle.brandName || vehicle.modelName) && (
               <p className="text-xs text-muted-foreground">
                 {vehicle.brandName} {vehicle.modelName}
@@ -272,13 +299,43 @@ export default function VehiclesPage() {
         </div>
       )}
 
+      {/* Filtro por Tipo de Veículo */}
+      <SectionCard title="Filtros">
+        <div className="max-w-xs">
+          <label className="text-sm font-medium text-muted-foreground mb-2 block">
+            Tipo de Veículo
+          </label>
+          <SearchableSelect
+            options={[
+              { value: '', label: 'Todos os tipos' },
+              ...VEHICLE_PLATE_TYPES.map((t) => ({
+                value: t,
+                label: PLATE_TYPE_LABELS[t],
+              })),
+            ]}
+            value={plateTypeFilter}
+            onChange={(v) => {
+              setPlateTypeFilter(v);
+              setPage(1);
+            }}
+            placeholder="Todos os tipos"
+          />
+        </div>
+      </SectionCard>
+
       {/* Lista de Veículos */}
       <SectionCard
         title="Lista de Veículos"
-        description={response?.total ? `${response.total} veículo(s) encontrado(s)` : undefined}
+        description={
+          plateTypeFilter
+            ? `${filteredData.length} veículo(s) com ${PLATE_TYPE_LABELS[plateTypeFilter as VehiclePlateType]}`
+            : response?.total
+              ? `${response.total} veículo(s) encontrado(s)`
+              : undefined
+        }
         actions={
           <ExportButton<Vehicle>
-            data={response?.data || []}
+            data={filteredData}
             filename="veiculos"
             title="Lista de Veículos"
             columns={[
@@ -293,11 +350,11 @@ export default function VehiclesPage() {
           />
         }
       >
-        {!isLoading && response?.data.length === 0 ? (
+        {!isLoading && filteredData.length === 0 ? (
           <EmptyVehicles />
         ) : (
           <DataTable
-            data={response?.data || []}
+            data={filteredData}
             columns={columns}
             isLoading={isLoading}
             emptyMessage="Nenhum veículo cadastrado"

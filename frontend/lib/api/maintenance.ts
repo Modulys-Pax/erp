@@ -130,9 +130,11 @@ export const maintenanceApi = {
     includeDeleted?: boolean,
     page = 1,
     limit = 15,
+    startDate?: string,
+    endDate?: string,
   ): Promise<PaginatedResponse<MaintenanceOrder>> => {
     const response = await api.get<PaginatedResponse<MaintenanceOrder>>('/maintenance', {
-      params: { branchId, vehicleId, status, includeDeleted, page, limit },
+      params: { branchId, vehicleId, status, startDate, endDate, includeDeleted, page, limit },
     });
     return response.data;
   },

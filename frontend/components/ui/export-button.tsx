@@ -105,7 +105,17 @@ export function ExportButton<T>({
         headStyles: { fillColor: [59, 130, 246] },
       });
 
-      doc.save(`${filename}.pdf`);
+      // Usar blob com MIME type explícito para garantir download como PDF (evita Notepad no Windows)
+      const blob = doc.output('blob');
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${filename}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
       toastSuccess('PDF exportado com sucesso');
     } catch {
       toastError('Erro ao exportar PDF');

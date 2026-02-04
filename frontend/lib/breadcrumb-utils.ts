@@ -1,8 +1,8 @@
 import { BreadcrumbItem } from '@/components/ui/breadcrumb';
 
-// Mapeamento de rotas para labels legíveis
+// Mapeamento de rotas para labels em português
 const routeLabels: Record<string, string> = {
-  dashboard: 'Dashboard',
+  dashboard: 'Painel',
   companies: 'Empresas',
   branches: 'Filiais',
   users: 'Usuários',
@@ -18,6 +18,22 @@ const routeLabels: Record<string, string> = {
   costs: 'Gastos com Veículos',
   summary: 'Resumo de Produtos',
   new: 'Novo',
+  financial: 'Financeiro',
+  wallet: 'Carteira',
+  expenses: 'Despesas',
+  'maintenance-labels': 'Etiquetas',
+  'product-changes': 'Registros na Estrada',
+  markings: 'Marcações',
+  payroll: 'Folha de Pagamento',
+  benefits: 'Benefícios',
+  roles: 'Cargos',
+  'vehicle-brands': 'Marcas de Veículos',
+  'vehicle-models': 'Modelos de Veículos',
+  'units-of-measurement': 'Unidades de Medida',
+  movements: 'Movimentações',
+  documents: 'Documentos',
+  chat: 'Chat',
+  payments: 'Pagamentos',
 };
 
 /**
@@ -27,12 +43,12 @@ export function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
   // Remove query params e hash
   const cleanPath = pathname.split('?')[0].split('#')[0];
   
-  // Sempre começa com Dashboard
+  // Sempre começa com Painel (link para /dashboard)
   const items: BreadcrumbItem[] = [
-    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'Painel', href: '/dashboard' },
   ];
 
-  // Dashboard → Início: breadcrumb "Dashboard > Início"
+  // Página inicial do dashboard
   if (cleanPath === '/dashboard' || cleanPath === '/') {
     items.push({ label: 'Início' });
     return items;
@@ -44,25 +60,17 @@ export function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
   // Remove 'dashboard' se for o primeiro segmento
   const filteredSegments = segments.filter((seg) => seg !== 'dashboard');
 
-  // Constrói breadcrumbs incrementalmente
-  let currentPath = '/dashboard';
-  
+  // Constrói breadcrumbs com hrefs corretos (baseados no path real da URL)
   filteredSegments.forEach((segment, index) => {
     const isLast = index === filteredSegments.length - 1;
     const label = routeLabels[segment] || formatSegmentLabel(segment);
+    // Path real da URL: /seg1/seg2/... (sem /dashboard no meio)
+    const href = '/' + filteredSegments.slice(0, index + 1).join('/');
     
-    // Se não for o último, adiciona href
     if (!isLast) {
-      currentPath += `/${segment}`;
-      items.push({
-        label,
-        href: currentPath,
-      });
+      items.push({ label, href });
     } else {
-      // Último item não tem href (página atual)
-      items.push({
-        label,
-      });
+      items.push({ label });
     }
   });
 
@@ -70,10 +78,10 @@ export function generateBreadcrumbs(pathname: string): BreadcrumbItem[] {
 }
 
 /**
- * Formata um segmento de rota para label legível
+ * Formata um segmento de rota para label legível em português
  */
 function formatSegmentLabel(segment: string): string {
-  // Se for um ID (UUID ou número), tenta inferir do contexto
+  // Se for um ID (UUID ou número), retorna Detalhes
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment)) {
     return 'Detalhes';
   }
@@ -85,6 +93,6 @@ function formatSegmentLabel(segment: string): string {
   // Capitaliza e substitui hífens por espaços
   return segment
     .split('-')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
 }

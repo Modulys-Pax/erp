@@ -101,8 +101,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...authResponse.user.role,
         description: authResponse.user.role.description ?? null,
       },
+      permissions: authResponse.user.permissions,
     });
-    router.push('/dashboard');
+    // Redirecionar com reload para garantir que permissões e contexto sejam carregados corretamente
+    window.location.href = '/dashboard';
   };
 
   const logout = () => {

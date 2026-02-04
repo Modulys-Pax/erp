@@ -17,11 +17,19 @@ export class AuthService {
   ) {}
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    // Buscar usuário por email
+    // Buscar usuário por email com permissões do cargo
     const user = await this.prisma.user.findUnique({
       where: { email: loginDto.email },
       include: {
-        role: true,
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -52,7 +60,11 @@ export class AuthService {
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = await this.generateRefreshToken(user.id);
 
-    // Retornar resposta
+    // Extrair permissões do cargo
+    const permissions = (user.role as { permissions?: { permission: { name: string } }[] }).permissions
+      ?.map((rp) => rp.permission.name) ?? [];
+
+    // Retornar resposta com permissões
     return {
       accessToken,
       refreshToken,
@@ -66,6 +78,7 @@ export class AuthService {
           id: user.role.id,
           name: user.role.name,
         },
+        permissions,
       },
     };
   }
@@ -101,6 +114,27 @@ export class AuthService {
       throw new UnauthorizedException('Usuário inativo');
     }
 
+    // Buscar role com permissões para refresh
+    const userWithPermissions = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const permissions = userWithPermissions?.role
+      ? (userWithPermissions.role as { permissions?: { permission: { name: string } }[] }).permissions
+        ?.map((rp) => rp.permission.name) ?? []
+      : [];
+
     // Gerar novos tokens
     const payload = {
       sub: user.id,
@@ -132,6 +166,7 @@ export class AuthService {
           id: user.role.id,
           name: user.role.name,
         },
+        permissions,
       },
     };
   }

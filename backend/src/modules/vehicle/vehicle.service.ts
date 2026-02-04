@@ -409,9 +409,12 @@ export class VehicleService {
       throw new NotFoundException('Veículo não encontrado');
     }
 
-    // Validar que a nova KM não é menor que a anterior
-    if (vehicle.currentKm && updateKmDto.currentKm < vehicle.currentKm) {
-      throw new BadRequestException('A nova quilometragem não pode ser menor que a anterior');
+    // Validar que a nova KM não é menor que a anterior (currentKm pode ser 0 ou null)
+    const currentKmNum = vehicle.currentKm != null ? Number(vehicle.currentKm) : null;
+    if (currentKmNum != null && updateKmDto.currentKm < currentKmNum) {
+      throw new BadRequestException(
+        `A nova quilometragem (${updateKmDto.currentKm}) não pode ser menor que a anterior (${currentKmNum})`,
+      );
     }
 
     const updatedVehicle = await this.prisma.vehicle.update({

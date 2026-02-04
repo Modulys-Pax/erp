@@ -39,8 +39,20 @@ export default function LoginPage() {
     try {
       setError(null);
       await login(data.email, data.password);
-    } catch (err: any) {
-      setError(err.message || 'Erro ao realizar login');
+    } catch (err: unknown) {
+      // Extrair mensagem de erro: priorizar mensagem do backend (401 = credenciais inválidas)
+      const axiosErr = err as { response?: { data?: { message?: string }; status?: number } };
+      const backendMessage = axiosErr?.response?.data?.message;
+      const status = axiosErr?.response?.status;
+
+      if (status === 401 && backendMessage) {
+        // Erro de acesso: credenciais inválidas, usuário inativo, etc.
+        setError(backendMessage);
+      } else if (backendMessage) {
+        setError(backendMessage);
+      } else {
+        setError('Erro ao conectar. Verifique sua conexão e tente novamente.');
+      }
     }
   };
 

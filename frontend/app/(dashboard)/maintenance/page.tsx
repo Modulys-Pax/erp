@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyMaintenance } from '@/components/ui/empty-state';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Input } from '@/components/ui/input';
 import {
   MAINTENANCE_STATUS_LABELS,
   MAINTENANCE_STATUS_COLORS,
@@ -51,6 +52,8 @@ export default function MaintenancePage() {
   const { branchId: effectiveBranchId, isAdmin } = useEffectiveBranch();
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedType, setSelectedType] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [page, setPage] = useState(1);
   const limit = 10;
 
@@ -59,13 +62,22 @@ export default function MaintenancePage() {
 
   useEffect(() => {
     setPage(1);
-  }, [effectiveBranchId, debouncedStatus, debouncedType]);
+  }, [effectiveBranchId, debouncedStatus, debouncedType, startDate, endDate]);
 
   const { data: response, isLoading } = useQuery({
-    queryKey: ['maintenance', effectiveBranchId, debouncedStatus, page, limit],
+    queryKey: ['maintenance', effectiveBranchId, debouncedStatus, startDate, endDate, page, limit],
     queryFn: () => {
       const branchId = effectiveBranchId || undefined;
-      return maintenanceApi.getAll(branchId, undefined, debouncedStatus || undefined, false, page, limit);
+      return maintenanceApi.getAll(
+        branchId,
+        undefined,
+        debouncedStatus || undefined,
+        false,
+        page,
+        limit,
+        startDate || undefined,
+        endDate || undefined
+      );
     },
   });
 
@@ -147,6 +159,25 @@ export default function MaintenancePage() {
           {MAINTENANCE_TYPE_LABELS[order.type]}
         </Badge>
       ),
+    },
+    {
+      key: 'dates',
+      header: 'Datas',
+      render: (order: MaintenanceOrder) => {
+        const completedEvent = order.timeline?.find((e) => e.event === 'COMPLETED' || e.event === 'CANCELLED');
+        return (
+          <div className="text-sm space-y-0.5">
+            <p className="text-muted-foreground">
+              Abertura: {formatDate(order.createdAt)}
+            </p>
+            {completedEvent && (
+              <p className="text-muted-foreground">
+                {completedEvent.event === 'COMPLETED' ? 'Conclusão' : 'Cancelamento'}: {formatDate(completedEvent.createdAt)}
+              </p>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'status',
@@ -273,7 +304,29 @@ export default function MaintenancePage() {
 
       {/* Filtros */}
       <SectionCard title="Filtros">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-2 block">
+              Data Inicial
+            </label>
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full rounded-xl"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-2 block">
+              Data Final
+            </label>
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full rounded-xl"
+            />
+          </div>
           <div>
             <label className="text-sm font-medium text-muted-foreground mb-2 block">
               Status

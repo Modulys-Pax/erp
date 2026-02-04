@@ -23,7 +23,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="erp-theme">
+      <ThemeProvider defaultTheme="light" storageKey="erp-theme">
         <AuthProvider>
           {children}
           <Toaster />

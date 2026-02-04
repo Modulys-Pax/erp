@@ -89,7 +89,7 @@ export const MAINTENANCE_TYPE_LABELS: Record<MaintenanceType, string> = {
 
 export const MAINTENANCE_TYPE_COLORS: Record<MaintenanceType, string> = {
   PREVENTIVE: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
-  CORRECTIVE: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  CORRECTIVE: 'bg-amber-100 text-amber-900 dark:bg-orange-900 dark:text-orange-200',
 };
 
 // =============================================================================

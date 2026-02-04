@@ -77,6 +77,8 @@ describe('MaintenanceController', () => {
         undefined,
         undefined,
         'OPEN',
+        undefined,
+        undefined,
         false,
         1,
         50,

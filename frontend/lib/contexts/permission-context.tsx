@@ -46,7 +46,8 @@ export function PermissionProvider({ children }: { children: React.ReactNode }) 
 
   const value = useMemo<PermissionContextType>(() => {
     const permissions = user?.permissions || [];
-    const isAdmin = user?.role?.name === 'ADMIN';
+    const roleName = user?.role?.name ?? '';
+    const isAdmin = ['admin', 'administrator', 'superadmin'].includes(roleName.toLowerCase());
 
     const hasPermission = (permission: string): boolean => {
       if (isAdmin) return true;

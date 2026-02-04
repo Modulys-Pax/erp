@@ -3,18 +3,17 @@
 import { useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 import { maintenanceLabelApi } from '@/lib/api/maintenance-label';
 import { PageHeader } from '@/components/layout/page-header';
 import { SectionCard } from '@/components/ui/section-card';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
 import { Printer } from 'lucide-react';
 import { formatDate } from '@/lib/utils/date';
 
 export default function MaintenanceLabelViewPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const id = params.id as string;
   const isPrintMode = searchParams.get('print') === 'true';
 
@@ -79,8 +78,8 @@ export default function MaintenanceLabelViewPage() {
             subtitle={`Veículo: ${label.vehiclePlate}`}
             actions={
               <>
-                <Button variant="outline" onClick={() => router.back()}>
-                  Voltar
+                <Button variant="outline" asChild>
+                  <Link href="/maintenance-labels">Voltar</Link>
                 </Button>
                 <Button onClick={handlePrint}>
                   <Printer className="h-4 w-4 mr-2" />

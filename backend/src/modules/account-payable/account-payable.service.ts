@@ -360,6 +360,7 @@ export class AccountPayableService {
     receivablePage = 1,
     limit = 15,
     user?: any,
+    filterDateType: 'dueDate' | 'createdAt' = 'dueDate',
   ): Promise<FinancialAccountsSummaryResponseDto> {
     const companyId = DEFAULT_COMPANY_ID;
     const payableSkip = (payablePage - 1) * limit;
@@ -395,7 +396,7 @@ export class AccountPayableService {
       ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
     };
 
-    // Aplicar filtro de data se fornecido
+    // Aplicar filtro de data se fornecido (por vencimento ou por cadastro)
     if (startDate || endDate) {
       const dateFilter: any = {};
       if (startDate) {
@@ -406,8 +407,9 @@ export class AccountPayableService {
         endDateTime.setHours(23, 59, 59, 999);
         dateFilter.lte = endDateTime;
       }
-      payableWhere.dueDate = dateFilter;
-      receivableWhere.dueDate = dateFilter;
+      const dateField = filterDateType === 'createdAt' ? 'createdAt' : 'dueDate';
+      payableWhere[dateField] = dateFilter;
+      receivableWhere[dateField] = dateFilter;
     }
 
     // Calcular totais de contas a pagar por status
@@ -462,6 +464,7 @@ export class AccountPayableService {
         paymentDate: true,
         status: true,
         documentNumber: true,
+        createdAt: true,
       },
     });
 
@@ -479,6 +482,7 @@ export class AccountPayableService {
         receiptDate: true,
         status: true,
         documentNumber: true,
+        createdAt: true,
       },
     });
 
@@ -539,6 +543,7 @@ export class AccountPayableService {
           paymentDate: account.paymentDate || undefined,
           status: account.status,
           documentNumber: account.documentNumber || undefined,
+          createdAt: account.createdAt,
         })),
         total: totalPayableCount,
         page: payablePage,
@@ -554,6 +559,7 @@ export class AccountPayableService {
           receiptDate: account.receiptDate || undefined,
           status: account.status,
           documentNumber: account.documentNumber || undefined,
+          createdAt: account.createdAt,
         })),
         total: totalReceivableCount,
         page: receivablePage,

@@ -121,7 +121,8 @@ export class MaintenanceLabelService {
           },
           orderBy: { createdAt: 'desc' },
         });
-        const lastChangeKm = lastChange?.lastChangeKm ?? lastMarking?.km ?? vehicle.currentKm ?? 0;
+        // Priorizar KM atual do veículo/marcações para etiqueta "antes da troca"
+        const lastChangeKm = lastChange?.lastChangeKm ?? vehicle.currentKm ?? lastMarking?.km ?? 0;
 
         await tx.maintenanceLabelReplacementItem.create({
           data: {

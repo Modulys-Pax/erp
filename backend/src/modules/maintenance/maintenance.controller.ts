@@ -107,6 +107,8 @@ export class MaintenanceController {
     @Query('branchId') branchId?: string,
     @Query('vehicleId') vehicleId?: string,
     @Query('status') status?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
     @Query('includeDeleted') includeDeleted?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -114,7 +116,7 @@ export class MaintenanceController {
     const include = includeDeleted === 'true';
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 50;
-    return this.maintenanceService.findAll(branchId, vehicleId, status, include, pageNum, limitNum);
+    return this.maintenanceService.findAll(branchId, vehicleId, status, startDate, endDate, include, pageNum, limitNum);
   }
 
   @Get('vehicle/:vehicleId')
@@ -126,7 +128,7 @@ export class MaintenanceController {
     type: [MaintenanceOrderResponseDto],
   })
   getByVehicle(@Param('vehicleId') vehicleId: string) {
-    return this.maintenanceService.findAll(undefined, vehicleId, undefined, false, 1, 50);
+    return this.maintenanceService.findAll(undefined, vehicleId, undefined, undefined, undefined, false, 1, 50);
   }
 
   @Get(':id')

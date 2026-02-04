@@ -98,7 +98,15 @@ describe('AuthService', () => {
       expect(result.user.email).toBe(mockUser.email);
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { email: loginDto.email },
-        include: { role: true },
+        include: {
+          role: {
+            include: {
+              permissions: {
+                include: { permission: true },
+              },
+            },
+          },
+        },
       });
     });
 
@@ -289,6 +297,7 @@ describe('AuthService', () => {
         name: mockUser.name,
         companyId: mockUser.companyId,
         branchId: mockUser.branchId,
+        permissions: ['users.view', 'users.create'],
         role: {
           id: mockUser.role.id,
           name: mockUser.role.name,
@@ -342,6 +351,7 @@ describe('AuthService', () => {
         name: mockUser.name,
         companyId: mockUser.companyId,
         branchId: mockUser.branchId,
+        permissions: expect.any(Array),
         role: {
           id: mockUser.role.id,
           name: mockUser.role.name,

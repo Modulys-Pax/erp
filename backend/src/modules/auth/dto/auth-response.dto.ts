@@ -26,5 +26,6 @@ export class AuthResponseDto {
       id: string;
       name: string;
     };
+    permissions?: string[];
   };
 }

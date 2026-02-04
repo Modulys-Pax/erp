@@ -27,9 +27,9 @@ export function StatCard({
     <Card className={cn('rounded-xl shadow-sm hover:shadow-md transition-shadow', className)}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <p className="text-label mb-1">{title}</p>
-            <p className="text-kpi-value">{value}</p>
+            <p className="text-kpi-value whitespace-nowrap overflow-hidden text-ellipsis">{value}</p>
             {indicator && (
               <p
                 className={cn(

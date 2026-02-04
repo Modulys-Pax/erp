@@ -362,13 +362,13 @@ export class MaintenanceService {
 
     // Criar ordem com transação
     const order = await this.prisma.$transaction(async (tx) => {
-      // Criar ordem
+      // Criar ordem já em execução (não requer início manual)
       const newOrder = await tx.maintenanceOrder.create({
         data: {
           orderNumber,
           vehicleId: createDto.vehicleId,
           type: createDto.type,
-          status: 'OPEN',
+          status: 'IN_PROGRESS',
           kmAtEntry: createDto.kmAtEntry,
           description: createDto.description,
           observations: createDto.observations,
@@ -630,6 +630,8 @@ export class MaintenanceService {
     branchId?: string,
     vehicleId?: string,
     status?: string,
+    startDate?: string,
+    endDate?: string,
     includeDeleted = false,
     page = 1,
     limit = 15,
@@ -643,6 +645,14 @@ export class MaintenanceService {
       ...(branchId ? { branchId } : {}),
       ...(vehicleId ? { vehicleId } : {}),
       ...(status ? { status: status as any } : {}),
+      ...(startDate || endDate
+        ? {
+            createdAt: {
+              ...(startDate ? { gte: new Date(startDate) } : {}),
+              ...(endDate ? { lte: new Date(endDate + 'T23:59:59.999Z') } : {}),
+            },
+          }
+        : {}),
     };
 
     const [orders, total] = await Promise.all([

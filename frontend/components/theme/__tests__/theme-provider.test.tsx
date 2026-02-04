@@ -42,7 +42,7 @@ describe('ThemeProvider', () => {
     expect(screen.getByText('Child content')).toBeInTheDocument();
   });
 
-  it('deve usar tema padrão system', () => {
+  it('deve usar tema padrão light (sistema usa light/dark, sem system)', () => {
     localStorageMock.getItem.mockReturnValue(null);
 
     const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -51,7 +51,7 @@ describe('ThemeProvider', () => {
 
     const { result } = renderHook(() => useTheme(), { wrapper });
 
-    expect(result.current.theme).toBe('system');
+    expect(result.current.theme).toBe('light');
   });
 
   it('deve usar tema do localStorage se existir', () => {
@@ -123,22 +123,17 @@ describe('ThemeProvider', () => {
     expect(document.documentElement.classList.contains('dark')).toBe(true);
   });
 
-  it('deve aplicar tema do sistema quando theme=system', () => {
+  it('deve migrar theme=system para light (opção system removida)', () => {
     localStorageMock.getItem.mockReturnValue('system');
-    
-    // Mock para preferir light
-    (window.matchMedia as jest.Mock).mockImplementation((query) => ({
-      matches: false,
-      media: query,
-    }));
 
-    render(
-      <ThemeProvider>
-        <div>Content</div>
-      </ThemeProvider>
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <ThemeProvider>{children}</ThemeProvider>
     );
 
-    expect(document.documentElement.classList.contains('light')).toBe(true);
+    const { result } = renderHook(() => useTheme(), { wrapper });
+
+    // Sistema migra 'system' para 'light'
+    expect(result.current.theme).toBe('light');
   });
 });
 
@@ -148,8 +143,8 @@ describe('useTheme', () => {
     // ao invés de lançar erro (context === undefined não é true porque
     // há um valor inicial definido)
     const { result } = renderHook(() => useTheme());
-    
-    expect(result.current.theme).toBe('system');
+
+    expect(result.current.theme).toBe('light');
     expect(typeof result.current.setTheme).toBe('function');
   });
 });

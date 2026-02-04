@@ -168,6 +168,12 @@ export class AccountPayableController {
     type: Number,
     description: 'Itens por página (padrão: 15)',
   })
+  @ApiQuery({
+    name: 'filterDateType',
+    required: false,
+    enum: ['dueDate', 'createdAt'],
+    description: 'Tipo de filtro de data: dueDate (vencimento) ou createdAt (cadastro)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Dashboard de resumo financeiro',
@@ -181,6 +187,7 @@ export class AccountPayableController {
     @Query('receivablePage') receivablePage?: string,
     @Query('limit') limit?: string,
     @CurrentUser() user?: any,
+    @Query('filterDateType') filterDateType?: 'dueDate' | 'createdAt',
   ): Promise<FinancialAccountsSummaryResponseDto> {
     const payablePageNum = payablePage ? parseInt(payablePage, 10) : 1;
     const receivablePageNum = receivablePage ? parseInt(receivablePage, 10) : 1;
@@ -193,6 +200,7 @@ export class AccountPayableController {
       receivablePageNum,
       limitNum,
       user,
+      filterDateType === 'createdAt' ? 'createdAt' : 'dueDate',
     );
   }
 

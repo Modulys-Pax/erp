@@ -149,10 +149,14 @@ export class ProductController {
     @Query('endDate') endDate?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @CurrentUser() user?: any,
   ): Promise<ProductSummaryResponseDto> {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 15;
-    return this.productService.getProductSummary(branchId, startDate, endDate, pageNum, limitNum);
+    const roleName = typeof user?.role === 'string' ? user.role : user?.role?.name;
+    const isAdmin = roleName?.toLowerCase() === 'admin';
+    const effectiveBranchId = isAdmin ? branchId : (user?.branchId ?? branchId);
+    return this.productService.getProductSummary(effectiveBranchId, startDate, endDate, pageNum, limitNum);
   }
 
   @Get(':id')

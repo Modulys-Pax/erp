@@ -56,6 +56,7 @@ export interface AccountPayableDetail {
   paymentDate?: Date;
   status: AccountPayableStatus;
   documentNumber?: string;
+  createdAt?: Date;
 }
 
 export interface AccountReceivableDetail {
@@ -66,6 +67,7 @@ export interface AccountReceivableDetail {
   receiptDate?: Date;
   status: 'PENDING' | 'RECEIVED' | 'CANCELLED';
   documentNumber?: string;
+  createdAt?: Date;
 }
 
 export interface FinancialAccountsSummary {
@@ -205,11 +207,12 @@ export const accountPayableApi = {
     payablePage = 1,
     receivablePage = 1,
     limit = 15,
+    filterDateType?: 'dueDate' | 'createdAt',
   ): Promise<FinancialAccountsSummaryResponse> => {
     const response = await api.get<FinancialAccountsSummaryResponse>(
       '/accounts-payable/summary',
       {
-        params: { branchId, startDate, endDate, payablePage, receivablePage, limit },
+        params: { branchId, startDate, endDate, payablePage, receivablePage, limit, filterDateType },
       },
     );
     return response.data;

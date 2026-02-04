@@ -268,7 +268,7 @@ describe('MaintenanceService', () => {
       prisma.maintenanceOrder.findMany.mockResolvedValue([]);
       prisma.maintenanceOrder.count.mockResolvedValue(50);
 
-      const result = await service.findAll(undefined, undefined, undefined, false, 3, 10);
+      const result = await service.findAll(undefined, undefined, undefined, undefined, undefined, false, 3, 10);
 
       expect(result.page).toBe(3);
       expect(result.totalPages).toBe(5);

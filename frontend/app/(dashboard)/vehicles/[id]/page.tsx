@@ -46,6 +46,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { formatDateTime } from '@/lib/utils/date';
+import { toastSuccess, toastErrorFromException } from '@/lib/utils';
 
 const PLATE_TYPE_LABELS: Record<VehiclePlateType, string> = {
   CAVALO: 'Cavalo',
@@ -267,12 +268,18 @@ export default function EditVehiclePage() {
   const updateKmMutation = useMutation({
     mutationFn: (data: { currentKm: number; notes?: string }) =>
       vehicleApi.updateKm(id, data),
-    onSuccess: () => {
+    onSuccess: (updatedVehicle) => {
+      // Atualizar cache imediatamente para evitar validação com dados desatualizados
+      queryClient.setQueryData(['vehicles', id], updatedVehicle);
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
       queryClient.invalidateQueries({ queryKey: ['vehicles', id, 'history'] });
       setKmDialogOpen(false);
       setKmValue('');
       setKmNotes('');
+      toastSuccess('Quilometragem atualizada com sucesso');
+    },
+    onError: (error) => {
+      toastErrorFromException(error, 'Erro ao atualizar quilometragem');
     },
   });
 
