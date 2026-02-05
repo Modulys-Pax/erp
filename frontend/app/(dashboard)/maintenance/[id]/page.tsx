@@ -31,6 +31,7 @@ import {
   MAINTENANCE_TYPE_LABELS,
   MAINTENANCE_TYPE_COLORS,
   MAINTENANCE_EVENT_LABELS,
+  MAINTENANCE_TYPE_TEXT_COLORS,
 } from '@/lib/constants/status.constants';
 import Link from 'next/link';
 import { toastSuccess, toastError } from '@/lib/utils';
@@ -258,7 +259,9 @@ export default function MaintenanceDetailPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Tipo</p>
-            <p className="font-semibold text-foreground">{MAINTENANCE_TYPE_LABELS[order.type]}</p>
+            <p className={`font-semibold ${MAINTENANCE_TYPE_TEXT_COLORS[order.type]}`}>
+              {MAINTENANCE_TYPE_LABELS[order.type]}
+            </p>
           </div>
         </div>
 

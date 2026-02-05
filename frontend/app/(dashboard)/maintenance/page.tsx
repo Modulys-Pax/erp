@@ -150,7 +150,10 @@ export default function MaintenancePage() {
       key: 'type',
       header: 'Tipo',
       render: (order: MaintenanceOrder) => (
-        <Badge className={`${MAINTENANCE_TYPE_COLORS[order.type]} flex items-center gap-1 w-fit`}>
+        <Badge
+          variant="outline"
+          className={`${MAINTENANCE_TYPE_COLORS[order.type]} flex items-center gap-1 w-fit border-0`}
+        >
           {order.type === 'PREVENTIVE' ? (
             <Shield className="h-3 w-3" />
           ) : (
