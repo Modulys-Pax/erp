@@ -127,7 +127,7 @@ export default function VehiclesPage() {
   const columns = [
     {
       key: 'plate',
-      header: 'Veículo',
+      header: 'Composição atual',
       render: (vehicle: Vehicle) => (
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -136,7 +136,10 @@ export default function VehiclesPage() {
           <div>
             <p className="font-semibold text-foreground">
               {vehicle.plates?.length
-                ? vehicle.plates.map((p) => p.plate).join(' / ')
+                ? vehicle.plates
+                    .sort((a, b) => VEHICLE_PLATE_TYPES.indexOf(a.type) - VEHICLE_PLATE_TYPES.indexOf(b.type))
+                    .map((p) => `${PLATE_TYPE_LABELS[p.type]}: ${p.plate}`)
+                    .join(' · ')
                 : vehicle.plate}
             </p>
             {(vehicle.brandName || vehicle.modelName) && (
@@ -248,7 +251,7 @@ export default function VehiclesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Veículos"
-        subtitle="Gerencie os veículos da frota"
+        subtitle="Cada veículo é um grupo de placas (cavalo, carretas, dolly). A composição pode ser alterada na manutenção, marcação ou troca na estrada."
         actions={
           <>
             <Button

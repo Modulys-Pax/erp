@@ -14,6 +14,7 @@ import { branchApi } from '@/lib/api/branch';
 import { DEFAULT_COMPANY_ID } from '@/lib/constants/company.constants';
 import { useEffectiveBranch } from '@/lib/hooks/use-effective-branch';
 import { PageHeader } from '@/components/layout/page-header';
+import { toastSuccess } from '@/lib/utils';
 import { SectionCard } from '@/components/ui/section-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -71,6 +72,7 @@ export default function NewAccountReceivablePage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['accounts-receivable'] });
       await queryClient.refetchQueries({ queryKey: ['accounts-receivable'] });
+      toastSuccess('Conta a receber cadastrada com sucesso');
       router.push('/accounts-receivable');
     },
   });

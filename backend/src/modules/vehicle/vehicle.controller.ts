@@ -140,6 +140,23 @@ export class VehicleController {
     return this.vehicleService.getVehicleCosts(branchId, startDate, endDate, pageNum, limitNum);
   }
 
+  @Get('plates/by-branch')
+  @RequirePermission('vehicles.view')
+  @ApiOperation({ summary: 'Listar placas da filial (para seleção de composição)' })
+  @ApiQuery({
+    name: 'branchId',
+    required: true,
+    type: String,
+    description: 'ID da filial',
+  })
+  @ApiResponse({ status: 200, description: 'Lista de placas (plate, type) da filial' })
+  getPlatesByBranch(
+    @Query('branchId') branchId: string | undefined,
+    @CurrentUser() user: any,
+  ) {
+    return this.vehicleService.getPlatesByBranch(branchId, user);
+  }
+
   @Get(':id')
   @RequirePermission('vehicles.view')
   @ApiOperation({ summary: 'Obter veículo por ID' })

@@ -13,7 +13,8 @@ export interface VehicleMarking {
 }
 
 export interface CreateVehicleMarkingDto {
-  vehicleId: string;
+  /** IDs dos veículos/placas (1 a 4) que compõem o combo */
+  vehicleIds: string[];
   km: number;
   companyId: string;
   branchId: string;

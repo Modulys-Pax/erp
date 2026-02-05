@@ -12,6 +12,7 @@ import { branchApi } from '@/lib/api/branch';
 import { DEFAULT_COMPANY_ID } from '@/lib/constants/company.constants';
 import { useEffectiveBranch } from '@/lib/hooks/use-effective-branch';
 import { PageHeader } from '@/components/layout/page-header';
+import { toastSuccess } from '@/lib/utils';
 import { SectionCard } from '@/components/ui/section-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -164,6 +165,7 @@ export default function NewEmployeePage() {
       queryClient.invalidateQueries({ queryKey: ['employee-costs'] });
       await queryClient.refetchQueries({ queryKey: ['employees'] });
       await queryClient.invalidateQueries({ queryKey: ['users'] });
+      toastSuccess('Funcionário cadastrado com sucesso');
       router.push('/employees');
     },
   });

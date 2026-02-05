@@ -13,6 +13,7 @@ import {
 import { branchApi } from '@/lib/api/branch';
 import { DEFAULT_COMPANY_ID } from '@/lib/constants/company.constants';
 import { PageHeader } from '@/components/layout/page-header';
+import { toastSuccess } from '@/lib/utils';
 import { SectionCard } from '@/components/ui/section-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,6 +71,7 @@ export default function EditAccountPayablePage() {
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['accounts-payable'] });
       await queryClient.refetchQueries({ queryKey: ['accounts-payable'] });
+      toastSuccess('Conta a pagar atualizada com sucesso');
       router.push('/accounts-payable');
     },
   });

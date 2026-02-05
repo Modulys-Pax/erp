@@ -14,7 +14,7 @@ jest.mock('../../shared/utils/branch-access.util', () => ({
 }));
 
 jest.mock('../../shared/utils/vehicle-plate.util', () => ({
-  getPrimaryPlate: jest.fn((vehicle: any) => vehicle?.plates?.[0]?.plate || 'ABC-1234'),
+  getPrimaryPlate: jest.fn((vehicle: any) => vehicle?.plate?.plate || 'ABC-1234'),
 }));
 
 jest.mock('../../shared/utils/decimal.util', () => ({
@@ -38,7 +38,7 @@ describe('MaintenanceLabelService', () => {
     branchId: 'branch-123',
     status: 'AVAILABLE',
     currentKm: 50000,
-    plates: [{ id: 'plate-1', plate: 'ABC-1234', type: 'PRINCIPAL' }],
+    plate: { id: 'plate-1', plate: 'ABC-1234', type: 'CAVALO' },
     replacementItems: [mockReplacementItem],
     deletedAt: null,
   };
@@ -287,7 +287,7 @@ describe('MaintenanceLabelService', () => {
 
   describe('registerProductChange', () => {
     const registerDto = {
-      vehicleId: 'vehicle-123',
+      vehicleIds: ['vehicle-123'],
       branchId: 'branch-123',
       companyId: 'company-123',
       changeKm: 55000,

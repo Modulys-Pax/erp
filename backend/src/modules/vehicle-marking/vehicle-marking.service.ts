@@ -24,17 +24,22 @@ export class VehicleMarkingService {
       validateBranchAccess(user.branchId, user.role, createVehicleMarkingDto.branchId, undefined);
     }
 
-    // Verificar se veículo existe
-    const vehicle = await this.prisma.vehicle.findFirst({
+    // Validar veículos (1 a 4 placas)
+    const uniqueIds = [...new Set(createVehicleMarkingDto.vehicleIds)];
+    if (uniqueIds.length !== createVehicleMarkingDto.vehicleIds.length) {
+      throw new NotFoundException('Não repita o mesmo veículo/placa.');
+    }
+
+    const vehicles = await this.prisma.vehicle.findMany({
       where: {
-        id: createVehicleMarkingDto.vehicleId,
+        id: { in: createVehicleMarkingDto.vehicleIds },
         companyId,
         deletedAt: null,
       },
     });
 
-    if (!vehicle) {
-      throw new NotFoundException('Veículo não encontrado');
+    if (vehicles.length !== createVehicleMarkingDto.vehicleIds.length) {
+      throw new NotFoundException('Um ou mais veículos não foram encontrados.');
     }
 
     // Verificar se filial existe
@@ -54,35 +59,42 @@ export class VehicleMarkingService {
     const marking = await this.prisma.$transaction(async (tx) => {
       const created = await tx.vehicleMarking.create({
         data: {
-          vehicleId: createVehicleMarkingDto.vehicleId,
           km: createVehicleMarkingDto.km,
           companyId,
           branchId: createVehicleMarkingDto.branchId,
           createdBy: userId,
+          vehicles: {
+            create: createVehicleMarkingDto.vehicleIds.map((vehicleId) => ({ vehicleId })),
+          },
         },
         include: {
-          vehicle: {
+          vehicles: {
             include: {
-              plates: true,
+              vehicle: {
+                include: { plate: true },
+              },
             },
           },
         },
       });
 
-      await tx.vehicle.update({
-        where: { id: createVehicleMarkingDto.vehicleId },
+      await tx.vehicle.updateMany({
+        where: { id: { in: createVehicleMarkingDto.vehicleIds } },
         data: { currentKm: createVehicleMarkingDto.km },
       });
 
-      await tx.vehicleStatusHistory.create({
-        data: {
-          vehicleId: createVehicleMarkingDto.vehicleId,
-          status: vehicle.status,
-          km: createVehicleMarkingDto.km,
-          notes: 'Quilometragem atualizada via marcação (chegada na filial)',
-          createdBy: userId,
-        },
-      });
+      for (const vehicleId of createVehicleMarkingDto.vehicleIds) {
+        const v = vehicles.find((x) => x.id === vehicleId);
+        await tx.vehicleStatusHistory.create({
+          data: {
+            vehicleId,
+            status: v?.status ?? 'ACTIVE',
+            km: createVehicleMarkingDto.km,
+            notes: 'Quilometragem atualizada via marcação (chegada na filial)',
+            createdBy: userId,
+          },
+        });
+      }
 
       return created;
     });
@@ -120,9 +132,11 @@ export class VehicleMarkingService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          vehicle: {
+          vehicles: {
             include: {
-              plates: true,
+              vehicle: {
+                include: { plate: true },
+              },
             },
           },
         },
@@ -148,9 +162,11 @@ export class VehicleMarkingService {
         companyId,
       },
       include: {
-        vehicle: {
-          select: {
-            plates: true,
+        vehicles: {
+          include: {
+            vehicle: {
+              include: { plate: true },
+            },
           },
         },
       },
@@ -183,10 +199,11 @@ export class VehicleMarkingService {
   }
 
   private mapToResponse(marking: any): VehicleMarkingResponseDto {
+    const firstVehicle = marking.vehicles?.[0];
     return {
       id: marking.id,
-      vehicleId: marking.vehicleId,
-      vehiclePlate: marking.vehicle ? getPrimaryPlate(marking.vehicle) : undefined,
+      vehicleId: firstVehicle?.vehicleId ?? '',
+      vehiclePlate: firstVehicle?.vehicle ? getPrimaryPlate(firstVehicle.vehicle) : undefined,
       km: marking.km,
       companyId: marking.companyId,
       branchId: marking.branchId,

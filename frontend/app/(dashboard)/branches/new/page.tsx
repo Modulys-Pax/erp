@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { branchApi, CreateBranchDto } from '@/lib/api/branch';
 import { DEFAULT_COMPANY_ID } from '@/lib/constants/company.constants';
 import { PageHeader } from '@/components/layout/page-header';
+import { toastSuccess } from '@/lib/utils';
 import { SectionCard } from '@/components/ui/section-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +49,7 @@ export default function NewBranchPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['branches'] });
       await queryClient.refetchQueries({ queryKey: ['branches'] });
+      toastSuccess('Filial cadastrada com sucesso');
       router.push('/branches');
     },
   });

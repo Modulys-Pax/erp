@@ -97,7 +97,7 @@ export class MaintenanceLabelService {
      */
     const lastMarking = await this.prisma.vehicleMarking.findFirst({
       where: {
-        vehicleId: createMaintenanceLabelDto.vehicleId,
+        vehicles: { some: { vehicleId: createMaintenanceLabelDto.vehicleId } },
         companyId,
       },
       orderBy: { createdAt: 'desc' },
@@ -106,10 +106,12 @@ export class MaintenanceLabelService {
     const label = await this.prisma.$transaction(async (tx) => {
       const newLabel = await tx.maintenanceLabel.create({
         data: {
-          vehicleId: createMaintenanceLabelDto.vehicleId,
           companyId,
           branchId: createMaintenanceLabelDto.branchId,
           createdBy: userId,
+          vehicles: {
+            create: { vehicleId: createMaintenanceLabelDto.vehicleId },
+          },
         },
       });
 
@@ -117,7 +119,7 @@ export class MaintenanceLabelService {
         const lastChange = await tx.maintenanceLabelReplacementItem.findFirst({
           where: {
             vehicleReplacementItemId,
-            maintenanceLabel: { vehicleId: createMaintenanceLabelDto.vehicleId },
+            maintenanceLabel: { vehicles: { some: { vehicleId: createMaintenanceLabelDto.vehicleId } } },
           },
           orderBy: { createdAt: 'desc' },
         });
@@ -152,7 +154,7 @@ export class MaintenanceLabelService {
     const where: Prisma.MaintenanceLabelWhereInput = {
       companyId,
       ...(branchId ? { branchId } : {}),
-      ...(vehicleId ? { vehicleId } : {}),
+      ...(vehicleId ? { vehicles: { some: { vehicleId } } } : {}),
     };
 
     const [labels, total] = await Promise.all([
@@ -162,10 +164,14 @@ export class MaintenanceLabelService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          vehicle: {
+          vehicles: {
             include: {
-              plates: true,
-              replacementItems: true,
+              vehicle: {
+                include: {
+                  plate: true,
+                  replacementItems: true,
+                },
+              },
             },
           },
           replacementItems: {
@@ -194,10 +200,14 @@ export class MaintenanceLabelService {
         companyId,
       },
       include: {
-        vehicle: {
+        vehicles: {
           include: {
-            plates: true,
-            replacementItems: true,
+            vehicle: {
+              include: {
+                plate: true,
+                replacementItems: true,
+              },
+            },
           },
         },
         replacementItems: {
@@ -235,7 +245,11 @@ export class MaintenanceLabelService {
     }
 
     const lastMarking = await this.prisma.vehicleMarking.findFirst({
-      where: { vehicleId, companyId, ...(branchId ? { branchId } : {}) },
+      where: {
+        vehicles: { some: { vehicleId } },
+        companyId,
+        ...(branchId ? { branchId } : {}),
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -246,7 +260,7 @@ export class MaintenanceLabelService {
       const lastChange = await this.prisma.maintenanceLabelReplacementItem.findFirst({
         where: {
           vehicleReplacementItemId: ri.id,
-          maintenanceLabel: { vehicleId },
+          maintenanceLabel: { vehicles: { some: { vehicleId } } },
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -313,30 +327,35 @@ export class MaintenanceLabelService {
       validateBranchAccess(user.branchId, user.role, registerProductChangeDto.branchId, undefined);
     }
 
-    // Verificar se veículo existe
-    const vehicle = await this.prisma.vehicle.findFirst({
+    // Validar veículos (1 a 4 placas)
+    const uniqueIds = [...new Set(registerProductChangeDto.vehicleIds)];
+    if (uniqueIds.length !== registerProductChangeDto.vehicleIds.length) {
+      throw new BadRequestException('Não repita o mesmo veículo/placa.');
+    }
+
+    const vehicles = await this.prisma.vehicle.findMany({
       where: {
-        id: registerProductChangeDto.vehicleId,
+        id: { in: registerProductChangeDto.vehicleIds },
         companyId,
         deletedAt: null,
       },
     });
 
-    if (!vehicle) {
-      throw new NotFoundException('Veículo não encontrado');
+    if (vehicles.length !== registerProductChangeDto.vehicleIds.length) {
+      throw new NotFoundException('Um ou mais veículos não foram encontrados.');
     }
 
-    // Validar cada item: deve ser vehicleReplacementItemId do veículo
+    // Validar cada item: deve ser vehicleReplacementItemId de um dos veículos
     const replacementItems = await this.prisma.vehicleReplacementItem.findMany({
       where: {
-        vehicleId: registerProductChangeDto.vehicleId,
+        vehicleId: { in: registerProductChangeDto.vehicleIds },
         id: { in: registerProductChangeDto.items.map((i) => i.vehicleReplacementItemId) },
       },
     });
 
     if (replacementItems.length !== registerProductChangeDto.items.length) {
       throw new BadRequestException(
-        'Item(ns) não configurado(s) para troca por KM neste veículo. Cadastre na edição do veículo.',
+        'Item(ns) não configurado(s) para troca por KM nos veículos selecionados. Cadastre na edição do veículo.',
       );
     }
 
@@ -375,10 +394,12 @@ export class MaintenanceLabelService {
     return this.prisma.$transaction(async (tx) => {
       const label = await tx.maintenanceLabel.create({
         data: {
-          vehicleId: registerProductChangeDto.vehicleId,
           companyId,
           branchId: registerProductChangeDto.branchId,
           createdBy: userId,
+          vehicles: {
+            create: registerProductChangeDto.vehicleIds.map((vehicleId) => ({ vehicleId })),
+          },
         },
       });
 
@@ -393,8 +414,8 @@ export class MaintenanceLabelService {
         });
       }
 
-      await tx.vehicle.update({
-        where: { id: registerProductChangeDto.vehicleId },
+      await tx.vehicle.updateMany({
+        where: { id: { in: registerProductChangeDto.vehicleIds } },
         data: { currentKm: registerProductChangeDto.changeKm },
       });
 
@@ -413,7 +434,9 @@ export class MaintenanceLabelService {
       const newOrder = await tx.maintenanceOrder.create({
         data: {
           orderNumber,
-          vehicleId: registerProductChangeDto.vehicleId,
+          vehicles: {
+            create: registerProductChangeDto.vehicleIds.map((vehicleId) => ({ vehicleId })),
+          },
           type: 'PREVENTIVE',
           status: 'COMPLETED',
           kmAtEntry: registerProductChangeDto.changeKm,
@@ -427,24 +450,26 @@ export class MaintenanceLabelService {
         },
       });
 
-      await tx.vehicleStatusHistory.create({
-        data: {
-          vehicleId: registerProductChangeDto.vehicleId,
-          status: vehicle.status,
-          km: registerProductChangeDto.changeKm,
+      for (const vehicleId of registerProductChangeDto.vehicleIds) {
+        const v = vehicles.find((x) => x.id === vehicleId);
+        await tx.vehicleStatusHistory.create({
+          data: {
+            vehicleId,
+            status: v?.status ?? 'ACTIVE',
+            km: registerProductChangeDto.changeKm,
           notes: observations,
-          maintenanceOrderId: newOrder.id,
-          createdBy: userId,
-        },
-      });
+            maintenanceOrderId: newOrder.id,
+            createdBy: userId,
+          },
+        });
+      }
 
       // Criar conta a pagar se houver custo
       if (totalCost > 0) {
-        const vehiclePlates = await tx.vehiclePlate.findMany({
-          where: { vehicleId: registerProductChangeDto.vehicleId },
-          orderBy: { type: 'asc' },
+        const vehiclePlate = await tx.vehiclePlate.findFirst({
+          where: { vehicleId: registerProductChangeDto.vehicleIds[0] },
         });
-        const plateStr = vehiclePlates.length > 0 ? vehiclePlates[0].plate : 'Veículo';
+        const plateStr = vehiclePlate?.plate ?? 'Veículo';
 
         await tx.accountPayable.create({
           data: {
@@ -489,7 +514,8 @@ export class MaintenanceLabelService {
   }
 
   private mapToResponse(label: any): MaintenanceLabelResponseDto {
-    const replacementByItem = (label.vehicle?.replacementItems ?? []).reduce(
+    const firstVehicle = label.vehicles?.[0]?.vehicle;
+    const replacementByItem = (firstVehicle?.replacementItems ?? []).reduce(
       (acc: Record<string, number>, r: { id: string; replaceEveryKm: number }) => {
         acc[r.id] = r.replaceEveryKm;
         return acc;
@@ -514,8 +540,8 @@ export class MaintenanceLabelService {
 
     return {
       id: label.id,
-      vehicleId: label.vehicleId,
-      vehiclePlate: label.vehicle ? getPrimaryPlate(label.vehicle) : '',
+      vehicleId: label.vehicles?.[0]?.vehicleId ?? '',
+      vehiclePlate: firstVehicle ? getPrimaryPlate(firstVehicle) : '',
       companyId: label.companyId,
       branchId: label.branchId,
       createdAt: label.createdAt,

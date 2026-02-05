@@ -31,7 +31,7 @@ describe('VehicleMarkingController', () => {
   describe('create', () => {
     it('deve criar uma marcação', async () => {
       const createDto = {
-        vehicleId: 'vehicle-1',
+        vehicleIds: ['vehicle-1'],
         km: 150000,
         branchId: 'branch-1',
         companyId: 'company-1',

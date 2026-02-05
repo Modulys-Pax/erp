@@ -41,7 +41,7 @@ describe('MaintenanceService', () => {
     currentKm: 50000,
     status: 'AVAILABLE',
     deletedAt: null,
-    plates: [{ plate: 'ABC-1234', isPrimary: true }],
+    plate: { plate: 'ABC-1234', type: 'CAVALO' },
   };
 
   const mockEmployee = {

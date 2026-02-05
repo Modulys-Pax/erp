@@ -201,17 +201,38 @@ export default function DashboardPage() {
   const pieChartData = useMemo(() => {
     const movements = walletData?.movements || [];
     const categories: Record<string, number> = {};
-    
+
+    function getCategory(m: { originType?: string; description?: string }): string {
+      // 1) Origem conhecida: HR / Manutenção
+      if (m.originType === 'HR') return 'Folha';
+      if (m.originType === 'MAINTENANCE') return 'Manutenção';
+
+      // 2) Qualquer outra origem conhecida (ex.: STOCK, MANUAL, SALE, etc.) tratamos como Almoxarifado,
+      //    porque hoje as nossas saídas automáticas relevantes (fora folha/manutenção)
+      //    vêm principalmente de compras de estoque.
+      if (m.originType) return 'Almoxarifado';
+
+      // 3) Fallback por descrição (para registros antigos ou sem originType)
+      if (m.description?.includes('Folha')) return 'Folha';
+      if (m.description?.includes('Manutenção')) return 'Manutenção';
+      if (
+        m.description?.includes('Estoque') ||
+        m.description?.includes('almoxarifado') ||
+        m.description?.includes('Almoxarifado')
+      ) {
+        return 'Almoxarifado';
+      }
+
+      return 'Outras';
+    }
+
     movements
       .filter((m) => m.type === 'payable')
       .forEach((m) => {
-        const category = m.description?.includes('Folha') ? 'Folha' :
-                        m.description?.includes('Manutenção') ? 'Manutenção' :
-                        m.description?.includes('Estoque') ? 'Estoque' :
-                        'Outras';
+        const category = getCategory(m);
         categories[category] = (categories[category] || 0) + m.amount;
       });
-    
+
     return Object.entries(categories).map(([name, value]) => ({ name, value }));
   }, [walletData?.movements]);
 

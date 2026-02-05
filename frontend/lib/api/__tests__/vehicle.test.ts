@@ -95,7 +95,7 @@ describe('vehicleApi', () => {
   describe('create', () => {
     it('deve criar veículo', async () => {
       const createDto: CreateVehicleDto = {
-        plates: [{ type: 'CAVALO', plate: 'XYZ-9999' }],
+        plate: { type: 'CAVALO', plate: 'XYZ-9999' },
         companyId: 'company-123',
         branchId: 'branch-123',
       };

@@ -65,7 +65,7 @@ export default function NewExpensePage() {
     mutationFn: expenseApi.create,
     onSuccess: () => {
       toastSuccess('Despesa cadastrada com sucesso');
-      router.push('/expenses');
+      router.push('/financial/expenses');
     },
     onError: (error) => toastErrorFromException(error, 'Erro ao cadastrar despesa'),
   });

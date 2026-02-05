@@ -44,7 +44,7 @@ describe('MaintenanceController', () => {
   describe('create', () => {
     it('deve criar uma ordem de manutenção', async () => {
       const createDto = {
-        vehicleId: 'vehicle-1',
+        vehicleIds: ['vehicle-1'],
         branchId: 'branch-1',
         companyId: 'company-1',
         description: 'Troca de óleo',

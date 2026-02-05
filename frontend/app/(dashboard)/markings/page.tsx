@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { vehicleMarkingApi, VehicleMarking, CreateVehicleMarkingDto } from '@/lib/api/vehicle-marking';
-import { vehicleApi } from '@/lib/api/vehicle';
 import { useEffectiveBranch } from '@/lib/hooks/use-effective-branch';
 import { DEFAULT_COMPANY_ID } from '@/lib/constants/company.constants';
 import { PageHeader } from '@/components/layout/page-header';
@@ -32,7 +31,7 @@ const LIMIT = 10;
 export default function MarkingsPage() {
   const queryClient = useQueryClient();
   const { branchId: effectiveBranchId } = useEffectiveBranch();
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
+  const [selectedVehicleIds, setSelectedVehicleIds] = useState<string[]>([]);
   const [km, setKm] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
@@ -86,11 +85,11 @@ export default function MarkingsPage() {
       queryClient.invalidateQueries({ queryKey: ['maintenanceDue'] });
       await queryClient.refetchQueries({ queryKey: ['vehicles'] });
       await queryClient.refetchQueries({ queryKey: ['maintenanceDue'] });
-      if (variables.vehicleId) {
-        queryClient.invalidateQueries({ queryKey: ['vehicles', variables.vehicleId] });
-        queryClient.invalidateQueries({ queryKey: ['vehicles', variables.vehicleId, 'history'] });
-      }
-      setSelectedVehicleId('');
+      variables.vehicleIds?.forEach((vid) => {
+        queryClient.invalidateQueries({ queryKey: ['vehicles', vid] });
+        queryClient.invalidateQueries({ queryKey: ['vehicles', vid, 'history'] });
+      });
+      setSelectedVehicleIds([]);
       setKm('');
       toastSuccess('Marcação criada com sucesso. Quilometragem do veículo atualizada.');
     },
@@ -113,7 +112,7 @@ export default function MarkingsPage() {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!effectiveBranchId) {
@@ -124,8 +123,8 @@ export default function MarkingsPage() {
       return;
     }
 
-    if (!selectedVehicleId) {
-      toastErrorFromException(new Error('Selecione um veículo'), 'Veículo obrigatório');
+    if (!selectedVehicleIds.length) {
+      toastErrorFromException(new Error('Selecione pelo menos 1 placa'), 'Placas obrigatórias');
       return;
     }
 
@@ -137,12 +136,16 @@ export default function MarkingsPage() {
       return;
     }
 
-    createMutation.mutate({
-      vehicleId: selectedVehicleId,
-      km: Number(km),
-      companyId: DEFAULT_COMPANY_ID,
-      branchId: effectiveBranchId,
-    });
+    try {
+      await createMutation.mutateAsync({
+        vehicleIds: selectedVehicleIds,
+        km: Number(km),
+        companyId: DEFAULT_COMPANY_ID,
+        branchId: effectiveBranchId,
+      });
+    } catch {
+      // Erro já tratado pelo mutation
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -233,22 +236,59 @@ export default function MarkingsPage() {
       <SectionCard title="Nova Marcação">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="vehicle" className="text-sm text-muted-foreground mb-2 block">
-                Veículo *
+            <div className="md:col-span-2">
+              <Label className="text-sm text-muted-foreground mb-2 block">
+                Placas do combo (1 a 4) *
               </Label>
-              <SearchableSelect
-                id="vehicle"
-                options={toSelectOptions(
-                  vehicles.filter((v) => v.active),
-                  (v) => v.id,
-                  (v) => `${v.plate}${v.brandName || v.modelName ? ` - ${v.brandName || ''} ${v.modelName || ''}`.trim() : ''}`,
+              <p className="text-xs text-muted-foreground mb-2">
+                Selecione as placas que chegaram na filial
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {selectedVehicleIds.map((vid) => {
+                  const v = vehicles.find((x) => x.id === vid);
+                  const plateLabel = v?.plates?.[0]
+                    ? `${v.plates[0].plate} (${v.plates[0].type})`
+                    : v?.plate ?? vid;
+                  return (
+                    <div
+                      key={vid}
+                      className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/30 px-3 py-1.5 text-sm"
+                    >
+                      <span>{plateLabel}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedVehicleIds(selectedVehicleIds.filter((id) => id !== vid))
+                        }
+                        className="text-muted-foreground hover:text-destructive ml-1"
+                        aria-label="Remover"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+                {selectedVehicleIds.length < 4 && (
+                  <SearchableSelect
+                    options={toSelectOptions(
+                      vehicles.filter((v) => v.active && !selectedVehicleIds.includes(v.id)),
+                      (v) => v.id,
+                      (v) => {
+                        const plateStr = v.plates?.[0]?.plate ?? v.plate ?? v.id;
+                        return `${plateStr}${v.brandName || v.modelName ? ` ${(v.brandName || '')} ${(v.modelName || '')}`.trim() : ''}`;
+                      },
+                    )}
+                    value=""
+                    onChange={(value) => {
+                      if (value && !selectedVehicleIds.includes(value)) {
+                        setSelectedVehicleIds([...selectedVehicleIds, value]);
+                      }
+                    }}
+                    placeholder="+ Adicionar placa..."
+                    disabled={!effectiveBranchId || createMutation.isPending}
+                  />
                 )}
-                value={selectedVehicleId}
-                onChange={(value) => setSelectedVehicleId(value)}
-                placeholder="Selecione um veículo"
-                disabled={!effectiveBranchId || createMutation.isPending}
-              />
+              </div>
             </div>
 
             <div>
@@ -268,6 +308,19 @@ export default function MarkingsPage() {
               />
             </div>
           </div>
+
+          {selectedVehicleId && selectedVehicle && (
+            <div className="space-y-2 rounded-xl border border-border p-4 bg-muted/20">
+              <h3 className="text-sm font-medium text-foreground">Composição do veículo</h3>
+              <p className="text-xs text-muted-foreground">
+                Altere se o veículo está com outra composição de placas. Ao salvar, o cadastro será atualizado.
+              </p>
+              <VehicleCompositionEditor
+                value={compositionPlates}
+                onChange={setCompositionPlates}
+              />
+            </div>
+          )}
 
           <div className="flex gap-2">
             <Button

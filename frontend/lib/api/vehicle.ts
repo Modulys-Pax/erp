@@ -53,7 +53,8 @@ export interface VehicleReplacementItemResponse {
 }
 
 export interface CreateVehicleDto {
-  plates: VehiclePlateItem[];
+  /** Uma placa por registro (Vehicle = 1 placa) */
+  plate: VehiclePlateItem;
   replacementItems?: VehicleReplacementItemDto[];
   brandId?: string;
   modelId?: string;
@@ -139,6 +140,17 @@ export const vehicleApi = {
     const response = await api.get<VehicleCostsResponse>('/vehicles/costs/summary', {
       params: { branchId, startDate, endDate, page, limit },
     });
+    return response.data;
+  },
+
+  /** Lista placas da filial para seleção de composição (manutenção, marcação, troca na estrada) */
+  getPlatesByBranch: async (
+    branchId: string,
+  ): Promise<{ plate: string; type: VehiclePlateType }[]> => {
+    const response = await api.get<{ plate: string; type: VehiclePlateType }[]>(
+      '/vehicles/plates/by-branch',
+      { params: { branchId } },
+    );
     return response.data;
   },
 };

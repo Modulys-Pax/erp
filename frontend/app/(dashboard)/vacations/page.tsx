@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Label } from '@/components/ui/label';
-import { toastSuccess, toastError } from '@/lib/utils';
+import { toastSuccess, toastErrorFromException, toastError } from '@/lib/utils';
 import { toSelectOptions } from '@/lib/hooks/use-searchable-select';
 import {
   VACATION_STATUS_LABELS,
@@ -81,7 +81,7 @@ export default function VacationsPage() {
       queryClient.invalidateQueries({ queryKey: ['vacations'] });
       toastSuccess('Férias excluídas');
     },
-    onError: () => toastError('Erro ao excluir férias'),
+    onError: (error) => toastErrorFromException(error, 'Erro ao excluir férias'),
   });
 
   const updateMutation = useMutation({
@@ -91,7 +91,7 @@ export default function VacationsPage() {
       queryClient.invalidateQueries({ queryKey: ['vacations'] });
       toastSuccess('Status atualizado');
     },
-    onError: () => toastError('Erro ao atualizar status'),
+    onError: (error) => toastErrorFromException(error, 'Erro ao atualizar status'),
   });
 
   const handleDelete = (id: string) => {

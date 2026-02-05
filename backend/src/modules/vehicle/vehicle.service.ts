@@ -65,34 +65,24 @@ export class VehicleService {
       throw new NotFoundException('Filial não encontrada');
     }
 
-    // Validar tipos duplicados nas placas
-    const types = createVehicleDto.plates.map((p) => p.type);
-    const uniqueTypes = new Set(types);
-    if (uniqueTypes.size !== types.length) {
-      throw new BadRequestException(
-        'Não é permitido mais de uma placa do mesmo tipo (cavalo, primeira carreta, dolly, segunda carreta)',
-      );
-    }
-
-    // Verificar se alguma placa já existe na filial (em outro veículo)
-    for (const item of createVehicleDto.plates) {
-      const existingPlate = await this.prisma.vehiclePlate.findFirst({
-        where: {
-          plate: item.plate.trim(),
-          vehicle: {
-            companyId,
-            branchId: createVehicleDto.branchId,
-            deletedAt: null,
-          },
+    // Verificar se a placa já existe na filial (em outro veículo)
+    const plateItem = createVehicleDto.plate;
+    const existingPlate = await this.prisma.vehiclePlate.findFirst({
+      where: {
+        plate: plateItem.plate.trim(),
+        vehicle: {
+          companyId,
+          branchId: createVehicleDto.branchId,
+          deletedAt: null,
         },
-      });
-      if (existingPlate) {
-        throw new ConflictException(`Placa ${item.plate} já cadastrada para esta empresa/filial`);
-      }
+      },
+    });
+    if (existingPlate) {
+      throw new ConflictException(`Placa ${plateItem.plate} já cadastrada para esta empresa/filial`);
     }
 
     const {
-      plates: platesInput,
+      plate: plateInput,
       replacementItems: replacementInput,
       ...vehicleData
     } = createVehicleDto;
@@ -103,11 +93,11 @@ export class VehicleService {
         companyId: companyId,
         status: (createVehicleDto.status as VehicleStatus) || VehicleStatus.ACTIVE,
         createdBy: userId,
-        plates: {
-          create: platesInput.map((p) => ({
-            type: p.type as VehiclePlateType,
-            plate: p.plate.trim(),
-          })),
+        plate: {
+          create: {
+            type: plateInput.type as VehiclePlateType,
+            plate: plateInput.plate.trim(),
+          },
         },
         ...(replacementInput?.length
           ? {
@@ -123,7 +113,7 @@ export class VehicleService {
       include: {
         brand: true,
         model: true,
-        plates: true,
+        plate: true,
         replacementItems: true,
       },
     });
@@ -167,7 +157,7 @@ export class VehicleService {
         include: {
           brand: true,
           model: true,
-          plates: true,
+          plate: true,
           replacementItems: true,
         },
         orderBy: { createdAt: 'asc' },
@@ -193,7 +183,7 @@ export class VehicleService {
       include: {
         brand: true,
         model: true,
-        plates: true,
+        plate: true,
         replacementItems: true,
       },
     });
@@ -208,6 +198,31 @@ export class VehicleService {
     }
 
     return this.mapToResponse(vehicle);
+  }
+
+  /**
+   * Lista todas as placas cadastradas na filial (para seleção de composição em manutenção, marcação, etc.)
+   */
+  async getPlatesByBranch(branchId: string | undefined, user?: any): Promise<{ plate: string; type: VehiclePlateType }[]> {
+    if (!branchId) {
+      return [];
+    }
+    if (user) {
+      validateBranchAccess(user.branchId, user.role, undefined, branchId);
+    }
+    const plates = await this.prisma.vehiclePlate.findMany({
+      where: {
+        vehicle: {
+          branchId,
+          companyId: DEFAULT_COMPANY_ID,
+          deletedAt: null,
+          active: true,
+        },
+      },
+      select: { plate: true, type: true },
+      orderBy: [{ type: 'asc' }, { plate: 'asc' }],
+    });
+    return plates.map((p) => ({ plate: p.plate, type: p.type as VehiclePlateType }));
   }
 
   async update(
@@ -265,40 +280,31 @@ export class VehicleService {
       }
     }
 
-    // Atualizar placas se enviadas
-    if (updateVehicleDto.plates !== undefined) {
-      if (updateVehicleDto.plates.length === 0) {
-        throw new BadRequestException('Informe pelo menos uma placa');
-      }
-      const types = updateVehicleDto.plates.map((p) => p.type);
-      const uniqueTypes = new Set(types);
-      if (uniqueTypes.size !== types.length) {
-        throw new BadRequestException('Não é permitido mais de uma placa do mesmo tipo');
-      }
+    // Atualizar placa se enviada (1 placa por veículo)
+    if (updateVehicleDto.plate !== undefined) {
+      const plateItem = updateVehicleDto.plate;
       const branchId = updateVehicleDto.branchId ?? existingVehicle.branchId;
-      for (const item of updateVehicleDto.plates) {
-        const existingPlate = await this.prisma.vehiclePlate.findFirst({
-          where: {
-            plate: item.plate.trim(),
-            vehicle: {
-              companyId: existingVehicle.companyId,
-              branchId,
-              deletedAt: null,
-            },
-            NOT: { vehicleId: id },
+      const existingPlate = await this.prisma.vehiclePlate.findFirst({
+        where: {
+          plate: plateItem.plate.trim(),
+          vehicle: {
+            companyId: existingVehicle.companyId,
+            branchId,
+            deletedAt: null,
           },
-        });
-        if (existingPlate) {
-          throw new ConflictException(`Placa ${item.plate} já cadastrada para esta empresa/filial`);
-        }
+          NOT: { vehicleId: id },
+        },
+      });
+      if (existingPlate) {
+        throw new ConflictException(`Placa ${plateItem.plate} já cadastrada para esta empresa/filial`);
       }
       await this.prisma.vehiclePlate.deleteMany({ where: { vehicleId: id } });
-      await this.prisma.vehiclePlate.createMany({
-        data: updateVehicleDto.plates.map((p) => ({
+      await this.prisma.vehiclePlate.create({
+        data: {
           vehicleId: id,
-          type: p.type as VehiclePlateType,
-          plate: p.plate.trim(),
-        })),
+          type: plateItem.type as VehiclePlateType,
+          plate: plateItem.plate.trim(),
+        },
       });
     }
 
@@ -323,12 +329,12 @@ export class VehicleService {
       updateVehicleDto.currentKm !== undefined &&
       updateVehicleDto.currentKm !== existingVehicle.currentKm;
 
-    // Excluir campos que não devem ser atualizados (plates e replacementItems já tratados acima)
+    // Excluir campos que não devem ser atualizados (plate e replacementItems já tratados acima)
     const {
       companyId,
       branchId,
       status,
-      plates: _plates,
+      plate: _plate,
       replacementItems: _replacementItems,
       ...restData
     } = updateVehicleDto;
@@ -347,7 +353,7 @@ export class VehicleService {
       include: {
         brand: true,
         model: true,
-        plates: true,
+        plate: true,
         replacementItems: true,
       },
     });
@@ -423,7 +429,7 @@ export class VehicleService {
       include: {
         brand: true,
         model: true,
-        plates: true,
+        plate: true,
         replacementItems: true,
       },
     });
@@ -473,7 +479,7 @@ export class VehicleService {
       include: {
         brand: true,
         model: true,
-        plates: true,
+        plate: true,
         replacementItems: true,
       },
     });
@@ -550,7 +556,7 @@ export class VehicleService {
       where,
       include: {
         model: true,
-        plates: true,
+        plate: true,
       },
       orderBy: { createdAt: 'asc' },
       skip,
@@ -588,7 +594,7 @@ export class VehicleService {
       const orders = await this.prisma.maintenanceOrder.findMany({
         where: {
           ...maintenanceWhere,
-          vehicleId: vehicle.id,
+          vehicles: { some: { vehicleId: vehicle.id } },
         },
         include: {
           materials: {
@@ -611,9 +617,10 @@ export class VehicleService {
         // Calcular custos da ordem atual
         let orderMaterialsCost = 0;
         let orderServicesCost = 0;
+        const orderWithIncludes = order as typeof order & { materials?: { totalCost?: unknown; unitCost?: unknown; quantity?: unknown }[]; services?: { cost?: unknown }[] };
 
         // Custo de materiais da ordem
-        for (const material of order.materials || []) {
+        for (const material of orderWithIncludes.materials || []) {
           const materialCost = material.totalCost
             ? typeof material.totalCost === 'object' && 'toNumber' in material.totalCost
               ? (material.totalCost as any).toNumber()
@@ -626,7 +633,7 @@ export class VehicleService {
         }
 
         // Custo de serviços da ordem
-        for (const service of order.services || []) {
+        for (const service of orderWithIncludes.services || []) {
           const serviceCost = service.cost
             ? typeof service.cost === 'object' && 'toNumber' in service.cost
               ? (service.cost as any).toNumber()
@@ -687,72 +694,60 @@ export class VehicleService {
       totalMaintenanceOrders += orders.length;
     }
 
-    // Calcular totais gerais (não apenas da página)
-    const allVehicles = await this.prisma.vehicle.findMany({
-      where,
-      select: { id: true },
+    // Totais gerais: cada ordem conta uma vez (buscar ordens diretamente, não por veículo)
+    const allOrdersForSummary = await this.prisma.maintenanceOrder.findMany({
+      where: maintenanceWhere,
+      include: {
+        materials: true,
+        services: true,
+      },
     });
 
     let globalTotalMaintenanceCost = 0;
     let globalTotalMaterialsCost = 0;
     let globalTotalServicesCost = 0;
-    let globalTotalOrders = 0;
 
-    for (const vehicle of allVehicles) {
-      const orders = await this.prisma.maintenanceOrder.findMany({
-        where: {
-          ...maintenanceWhere,
-          vehicleId: vehicle.id,
-        },
-        include: {
-          materials: true,
-          services: true,
-        },
-      });
+    for (const order of allOrdersForSummary) {
+      const orderWithIncludes = order as typeof order & { materials?: { totalCost?: unknown; unitCost?: unknown; quantity?: unknown }[]; services?: { cost?: unknown }[] };
+      let orderMaterialsCost = 0;
+      let orderServicesCost = 0;
 
-      for (const order of orders) {
-        let orderMaterialsCost = 0;
-        let orderServicesCost = 0;
-
-        for (const material of order.materials || []) {
-          const cost = material.totalCost
-            ? typeof material.totalCost === 'object' && 'toNumber' in material.totalCost
-              ? (material.totalCost as any).toNumber()
-              : Number(material.totalCost)
-            : material.unitCost && material.quantity
-              ? Number(material.unitCost) * Number(material.quantity)
-              : 0;
-          orderMaterialsCost += cost;
-          globalTotalMaterialsCost += cost;
-        }
-
-        for (const service of order.services || []) {
-          const cost = service.cost
-            ? typeof service.cost === 'object' && 'toNumber' in service.cost
-              ? (service.cost as any).toNumber()
-              : Number(service.cost)
+      for (const material of orderWithIncludes.materials || []) {
+        const cost = material.totalCost
+          ? typeof material.totalCost === 'object' && 'toNumber' in material.totalCost
+            ? (material.totalCost as any).toNumber()
+            : Number(material.totalCost)
+          : material.unitCost && material.quantity
+            ? Number(material.unitCost) * Number(material.quantity)
             : 0;
-          orderServicesCost += cost;
-          globalTotalServicesCost += cost;
-        }
+        orderMaterialsCost += cost;
+        globalTotalMaterialsCost += cost;
+      }
 
-        // Custos diretos (ordem com totalCost mas sem materials/services)
-        const detailedCost = orderMaterialsCost + orderServicesCost;
-        if (detailedCost === 0 && order.totalCost) {
-          const directCost =
-            typeof order.totalCost === 'object' && 'toNumber' in order.totalCost
-              ? (order.totalCost as any).toNumber()
-              : Number(order.totalCost);
-          if (directCost > 0) {
-            globalTotalServicesCost += directCost; // Incluir em serviços
-          }
-        }
+      for (const service of orderWithIncludes.services || []) {
+        const cost = service.cost
+          ? typeof service.cost === 'object' && 'toNumber' in service.cost
+            ? (service.cost as any).toNumber()
+            : Number(service.cost)
+          : 0;
+        orderServicesCost += cost;
+        globalTotalServicesCost += cost;
+      }
 
-        globalTotalOrders += 1;
+      const detailedCost = orderMaterialsCost + orderServicesCost;
+      if (detailedCost === 0 && order.totalCost) {
+        const directCost =
+          typeof order.totalCost === 'object' && 'toNumber' in order.totalCost
+            ? (order.totalCost as any).toNumber()
+            : Number(order.totalCost);
+        if (directCost > 0) {
+          globalTotalServicesCost += directCost;
+        }
       }
     }
 
     globalTotalMaintenanceCost = globalTotalMaterialsCost + globalTotalServicesCost;
+    const globalTotalOrders = allOrdersForSummary.length;
 
     const summary: VehicleCostsSummaryDto = {
       totalVehicles,
@@ -776,10 +771,9 @@ export class VehicleService {
   }
 
   private mapToResponse(vehicle: any): VehicleResponseDto {
-    const plates = (vehicle.plates ?? []).map((p: { type: string; plate: string }) => ({
-      type: p.type,
-      plate: p.plate,
-    }));
+    const plates = vehicle.plate
+      ? [{ type: vehicle.plate.type, plate: vehicle.plate.plate }]
+      : [];
     const replacementItems = (vehicle.replacementItems ?? []).map(
       (ri: { id: string; name: string; replaceEveryKm: number }) => ({
         id: ri.id,

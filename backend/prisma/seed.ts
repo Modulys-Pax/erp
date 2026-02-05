@@ -610,10 +610,8 @@ export function validateDefaultCompanyId(): void {
         
         const status = statuses[Math.floor(Math.random() * statuses.length)];
 
-        // IMPORTANTE: Após executar 'npx prisma generate', o tipo VehicleUncheckedCreateInput
-        // incluirá brandId e modelId, e esta asserção de tipo não será mais necessária
+        // Vehicle = 1 placa: criar Vehicle e depois VehiclePlate (tipo CAVALO)
         const vehicleData = {
-          plate,
           brandId: selectedBrand.id,
           modelId: selectedModel?.id || null,
           year: randomInt(2018, 2024),
@@ -627,7 +625,12 @@ export function validateDefaultCompanyId(): void {
         } as unknown as Prisma.VehicleUncheckedCreateInput;
 
         const vehicle = await prisma.vehicle.create({
-          data: vehicleData,
+          data: {
+            ...vehicleData,
+            plate: {
+              create: { type: 'CAVALO', plate },
+            },
+          },
         });
         createdVehicles.push(vehicle);
 
@@ -721,7 +724,7 @@ export function validateDefaultCompanyId(): void {
         const maintenanceOrder = await prisma.maintenanceOrder.create({
           data: {
             orderNumber: `OM-${String(orderNumber).padStart(6, '0')}`,
-            vehicleId: vehicle.id,
+            vehicles: { create: [{ vehicleId: vehicle.id }] },
             type,
             status,
             kmAtEntry: vehicle.currentKm ? vehicle.currentKm - randomInt(1000, 10000) : randomInt(50000, 400000),

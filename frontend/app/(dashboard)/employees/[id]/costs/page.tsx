@@ -283,8 +283,8 @@ export default function EmployeeDetailCostsPage() {
 
       {/* Ações */}
       <div className="flex gap-4">
-        <Button variant="outline" onClick={() => router.push('/employees/costs')}>
-          Voltar para Dashboard
+        <Button variant="outline" onClick={() => router.push('/employees')}>
+          Voltar para Funcionários
         </Button>
         <Button variant="outline" onClick={() => router.push(`/employees/${id}`)}>
           Ver Dados do Funcionário

@@ -59,7 +59,7 @@ describe('VehicleController', () => {
   describe('create', () => {
     it('deve criar um novo veículo', async () => {
       const createDto: CreateVehicleDto = {
-        plates: [{ type: 'CAVALO' as any, plate: 'ABC1234' }],
+        plate: { type: 'CAVALO' as any, plate: 'ABC1234' },
         brandId: 'brand-1',
         modelId: 'model-1',
         year: 2023,

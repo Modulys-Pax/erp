@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CurrencyInput } from '@/components/ui/currency-input';
-import { toastErrorFromException } from '@/lib/utils';
+import { toastErrorFromException, toastSuccess } from '@/lib/utils';
 
 const benefitSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -60,6 +60,7 @@ export default function NewBenefitPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['benefits'] });
       await queryClient.refetchQueries({ queryKey: ['benefits'] });
+      toastSuccess('Benefício criado com sucesso');
       router.push('/benefits');
     },
     onError: (error) => {

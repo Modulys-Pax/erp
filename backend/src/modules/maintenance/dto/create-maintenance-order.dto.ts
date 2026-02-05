@@ -7,6 +7,8 @@ import {
   Min,
   IsEnum,
   IsArray,
+  ArrayMinSize,
+  ArrayMaxSize,
   ValidateNested,
   IsDecimal,
   IsBoolean,
@@ -81,10 +83,16 @@ export class CreateMaintenanceMaterialDto {
 }
 
 export class CreateMaintenanceOrderDto {
-  @ApiProperty({ description: 'ID do veículo', example: 'uuid' })
-  @IsUUID('4', { message: 'ID do veículo deve ser um UUID válido' })
-  @IsNotEmpty({ message: 'ID do veículo é obrigatório' })
-  vehicleId: string;
+  @ApiProperty({
+    description: 'IDs dos veículos/placas (1 a 4) que compõem o combo nesta manutenção',
+    example: ['uuid1', 'uuid2'],
+    type: [String],
+  })
+  @IsArray({ message: 'vehicleIds deve ser um array' })
+  @ArrayMinSize(1, { message: 'Selecione pelo menos 1 placa' })
+  @ArrayMaxSize(4, { message: 'Selecione no máximo 4 placas' })
+  @IsUUID('4', { each: true, message: 'Cada ID de veículo deve ser um UUID válido' })
+  vehicleIds: string[];
 
   @ApiProperty({
     description: 'Tipo de manutenção',

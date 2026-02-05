@@ -248,31 +248,38 @@ export class MaintenanceService {
       throw new NotFoundException('Filial não encontrada');
     }
 
-    // Validar veículo
-    const vehicle = await this.prisma.vehicle.findFirst({
+    // Validar veículos (1 a 4 placas)
+    const uniqueVehicleIds = [...new Set(createDto.vehicleIds)];
+    if (uniqueVehicleIds.length !== createDto.vehicleIds.length) {
+      throw new BadRequestException('Não repita o mesmo veículo/placa.');
+    }
+
+    const vehicles = await this.prisma.vehicle.findMany({
       where: {
-        id: createDto.vehicleId,
+        id: { in: createDto.vehicleIds },
         companyId: companyId,
         branchId: createDto.branchId,
         deletedAt: null,
       },
     });
 
-    if (!vehicle) {
-      throw new NotFoundException('Veículo não encontrado');
+    if (vehicles.length !== createDto.vehicleIds.length) {
+      throw new NotFoundException(
+        'Um ou mais veículos não foram encontrados ou não pertencem a esta filial.',
+      );
     }
 
-    // Validar itens de troca por KM (replacementItemsChanged devem ser do veículo)
+    // Validar itens de troca por KM (replacementItemsChanged devem ser de um dos veículos)
     if (createDto.replacementItemsChanged && createDto.replacementItemsChanged.length > 0) {
       const vehicleItemIds = await this.prisma.vehicleReplacementItem.findMany({
-        where: { vehicleId: createDto.vehicleId },
+        where: { vehicleId: { in: createDto.vehicleIds } },
         select: { id: true },
       });
       const validIds = new Set(vehicleItemIds.map((r) => r.id));
       const invalid = createDto.replacementItemsChanged.filter((id) => !validIds.has(id));
       if (invalid.length > 0) {
         throw new BadRequestException(
-          'Um ou mais itens de troca por KM não pertencem a este veículo.',
+          'Um ou mais itens de troca por KM não pertencem aos veículos selecionados.',
         );
       }
     }
@@ -366,7 +373,9 @@ export class MaintenanceService {
       const newOrder = await tx.maintenanceOrder.create({
         data: {
           orderNumber,
-          vehicleId: createDto.vehicleId,
+          vehicles: {
+            create: createDto.vehicleIds.map((vehicleId) => ({ vehicleId })),
+          },
           type: createDto.type,
           status: 'IN_PROGRESS',
           kmAtEntry: createDto.kmAtEntry,
@@ -552,7 +561,7 @@ export class MaintenanceService {
         },
       });
 
-      // Atualizar status do veículo para MAINTENANCE e quilometragem (se informada)
+      // Atualizar status de todos os veículos para MAINTENANCE
       const vehicleUpdateData: { status: 'MAINTENANCE'; currentKm?: number } = {
         status: 'MAINTENANCE',
       };
@@ -563,22 +572,27 @@ export class MaintenanceService {
       ) {
         vehicleUpdateData.currentKm = createDto.kmAtEntry;
       }
-      await tx.vehicle.update({
-        where: { id: createDto.vehicleId },
+      await tx.vehicle.updateMany({
+        where: { id: { in: createDto.vehicleIds } },
         data: vehicleUpdateData,
       });
 
-      // Criar histórico de status do veículo
-      await tx.vehicleStatusHistory.create({
-        data: {
-          vehicleId: createDto.vehicleId,
-          maintenanceOrderId: newOrder.id,
-          status: 'MAINTENANCE',
-          km: createDto.kmAtEntry ?? vehicle.currentKm ?? null,
-          notes: `Ordem de manutenção ${orderNumber} aberta`,
-          createdBy: userId,
-        },
-      });
+      // Criar histórico de status para cada veículo
+      const kmForHistory =
+        createDto.kmAtEntry ?? vehicles[0]?.currentKm ?? null;
+      for (const vehicleId of createDto.vehicleIds) {
+        const v = vehicles.find((x) => x.id === vehicleId);
+        await tx.vehicleStatusHistory.create({
+          data: {
+            vehicleId,
+            maintenanceOrderId: newOrder.id,
+            status: 'MAINTENANCE',
+            km: createDto.kmAtEntry ?? v?.currentKm ?? null,
+            notes: `Ordem de manutenção ${orderNumber} aberta`,
+            createdBy: userId,
+          },
+        });
+      }
 
       // Registrar itens de troca por KM que foram trocados nesta ordem (etiqueta virtual)
       const kmAtEntryCreate =
@@ -586,7 +600,7 @@ export class MaintenanceService {
         createDto.kmAtEntry !== null &&
         !Number.isNaN(createDto.kmAtEntry)
           ? createDto.kmAtEntry
-          : (vehicle.currentKm ?? 0);
+          : (vehicles[0]?.currentKm ?? 0);
       if (
         createDto.replacementItemsChanged &&
         createDto.replacementItemsChanged.length > 0 &&
@@ -594,17 +608,19 @@ export class MaintenanceService {
       ) {
         const label = await tx.maintenanceLabel.create({
           data: {
-            vehicleId: createDto.vehicleId,
             companyId: companyId,
             branchId: createDto.branchId,
             createdBy: userId,
+            vehicles: {
+              create: createDto.vehicleIds.map((vehicleId) => ({ vehicleId })),
+            },
           },
         });
         for (const vehicleReplacementItemId of createDto.replacementItemsChanged) {
           const item = await tx.vehicleReplacementItem.findFirst({
             where: {
               id: vehicleReplacementItemId,
-              vehicleId: createDto.vehicleId,
+              vehicleId: { in: createDto.vehicleIds },
             },
           });
           if (item) {
@@ -643,7 +659,7 @@ export class MaintenanceService {
       companyId,
       ...(includeDeleted ? {} : { deletedAt: null }),
       ...(branchId ? { branchId } : {}),
-      ...(vehicleId ? { vehicleId } : {}),
+      ...(vehicleId ? { vehicles: { some: { vehicleId } } } : {}),
       ...(status ? { status: status as any } : {}),
       ...(startDate || endDate
         ? {
@@ -661,9 +677,11 @@ export class MaintenanceService {
         skip,
         take: limit,
         include: {
-          vehicle: {
+          vehicles: {
             include: {
-              plates: true,
+              vehicle: {
+                include: { plate: true },
+              },
             },
           },
           workers: {
@@ -719,9 +737,13 @@ export class MaintenanceService {
         deletedAt: null,
       },
       include: {
-        vehicle: {
+        vehicles: {
           include: {
-            plates: true,
+            vehicle: {
+              include: {
+                plate: true,
+              },
+            },
           },
         },
         workers: {
@@ -1030,6 +1052,7 @@ export class MaintenanceService {
         deletedAt: null,
       },
       include: {
+        vehicles: true,
         timeline: true,
         services: true,
         materials: {
@@ -1042,6 +1065,11 @@ export class MaintenanceService {
 
     if (!order) {
       throw new NotFoundException('Ordem de manutenção não encontrada');
+    }
+
+    const primaryVehicleId = order.vehicles?.[0]?.vehicleId;
+    if (!primaryVehicleId) {
+      throw new BadRequestException('Ordem de manutenção sem veículo associado');
     }
 
     if (order.status === 'COMPLETED' || order.status === 'CANCELLED') {
@@ -1083,14 +1111,14 @@ export class MaintenanceService {
         completeVehicleData.currentKm = order.kmAtEntry;
       }
       await tx.vehicle.update({
-        where: { id: order.vehicleId },
+        where: { id: primaryVehicleId },
         data: completeVehicleData,
       });
 
       // Criar histórico de status do veículo
       await tx.vehicleStatusHistory.create({
         data: {
-          vehicleId: order.vehicleId,
+          vehicleId: primaryVehicleId,
           maintenanceOrderId: id,
           status: 'ACTIVE',
           km: order.kmAtEntry,
@@ -1108,12 +1136,10 @@ export class MaintenanceService {
 
       // Criar conta a pagar se houver custo
       if (totalCost > 0) {
-        // Buscar placa do veículo
-        const vehiclePlates = await tx.vehiclePlate.findMany({
-          where: { vehicleId: order.vehicleId },
-          orderBy: { type: 'asc' },
+        const vehiclePlate = await tx.vehiclePlate.findFirst({
+          where: { vehicleId: primaryVehicleId },
         });
-        const plateStr = vehiclePlates.length > 0 ? vehiclePlates[0].plate : 'Veículo';
+        const plateStr = vehiclePlate?.plate ?? 'Veículo';
 
         await tx.accountPayable.create({
           data: {
@@ -1140,11 +1166,14 @@ export class MaintenanceService {
         id,
         deletedAt: null,
       },
+      include: { vehicles: true },
     });
 
     if (!order) {
       throw new NotFoundException('Ordem de manutenção não encontrada');
     }
+
+    const primaryVehicleId = order.vehicles?.[0]?.vehicleId;
 
     if (order.status === 'COMPLETED' || order.status === 'CANCELLED') {
       throw new BadRequestException('Ordem já foi concluída ou cancelada');
@@ -1176,22 +1205,26 @@ export class MaintenanceService {
       ) {
         cancelVehicleData.currentKm = order.kmAtEntry;
       }
-      await tx.vehicle.update({
-        where: { id: order.vehicleId },
-        data: cancelVehicleData,
-      });
+      if (primaryVehicleId) {
+        await tx.vehicle.update({
+          where: { id: primaryVehicleId },
+          data: cancelVehicleData,
+        });
+      }
 
       // Criar histórico de status do veículo
-      await tx.vehicleStatusHistory.create({
-        data: {
-          vehicleId: order.vehicleId,
-          maintenanceOrderId: id,
-          status: 'ACTIVE',
-          km: order.kmAtEntry,
-          notes: `Ordem de manutenção ${order.orderNumber} cancelada`,
-          createdBy: userId,
-        },
-      });
+      if (primaryVehicleId) {
+        await tx.vehicleStatusHistory.create({
+          data: {
+            vehicleId: primaryVehicleId,
+            maintenanceOrderId: id,
+            status: 'ACTIVE',
+            km: order.kmAtEntry,
+            notes: `Ordem de manutenção ${order.orderNumber} cancelada`,
+            createdBy: userId,
+          },
+        });
+      }
     });
 
     return this.findOne(id);
@@ -1304,12 +1337,15 @@ export class MaintenanceService {
   private mapToResponse(order: any): MaintenanceOrderResponseDto {
     const totalCost = this.calculateTotalCost(order);
     const totalTimeMinutes = this.calculateTotalTime(order.timeline || []);
+    const firstVehicle = order.vehicles?.[0];
+    const vehicleId = firstVehicle?.vehicleId ?? '';
+    const vehicle = firstVehicle?.vehicle;
 
     return {
       id: order.id,
       orderNumber: order.orderNumber,
-      vehicleId: order.vehicleId,
-      vehiclePlate: order.vehicle ? getPrimaryPlate(order.vehicle) : undefined,
+      vehicleId,
+      vehiclePlate: vehicle ? getPrimaryPlate(vehicle) : undefined,
       type: order.type,
       status: order.status,
       kmAtEntry: order.kmAtEntry,

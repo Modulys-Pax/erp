@@ -7,7 +7,6 @@ import {
   IsInt,
   Min,
   IsArray,
-  ArrayMinSize,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -17,16 +16,14 @@ import { VehicleReplacementItemDto } from './vehicle-replacement-item.dto';
 
 export class CreateVehicleDto {
   @ApiProperty({
-    description:
-      'Placas do veículo por tipo (cavalo, primeira carreta, dolly, segunda carreta). Pelo menos uma obrigatória.',
-    type: [VehiclePlateItemDto],
-    example: [{ type: 'CAVALO', plate: 'ABC1D23' }],
+    description: 'Placa do veículo (uma por registro). Tipo: CAVALO, PRIMEIRA_CARRETA, DOLLY ou SEGUNDA_CARRETA.',
+    type: VehiclePlateItemDto,
+    example: { type: 'CAVALO', plate: 'ABC1D23' },
   })
-  @IsArray({ message: 'Placas deve ser um array' })
-  @ArrayMinSize(1, { message: 'Informe pelo menos uma placa' })
-  @ValidateNested({ each: true })
+  @ValidateNested()
   @Type(() => VehiclePlateItemDto)
-  plates: VehiclePlateItemDto[];
+  @IsNotEmpty({ message: 'Informe a placa' })
+  plate: VehiclePlateItemDto;
 
   @ApiProperty({
     description: 'Produtos para troca a cada X KM neste veículo (opcional)',

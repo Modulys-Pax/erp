@@ -35,7 +35,8 @@ export interface RegisterProductChangeItemDto {
 }
 
 export interface RegisterProductChangeDto {
-  vehicleId: string;
+  /** IDs dos veículos/placas (1 a 4) que compõem o combo */
+  vehicleIds: string[];
   changeKm: number;
   items: RegisterProductChangeItemDto[];
   serviceDate?: string; // ISO 8601 (ex.: 2026-01-28)

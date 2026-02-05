@@ -15,7 +15,7 @@ jest.mock('fs', () => ({
 }));
 
 jest.mock('../../shared/utils/vehicle-plate.util', () => ({
-  getPrimaryPlate: jest.fn((vehicle: any) => vehicle?.plates?.[0]?.plate || null),
+  getPrimaryPlate: jest.fn((vehicle: any) => vehicle?.plate?.plate || null),
 }));
 
 describe('VehicleDocumentService', () => {
@@ -26,7 +26,7 @@ describe('VehicleDocumentService', () => {
     id: 'vehicle-123',
     companyId: 'company-123',
     branchId: 'branch-123',
-    plates: [{ id: 'plate-1', plate: 'ABC-1234', type: 'PRINCIPAL' }],
+    plate: { id: 'plate-1', plate: 'ABC-1234', type: 'CAVALO' },
     deletedAt: null,
   };
 

@@ -99,7 +99,10 @@ export default function NewMaintenanceLabelPage() {
               options={toSelectOptions(
                 vehicles.filter((v) => v.active),
                 (v) => v.id,
-                (v) => `${v.plate}${v.brandName || v.modelName ? ` - ${v.brandName || ''} ${v.modelName || ''}`.trim() : ''}`,
+                (v) => {
+                  const plateStr = v.plates?.[0]?.plate ?? v.plate ?? v.id;
+                  return `${plateStr}${v.brandName || v.modelName ? ` ${v.brandName || ''} ${v.modelName || ''}`.trim() : ''}`;
+                },
               )}
               value={selectedVehicleId}
               onChange={(value) => setSelectedVehicleId(value || '')}

@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toastSuccess } from '@/lib/utils';
 
 const accountPayableSchema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória'),
@@ -72,6 +73,7 @@ export default function NewAccountPayablePage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['accounts-payable'] });
       await queryClient.refetchQueries({ queryKey: ['accounts-payable'] });
+      toastSuccess('Conta a pagar cadastrada com sucesso');
       router.push('/accounts-payable');
     },
   });

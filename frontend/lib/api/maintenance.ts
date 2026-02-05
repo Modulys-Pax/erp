@@ -96,7 +96,8 @@ export interface CreateMaintenanceMaterialDto {
 }
 
 export interface CreateMaintenanceOrderDto {
-  vehicleId: string;
+  /** IDs dos veículos/placas (1 a 4) que compõem o combo nesta manutenção */
+  vehicleIds: string[];
   type: 'PREVENTIVE' | 'CORRECTIVE';
   kmAtEntry?: number;
   description?: string;

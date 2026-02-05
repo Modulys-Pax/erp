@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { EmptyState } from '@/components/ui/empty-state';
-import { toastSuccess, toastError } from '@/lib/utils';
+import { toastSuccess, toastErrorFromException, toastError } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
 import {
   ACCOUNT_RECEIVABLE_STATUS_LABELS,
@@ -90,7 +90,7 @@ export default function AccountsReceivablePage() {
       queryClient.invalidateQueries({ queryKey: ['accounts-receivable-summary'] });
       toastSuccess('Conta marcada como recebida');
     },
-    onError: () => toastError('Erro ao receber conta'),
+    onError: (error) => toastErrorFromException(error, 'Erro ao receber conta'),
   });
 
   const cancelMutation = useMutation({
@@ -99,7 +99,7 @@ export default function AccountsReceivablePage() {
       queryClient.invalidateQueries({ queryKey: ['accounts-receivable-summary'] });
       toastSuccess('Conta cancelada');
     },
-    onError: () => toastError('Erro ao cancelar conta'),
+    onError: (error) => toastErrorFromException(error, 'Erro ao cancelar conta'),
   });
 
   const deleteMutation = useMutation({
@@ -108,7 +108,7 @@ export default function AccountsReceivablePage() {
       queryClient.invalidateQueries({ queryKey: ['accounts-receivable-summary'] });
       toastSuccess('Conta excluída');
     },
-    onError: () => toastError('Erro ao excluir conta'),
+    onError: (error) => toastErrorFromException(error, 'Erro ao excluir conta'),
   });
 
   const handleReceive = (id: string) => {

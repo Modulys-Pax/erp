@@ -309,12 +309,11 @@ enum VehiclePlateType {
 
 model VehiclePlate {
   id        String          @id @default(uuid())
-  vehicleId String
+  vehicleId String          @unique // 1:1 - cada Vehicle tem exatamente uma placa
   vehicle   Vehicle         @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   type      VehiclePlateType
   plate     String
 
-  @@unique([vehicleId, type])
   @@map("vehicle_plates")
 }
 
@@ -340,13 +339,13 @@ model Vehicle {
   createdBy String?
   deletedAt DateTime?
 
-  plates                VehiclePlate[]
+  plate                 VehiclePlate?  // 1:1 - cada Vehicle tem exatamente uma placa
   replacementItems      VehicleReplacementItem[]
   statusHistory         VehicleStatusHistory[]
-  maintenanceOrders     MaintenanceOrder[]
+  maintenanceOrderVehicles MaintenanceOrderVehicle[]
   documents             VehicleDocument[]
-  markings              VehicleMarking[]
-  maintenanceLabels     MaintenanceLabel[]
+  vehicleMarkingVehicles VehicleMarkingVehicle[]
+  maintenanceLabelVehicles MaintenanceLabelVehicle[]
 
   @@map("vehicles")
 }
@@ -437,11 +436,21 @@ enum MaintenanceTimelineEvent {
   CANCELLED // Cancelada
 }
 
+model MaintenanceOrderVehicle {
+  id                 String           @id @default(uuid())
+  maintenanceOrderId String
+  maintenanceOrder   MaintenanceOrder @relation(fields: [maintenanceOrderId], references: [id], onDelete: Cascade)
+  vehicleId          String
+  vehicle            Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@unique([maintenanceOrderId, vehicleId])
+  @@map("maintenance_order_vehicles")
+}
+
 model MaintenanceOrder {
   id               String                 @id @default(uuid())
   orderNumber      String // Número da ordem (gerado automaticamente)
-  vehicleId        String
-  vehicle          Vehicle                @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicles         MaintenanceOrderVehicle[] // 1 a 4 placas/veículos
   type             MaintenanceType
   status           MaintenanceOrderStatus @default(OPEN)
   kmAtEntry        Int? // KM na entrada
@@ -944,11 +953,21 @@ model AuditLog {
 // MARCAÇÕES DE VEÍCULOS
 // ============================================
 
+model VehicleMarkingVehicle {
+  id               String        @id @default(uuid())
+  vehicleMarkingId String
+  vehicleMarking   VehicleMarking @relation(fields: [vehicleMarkingId], references: [id], onDelete: Cascade)
+  vehicleId        String
+  vehicle          Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@unique([vehicleMarkingId, vehicleId])
+  @@map("vehicle_marking_vehicles")
+}
+
 model VehicleMarking {
   id        String   @id @default(uuid())
-  vehicleId String
-  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  km        Int // Quilometragem quando o veículo chegou
+  vehicles  VehicleMarkingVehicle[] // 1 a 4 placas/veículos
+  km        Int // Quilometragem quando o combo chegou (hodômetro)
   companyId String
   branchId  String
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -956,7 +975,6 @@ model VehicleMarking {
   createdAt DateTime @default(now())
   createdBy String?
 
-  @@index([vehicleId])
   @@index([companyId, branchId])
   @@index([createdAt])
   @@map("vehicle_markings")
@@ -966,10 +984,20 @@ model VehicleMarking {
 // ETIQUETAS DE MANUTENÇÃO
 // ============================================
 
+model MaintenanceLabelVehicle {
+  id                 String          @id @default(uuid())
+  maintenanceLabelId String
+  maintenanceLabel   MaintenanceLabel @relation(fields: [maintenanceLabelId], references: [id], onDelete: Cascade)
+  vehicleId          String
+  vehicle            Vehicle         @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@unique([maintenanceLabelId, vehicleId])
+  @@map("maintenance_label_vehicles")
+}
+
 model MaintenanceLabel {
   id        String   @id @default(uuid())
-  vehicleId String
-  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicles  MaintenanceLabelVehicle[] // 1 a 4 placas/veículos (troca na estrada)
   companyId String
   branchId  String
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -979,7 +1007,6 @@ model MaintenanceLabel {
 
   replacementItems MaintenanceLabelReplacementItem[]
 
-  @@index([vehicleId])
   @@index([companyId, branchId])
   @@index([createdAt])
   @@map("maintenance_labels")

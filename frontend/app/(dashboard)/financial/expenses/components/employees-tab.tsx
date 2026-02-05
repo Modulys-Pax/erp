@@ -9,7 +9,6 @@ import { useEffectiveBranch } from '@/lib/hooks/use-effective-branch';
 import { SectionCard } from '@/components/ui/section-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { DataTable } from '@/components/ui/data-table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { ExportButton } from '@/components/ui/export-button';
-import { toastSuccess, toastError } from '@/lib/utils';
+import { toastSuccess, toastErrorFromException } from '@/lib/utils';
 import { toSelectOptions } from '@/lib/hooks/use-searchable-select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -110,7 +109,7 @@ export function EmployeesExpensesTab() {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       toastSuccess('Despesa excluída');
     },
-    onError: () => toastError('Erro ao excluir despesa'),
+    onError: (error) => toastErrorFromException(error, 'Erro ao excluir despesa'),
   });
 
   const handleDelete = (id: string) => {
@@ -421,11 +420,16 @@ export function EmployeesExpensesTab() {
                   {
                     key: 'type',
                     header: 'Tipo',
-                    render: (expense) => (
-                      <Badge className={EXPENSE_TYPE_COLORS[expense.type as ExpenseTypeEnum]}>
-                        {EXPENSE_TYPE_LABELS[expense.type as ExpenseTypeEnum]}
-                      </Badge>
-                    ),
+                    render: (expense) => {
+                      const colors = EXPENSE_TYPE_COLORS[expense.type as ExpenseTypeEnum];
+                      return (
+                        <span
+                          className={`inline-flex items-center rounded-full border border-border px-2 py-1 text-xs font-medium ${colors}`}
+                        >
+                          {EXPENSE_TYPE_LABELS[expense.type as ExpenseTypeEnum]}
+                        </span>
+                      );
+                    },
                   },
                   {
                     key: 'date',

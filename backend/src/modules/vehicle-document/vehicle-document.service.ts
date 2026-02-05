@@ -60,7 +60,7 @@ export class VehicleDocumentService {
         id: vehicleId,
         deletedAt: null,
       },
-      include: { plates: true },
+      include: { plate: true },
     });
 
     if (!vehicle) {

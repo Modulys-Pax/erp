@@ -5,7 +5,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   maintenanceApi,
   CreateMaintenanceOrderDto,
@@ -29,7 +29,10 @@ import { useSearchableSelect, toSelectOptions } from '@/lib/hooks/use-searchable
 import { roundCurrency, roundQuantity } from '@/lib/utils/numbers';
 
 const maintenanceSchema = z.object({
-  vehicleId: z.string().uuid('Selecione um veículo'),
+  vehicleIds: z
+    .array(z.string().uuid())
+    .min(1, 'Selecione pelo menos 1 placa')
+    .max(4, 'Selecione no máximo 4 placas'),
   type: z.enum(['PREVENTIVE', 'CORRECTIVE']),
   // String no input evita alteração por ponto flutuante (ex: 20000 → 19995)
   kmAtEntry: z
@@ -207,6 +210,7 @@ export default function NewMaintenancePage() {
   } = useForm<MaintenanceFormData>({
     resolver: zodResolver(maintenanceSchema),
     defaultValues: {
+      vehicleIds: [],
       replacementItemsChanged: [],
       workers: [],
       services: [],
@@ -216,13 +220,7 @@ export default function NewMaintenancePage() {
     },
   });
 
-  const selectedVehicleId = watch('vehicleId');
-  const { data: selectedVehicle } = useQuery({
-    queryKey: ['vehicles', selectedVehicleId],
-    queryFn: () => vehicleApi.getById(selectedVehicleId),
-    enabled: !!selectedVehicleId,
-  });
-  const replacementItems = selectedVehicle?.replacementItems ?? [];
+  const selectedVehicleIds = watch('vehicleIds') ?? [];
 
   // Usar a filial efetiva (do contexto para admin, do perfil para não-admin)
   const selectedBranchId = effectiveBranchId;
@@ -278,6 +276,22 @@ export default function NewMaintenancePage() {
 
   const vehicles = vehiclesResponse?.data || [];
 
+  // Itens de troca por KM: união dos itens de todos os veículos selecionados
+  const replacementItems = (() => {
+    const ids = new Set<string>();
+    const items: Array<{ id: string; name: string; replaceEveryKm: number }> = [];
+    for (const vid of selectedVehicleIds) {
+      const v = vehicles.find((x) => x.id === vid);
+      for (const ri of v?.replacementItems ?? []) {
+        if (!ids.has(ri.id)) {
+          ids.add(ri.id);
+          items.push(ri);
+        }
+      }
+    }
+    return items;
+  })();
+
   const { data: employeesResponse } = useQuery({
     queryKey: ['employees', selectedBranchId],
     queryFn: () =>
@@ -316,7 +330,7 @@ export default function NewMaintenancePage() {
     },
   });
 
-  const onSubmit = (data: MaintenanceFormData) => {
+  const onSubmit = async (data: MaintenanceFormData) => {
     console.log('Form data:', data);
     console.log('Effective branch ID:', effectiveBranchId);
     
@@ -329,8 +343,8 @@ export default function NewMaintenancePage() {
       return;
     }
 
-    if (!data.vehicleId) {
-      alert('Por favor, selecione um veículo');
+    if (!data.vehicleIds || data.vehicleIds.length === 0) {
+      alert('Por favor, selecione pelo menos 1 placa');
       return;
     }
 
@@ -354,7 +368,7 @@ export default function NewMaintenancePage() {
     }
 
     const submitData: CreateMaintenanceOrderDto = {
-      vehicleId: data.vehicleId,
+      vehicleIds: data.vehicleIds,
       type: data.type,
       kmAtEntry:
         data.kmAtEntry != null && data.kmAtEntry !== undefined && !Number.isNaN(Number(data.kmAtEntry))
@@ -398,9 +412,12 @@ export default function NewMaintenancePage() {
               })
           : undefined,
     };
-    
-    console.log('Submitting data:', submitData);
-    createMutation.mutate(submitData);
+
+    try {
+      await createMutation.mutateAsync(submitData);
+    } catch {
+      // Erro já tratado pelo mutation
+    }
   };
 
   return (
@@ -432,26 +449,66 @@ export default function NewMaintenancePage() {
             <input type="hidden" {...register('branchId')} value={effectiveBranchId || ''} />
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="vehicleId" className="text-sm text-muted-foreground mb-2">
-                  Veículo *
+              <div className="col-span-2">
+                <Label className="text-sm text-muted-foreground mb-2">
+                  Placas do combo (1 a 4) *
                 </Label>
-                <SearchableSelect
-                  id="vehicleId"
-                  options={toSelectOptions(
-                    vehicles || [],
-                    (v) => v.id,
-                    (v) => `${v.plate} - ${v.brandName || ''} ${v.modelName || ''}`.trim(),
+                <p className="text-xs text-muted-foreground mb-2">
+                  Selecione as placas que compõem o veículo nesta manutenção (cavalo, carretas, dolly)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedVehicleIds.map((vid) => {
+                    const v = vehicles.find((x) => x.id === vid);
+                    const plateLabel = v?.plates?.[0] ? `${v.plates[0].plate} (${v.plates[0].type})` : v?.plate ?? vid;
+                    return (
+                      <div
+                        key={vid}
+                        className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/30 px-3 py-1.5 text-sm"
+                      >
+                        <span>{plateLabel}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setValue(
+                              'vehicleIds',
+                              selectedVehicleIds.filter((id) => id !== vid),
+                              { shouldValidate: true }
+                            );
+                          }}
+                          className="text-muted-foreground hover:text-destructive ml-1"
+                          aria-label="Remover"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {selectedVehicleIds.length < 4 && (
+                    <SearchableSelect
+                      options={toSelectOptions(
+                        (vehicles || []).filter((v) => !selectedVehicleIds.includes(v.id)),
+                        (v) => v.id,
+                        (v) => {
+                          const plateStr = v.plates?.[0]?.plate ?? v.plate ?? v.id;
+                          return `${plateStr} ${v.brandName || ''} ${v.modelName || ''}`.trim();
+                        },
+                      )}
+                      value=""
+                      onChange={(value) => {
+                        if (value && !selectedVehicleIds.includes(value)) {
+                          setValue('vehicleIds', [...selectedVehicleIds, value], {
+                            shouldValidate: true,
+                          });
+                        }
+                      }}
+                      placeholder="+ Adicionar placa..."
+                      disabled={!selectedBranchId}
+                    />
                   )}
-                  value={watch('vehicleId')}
-                  onChange={(value) => setValue('vehicleId', value, { shouldValidate: true })}
-                  placeholder="Selecione um veículo..."
-                  disabled={!selectedBranchId}
-                  error={!!errors.vehicleId}
-                />
-                {errors.vehicleId && (
+                </div>
+                {errors.vehicleIds && (
                   <p className="text-sm text-destructive mt-1">
-                    {errors.vehicleId.message}
+                    {errors.vehicleIds.message as string}
                   </p>
                 )}
               </div>

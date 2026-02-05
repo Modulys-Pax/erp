@@ -1,14 +1,17 @@
-import { IsString, IsNotEmpty, IsUUID, IsInt, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsUUID, IsInt, Min, IsArray, ArrayMinSize, ArrayMaxSize } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateVehicleMarkingDto {
   @ApiProperty({
-    description: 'ID do veículo',
-    example: 'uuid',
+    description: 'IDs dos veículos/placas (1 a 4) que compõem o combo',
+    example: ['uuid1', 'uuid2'],
+    type: [String],
   })
-  @IsUUID('4', { message: 'ID do veículo deve ser um UUID válido' })
-  @IsNotEmpty({ message: 'ID do veículo é obrigatório' })
-  vehicleId: string;
+  @IsArray()
+  @ArrayMinSize(1, { message: 'Selecione pelo menos 1 placa' })
+  @ArrayMaxSize(4, { message: 'Selecione no máximo 4 placas' })
+  @IsUUID('4', { each: true })
+  vehicleIds: string[];
 
   @ApiProperty({
     description: 'Quilometragem quando o veículo chegou',

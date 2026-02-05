@@ -92,7 +92,7 @@ describe('MaintenanceLabelController', () => {
   describe('registerProductChange', () => {
     it('deve registrar troca de produto', async () => {
       const registerDto = {
-        vehicleId: 'vehicle-1',
+        vehicleIds: ['vehicle-1'],
         changeKm: 105000,
         branchId: 'branch-1',
         companyId: 'company-1',

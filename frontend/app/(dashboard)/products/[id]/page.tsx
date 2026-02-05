@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { toSelectOptions } from '@/lib/hooks/use-searchable-select';
-import { toastErrorFromException } from '@/lib/utils';
+import { toastErrorFromException, toastSuccess } from '@/lib/utils';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -103,6 +103,7 @@ export default function EditProductPage() {
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       await queryClient.refetchQueries({ queryKey: ['products'] });
+      toastSuccess('Produto atualizado com sucesso');
       router.push('/products');
     },
     onError: (error) => {

@@ -13,7 +13,7 @@ jest.mock('../../shared/utils/branch-access.util', () => ({
 }));
 
 jest.mock('../../shared/utils/vehicle-plate.util', () => ({
-  getPrimaryPlate: jest.fn((vehicle: any) => vehicle?.plates?.[0]?.plate || 'ABC-1234'),
+  getPrimaryPlate: jest.fn((vehicle: any) => vehicle?.plate?.plate || 'ABC-1234'),
 }));
 
 describe('VehicleMarkingService', () => {
@@ -26,7 +26,7 @@ describe('VehicleMarkingService', () => {
     branchId: 'branch-123',
     status: 'AVAILABLE',
     currentKm: 50000,
-    plates: [{ id: 'plate-1', plate: 'ABC-1234', type: 'PRINCIPAL' }],
+    plate: { id: 'plate-1', plate: 'ABC-1234', type: 'CAVALO' },
     deletedAt: null,
   };
 
@@ -71,7 +71,7 @@ describe('VehicleMarkingService', () => {
 
   describe('create', () => {
     const createDto = {
-      vehicleId: 'vehicle-123',
+      vehicleIds: ['vehicle-123'],
       branchId: 'branch-123',
       companyId: 'company-123',
       km: 55000,
@@ -104,7 +104,7 @@ describe('VehicleMarkingService', () => {
       prisma.vehicle.findFirst.mockResolvedValue(null);
 
       await expect(service.create(createDto)).rejects.toThrow(NotFoundException);
-      await expect(service.create(createDto)).rejects.toThrow('Veículo não encontrado');
+      await expect(service.create(createDto)).rejects.toThrow('Um ou mais veículos não foram encontrados.');
     });
 
     it('deve lançar NotFoundException quando filial não existe', async () => {

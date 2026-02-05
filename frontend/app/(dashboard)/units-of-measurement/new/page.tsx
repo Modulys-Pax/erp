@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { unitOfMeasurementApi, CreateUnitOfMeasurementDto } from '@/lib/api/unit-of-measurement';
 import { PageHeader } from '@/components/layout/page-header';
+import { toastSuccess } from '@/lib/utils';
 import { SectionCard } from '@/components/ui/section-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,7 @@ export default function NewUnitOfMeasurementPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['units-of-measurement'] });
       await queryClient.refetchQueries({ queryKey: ['units-of-measurement'] });
+      toastSuccess('Unidade de medida cadastrada com sucesso');
       router.push('/units-of-measurement');
     },
   });

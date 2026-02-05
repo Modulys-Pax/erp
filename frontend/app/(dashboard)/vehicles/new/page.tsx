@@ -27,43 +27,31 @@ const PLATE_TYPE_LABELS: Record<VehiclePlateType, string> = {
   SEGUNDA_CARRETA: 'Segunda carreta',
 };
 
-const vehicleSchema = z
-  .object({
-    plates: z
-      .array(
-        z.object({
-          type: z.enum(VEHICLE_PLATE_TYPES as unknown as [string, ...string[]]),
-          plate: z.string().min(1, 'Placa é obrigatória'),
-        }),
-      )
-      .min(1, 'Informe pelo menos uma placa'),
-    brandId: z.string().uuid('Selecione uma marca').optional().or(z.literal('')),
-    modelId: z.string().uuid('Selecione um modelo').optional().or(z.literal('')),
-    year: z.coerce.number().int().min(1900).max(2100).optional().or(z.nan()),
-    color: z.string().optional(),
-    chassis: z.string().optional(),
-    renavam: z.string().optional(),
-    currentKm: z.coerce.number().int().min(0).optional().or(z.nan()),
-    status: z.enum(['ACTIVE', 'MAINTENANCE', 'STOPPED']).optional(),
-    branchId: z.string().uuid('Selecione uma filial').optional(),
-    active: z.boolean().default(true),
-    replacementItems: z
-      .array(
-        z.object({
-          name: z.string().optional(),
-          replaceEveryKm: z.coerce.number().int().min(1, 'Troca em KM deve ser pelo menos 1').optional().or(z.nan()),
-        }),
-      )
-      .optional()
-      .default([]),
-  })
-  .refine(
-    (data) => {
-      const types = data.plates.map((p) => p.type);
-      return new Set(types).size === types.length;
-    },
-    { message: 'Não repita o mesmo tipo (cavalo, carreta, dolly)', path: ['plates'] },
-  );
+const vehicleSchema = z.object({
+  plate: z.object({
+    type: z.enum(VEHICLE_PLATE_TYPES as unknown as [string, ...string[]]),
+    plate: z.string().min(1, 'Placa é obrigatória'),
+  }),
+  brandId: z.string().uuid('Selecione uma marca').optional().or(z.literal('')),
+  modelId: z.string().uuid('Selecione um modelo').optional().or(z.literal('')),
+  year: z.coerce.number().int().min(1900).max(2100).optional().or(z.nan()),
+  color: z.string().optional(),
+  chassis: z.string().optional(),
+  renavam: z.string().optional(),
+  currentKm: z.coerce.number().int().min(0).optional().or(z.nan()),
+  status: z.enum(['ACTIVE', 'MAINTENANCE', 'STOPPED']).optional(),
+  branchId: z.string().uuid('Selecione uma filial').optional(),
+  active: z.boolean().default(true),
+  replacementItems: z
+    .array(
+      z.object({
+        name: z.string().optional(),
+        replaceEveryKm: z.coerce.number().int().min(1, 'Troca em KM deve ser pelo menos 1').optional().or(z.nan()),
+      }),
+    )
+    .optional()
+    .default([]),
+});
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
@@ -81,16 +69,11 @@ export default function NewVehiclePage() {
   } = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
     defaultValues: {
-      plates: [{ type: 'CAVALO', plate: '' }],
+      plate: { type: 'CAVALO', plate: '' },
       replacementItems: [],
       active: true,
       branchId: effectiveBranchId || '',
     },
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'plates',
   });
 
   const {
@@ -137,7 +120,7 @@ export default function NewVehiclePage() {
     if (!effectiveBranchId) return;
 
     const submitData: CreateVehicleDto = {
-      plates: data.plates.map((p) => ({ type: p.type as VehiclePlateType, plate: p.plate.trim() })),
+      plate: { type: data.plate.type as VehiclePlateType, plate: data.plate.plate.trim() },
       replacementItems:
         data.replacementItems?.filter((r) => r.name?.trim()).length
           ? data.replacementItems
@@ -167,82 +150,38 @@ export default function NewVehiclePage() {
     label: PLATE_TYPE_LABELS[t],
   }));
 
-  const usedTypes = watch('plates').map((p) => p.type);
-
   return (
     <div className="space-y-6">
       <PageHeader
         title="Novo Veículo"
-        subtitle="Cadastre um novo veículo (cavalo, carretas, dolly)"
+        subtitle="Cadastre uma placa por vez com seu tipo. Cada veículo = uma placa."
       />
 
       <SectionCard title="Dados do Veículo">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label className="text-sm text-muted-foreground">
-                Placas (cavalo, carretas, dolly) *
-              </Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const next = VEHICLE_PLATE_TYPES.find((t) => !usedTypes.includes(t));
-                  if (next) append({ type: next, plate: '' });
-                }}
-                disabled={fields.length >= VEHICLE_PLATE_TYPES.length}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Adicionar placa
-              </Button>
+          <div className="flex gap-2 items-end flex-wrap rounded-xl border border-border p-3 bg-muted/30">
+            <div className="flex-1 min-w-[140px]">
+              <Label className="text-xs text-muted-foreground">Tipo da placa *</Label>
+              <SearchableSelect
+                options={plateTypeOptions}
+                value={watch('plate.type')}
+                onChange={(value) => setValue('plate.type', value as VehiclePlateType, { shouldValidate: true })}
+                placeholder="Tipo"
+                error={!!errors.plate?.type}
+              />
             </div>
-            {errors.plates?.message && typeof errors.plates.message === 'string' && (
-              <p className="text-sm text-destructive mb-2">{errors.plates.message}</p>
-            )}
-            <div className="space-y-3">
-              {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="flex gap-2 items-end flex-wrap rounded-xl border border-border p-3 bg-muted/30"
-                >
-                  <div className="flex-1 min-w-[140px]">
-                    <Label className="text-xs text-muted-foreground">Tipo</Label>
-                    <SearchableSelect
-                      options={plateTypeOptions.filter(
-                        (o) => usedTypes[index] === o.value || !usedTypes.filter((_, i) => i !== index).includes(o.value),
-                      )}
-                      value={watch(`plates.${index}.type`)}
-                      onChange={(value) => setValue(`plates.${index}.type`, value as VehiclePlateType, { shouldValidate: true })}
-                      placeholder="Tipo"
-                      error={!!errors.plates?.[index]?.type}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-[120px]">
-                    <Label className="text-xs text-muted-foreground">Placa</Label>
-                    <Input
-                      {...register(`plates.${index}.plate`)}
-                      placeholder="ABC1D23"
-                      className={errors.plates?.[index]?.plate ? 'border-destructive' : 'rounded-xl'}
-                    />
-                    {errors.plates?.[index]?.plate && (
-                      <p className="text-xs text-destructive mt-0.5">
-                        {errors.plates[index]?.plate?.message}
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => remove(index)}
-                    disabled={fields.length <= 1}
-                    className="shrink-0"
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              ))}
+            <div className="flex-1 min-w-[120px]">
+              <Label className="text-xs text-muted-foreground">Placa *</Label>
+              <Input
+                {...register('plate.plate')}
+                placeholder="ABC1D23"
+                className={errors.plate?.plate ? 'border-destructive' : 'rounded-xl'}
+              />
+              {errors.plate?.plate && (
+                <p className="text-xs text-destructive mt-0.5">
+                  {errors.plate.plate?.message}
+                </p>
+              )}
             </div>
           </div>
 

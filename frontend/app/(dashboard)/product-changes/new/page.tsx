@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,7 +9,6 @@ import {
   RegisterProductChangeDto,
 } from '@/lib/api/maintenance-label';
 import { maintenanceApi } from '@/lib/api/maintenance';
-import { vehicleApi } from '@/lib/api/vehicle';
 import { useEffectiveBranch } from '@/lib/hooks/use-effective-branch';
 import { DEFAULT_COMPANY_ID } from '@/lib/constants/company.constants';
 import { PageHeader } from '@/components/layout/page-header';
@@ -25,7 +24,7 @@ import { roundCurrency } from '@/lib/utils/numbers';
 import { Plus, Trash2 } from 'lucide-react';
 
 type FormData = {
-  vehicleId: string;
+  vehicleIds: string[];
   changeKm: string;
   serviceDate: string; // YYYY-MM-DD
   items: Array<{
@@ -49,7 +48,7 @@ export default function NewProductChangePage() {
 
   const { watch, setValue, register, handleSubmit, control } = useForm<FormData>({
     defaultValues: {
-      vehicleId: '',
+      vehicleIds: [],
       changeKm: '',
       serviceDate: '',
       items: [defaultItem],
@@ -72,13 +71,21 @@ export default function NewProductChangePage() {
 
   const vehicles = vehiclesResponse?.data || [];
 
-  const { data: selectedVehicle } = useQuery({
-    queryKey: ['vehicles', selectedVehicleId],
-    queryFn: () => vehicleApi.getById(selectedVehicleId),
-    enabled: !!selectedVehicleId,
-  });
-
-  const replacementItems = selectedVehicle?.replacementItems ?? [];
+  // Itens de troca: união dos itens de todos os veículos selecionados
+  const replacementItems = (() => {
+    const ids = new Set<string>();
+    const items: Array<{ id: string; name: string; replaceEveryKm: number }> = [];
+    for (const vid of selectedVehicleIds) {
+      const v = vehicles.find((x) => x.id === vid);
+      for (const ri of v?.replacementItems ?? []) {
+        if (!ids.has(ri.id)) {
+          ids.add(ri.id);
+          items.push(ri);
+        }
+      }
+    }
+    return items;
+  })();
 
   const items = watch('items');
   const totalCost = items.reduce((sum, item) => {
@@ -107,8 +114,8 @@ export default function NewProductChangePage() {
       return;
     }
 
-    if (!data.vehicleId) {
-      toastErrorFromException(new Error('Selecione um veículo'), 'Veículo obrigatório');
+    if (!data.vehicleIds?.length) {
+      toastErrorFromException(new Error('Selecione pelo menos 1 placa'), 'Placas obrigatórias');
       return;
     }
 
@@ -135,7 +142,7 @@ export default function NewProductChangePage() {
     }
 
     const payload: RegisterProductChangeDto = {
-      vehicleId: data.vehicleId,
+      vehicleIds: data.vehicleIds,
       changeKm: Math.round(changeKmNum),
       items: validItems.map((i) => {
         const raw = i.cost;
@@ -163,7 +170,6 @@ export default function NewProductChangePage() {
     (async () => {
       try {
         const result = await registerMutation.mutateAsync(payload);
-        // Ler o arquivo do input no momento do envio (evita state desatualizado)
         const fileToUpload = fileInputRef.current?.files?.[0] ?? attachmentFile;
         if (fileToUpload && fileToUpload.size > 0) {
           await maintenanceApi.uploadAttachment(result.orderId, fileToUpload);
@@ -192,25 +198,66 @@ export default function NewProductChangePage() {
       <SectionCard title="Dados da Troca">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <Label htmlFor="vehicle" className="text-sm text-muted-foreground mb-2 block">
-              Veículo *
+            <Label className="text-sm text-muted-foreground mb-2 block">
+              Placas do combo (1 a 4) *
             </Label>
-            <SearchableSelect
-              id="vehicle"
-              options={toSelectOptions(
-                vehicles.filter((v) => v.active),
-                (v) => v.id,
-                (v) =>
-                  `${v.plate}${v.brandName || v.modelName ? ` - ${v.brandName || ''} ${v.modelName || ''}`.trim() : ''}`,
+            <p className="text-xs text-muted-foreground mb-2">
+              Selecione as placas que compõem o veículo nesta troca na estrada
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {selectedVehicleIds.map((vid) => {
+                const v = vehicles.find((x) => x.id === vid);
+                const plateLabel = v?.plates?.[0]
+                  ? `${v.plates[0].plate} (${v.plates[0].type})`
+                  : v?.plate ?? vid;
+                return (
+                  <div
+                    key={vid}
+                    className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/30 px-3 py-1.5 text-sm"
+                  >
+                    <span>{plateLabel}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setValue(
+                          'vehicleIds',
+                          selectedVehicleIds.filter((id) => id !== vid),
+                          { shouldValidate: true }
+                        );
+                        setValue('items', [{ ...defaultItem }]);
+                      }}
+                      className="text-muted-foreground hover:text-destructive ml-1"
+                      aria-label="Remover"
+                    >
+                      ×
+                    </button>
+                  </div>
+                );
+              })}
+              {selectedVehicleIds.length < 4 && (
+                <SearchableSelect
+                  options={toSelectOptions(
+                    vehicles.filter((v) => v.active && !selectedVehicleIds.includes(v.id)),
+                    (v) => v.id,
+                    (v) => {
+                      const plateStr = v.plates?.[0]?.plate ?? v.plate ?? v.id;
+                      return `${plateStr}${v.brandName || v.modelName ? ` ${v.brandName || ''} ${v.modelName || ''}`.trim() : ''}`;
+                    },
+                  )}
+                  value=""
+                  onChange={(value) => {
+                    if (value && !selectedVehicleIds.includes(value)) {
+                      setValue('vehicleIds', [...selectedVehicleIds, value], {
+                        shouldValidate: true,
+                      });
+                      setValue('items', [{ ...defaultItem }]);
+                    }
+                  }}
+                  placeholder="+ Adicionar placa..."
+                  disabled={!effectiveBranchId || registerMutation.isPending}
+                />
               )}
-              value={watch('vehicleId')}
-              onChange={(value) => {
-                setValue('vehicleId', value || '');
-                setValue('items', [{ ...defaultItem }]);
-              }}
-              placeholder="Selecione um veículo"
-              disabled={!effectiveBranchId || registerMutation.isPending}
-            />
+            </div>
           </div>
 
           <div>
@@ -283,7 +330,7 @@ export default function NewProductChangePage() {
                 size="sm"
                 onClick={() => append({ ...defaultItem })}
                 disabled={
-                  !selectedVehicleId ||
+                  selectedVehicleIds.length === 0 ||
                   replacementItems.length === 0 ||
                   registerMutation.isPending
                 }
@@ -324,7 +371,7 @@ export default function NewProductChangePage() {
                       }
                       placeholder="Selecione o item"
                       disabled={
-                        !selectedVehicleId ||
+                        selectedVehicleIds.length === 0 ||
                         replacementItems.length === 0 ||
                         registerMutation.isPending
                       }
