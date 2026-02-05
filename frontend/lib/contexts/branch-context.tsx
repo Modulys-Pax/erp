@@ -20,9 +20,9 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [selectedBranchId, setSelectedBranchIdState] = useState<string | null>(null);
 
-  // Verificar se é admin - suporta 'ADMIN', 'admin', 'Administrator'
-  const roleName = user?.role?.name ?? '';
-  const isAdmin = ['admin', 'administrator', 'superadmin'].includes(roleName.toLowerCase());
+  // Verificar se é admin - suporta 'ADMIN', 'admin', 'Administrator', 'Administrador', etc.
+  const roleName = (user?.role?.name ?? '').toLowerCase();
+  const isAdmin = ['admin', 'administrator', 'administrador', 'superadmin'].includes(roleName);
 
   // Carregar filial selecionada do localStorage (apenas para admin)
   useEffect(() => {
