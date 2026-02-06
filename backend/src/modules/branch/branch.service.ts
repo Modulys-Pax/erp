@@ -33,18 +33,21 @@ export class BranchService {
       throw new NotFoundException('Empresa não encontrada');
     }
 
-    // Normalizar código (trim) e verificar duplicidade sempre (inclui "" e undefined)
+    // Normalizar código (trim). Só verificar duplicidade quando código é preenchido.
+    // Código vazio/null é permitido para múltiplas filiais (PostgreSQL permite múltiplos NULL em UNIQUE).
     const codeNormalized = createBranchDto.code?.trim() || null;
-    const existingBranch = await this.prisma.branch.findFirst({
-      where: {
-        companyId: companyId,
-        code: codeNormalized,
-        deletedAt: null,
-      },
-    });
+    if (codeNormalized !== null) {
+      const existingBranch = await this.prisma.branch.findFirst({
+        where: {
+          companyId: companyId,
+          code: codeNormalized,
+          deletedAt: null,
+        },
+      });
 
-    if (existingBranch) {
-      throw new ConflictException('Código já cadastrado para esta empresa');
+      if (existingBranch) {
+        throw new ConflictException('Código já cadastrado para esta empresa');
+      }
     }
 
     try {
@@ -71,7 +74,19 @@ export class BranchService {
     limit = 15,
   ): Promise<PaginatedResponseDto<BranchResponseDto>> {
     const skip = (page - 1) * limit;
-    const companyId = DEFAULT_COMPANY_ID;
+    // Usar companyId efetivo: fallback para primeira empresa do DB se constante não existir
+    // (evita listagem vazia quando DEFAULT_COMPANY_ID não bate com empresa cadastrada em produção)
+    let companyId = DEFAULT_COMPANY_ID;
+    const companyExists = await this.prisma.company.findFirst({
+      where: { id: companyId, deletedAt: null },
+    });
+    if (!companyExists) {
+      const firstCompany = await this.prisma.company.findFirst({
+        where: { deletedAt: null },
+        orderBy: { name: 'asc' },
+      });
+      if (firstCompany) companyId = firstCompany.id;
+    }
 
     const where: Prisma.BranchWhereInput = {
       companyId,
@@ -138,13 +153,13 @@ export class BranchService {
       }
     }
 
-    // Normalizar código e verificar duplicidade quando código está sendo alterado
+    // Normalizar código e verificar duplicidade apenas quando código preenchido está sendo alterado
     const codeNormalized = updateBranchDto.code?.trim();
     const codeChanged =
       codeNormalized !== undefined && codeNormalized !== (existingBranch.code?.trim() ?? null);
-    if (codeChanged) {
+    const codeToCheck = codeNormalized !== undefined ? (codeNormalized || null) : null;
+    if (codeChanged && codeToCheck !== null) {
       const companyId = updateBranchDto.companyId || existingBranch.companyId;
-      const codeToCheck = codeNormalized || null;
       const branchWithCode = await this.prisma.branch.findFirst({
         where: {
           companyId,
