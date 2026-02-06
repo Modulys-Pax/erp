@@ -31,6 +31,18 @@ export class AccountPayableResponseDto {
   @ApiProperty({ example: 'Pagamento parcelado em 3x', required: false })
   notes?: string;
 
+  @ApiProperty({ example: 'uuid', required: false })
+  supplierId?: string;
+
+  @ApiProperty({ example: 'Fornecedor ABC', required: false })
+  supplierName?: string;
+
+  @ApiProperty({ example: 'uuid', required: false })
+  costCenterId?: string;
+
+  @ApiProperty({ example: 'Frota', required: false })
+  costCenterName?: string;
+
   @ApiProperty({ example: 'uuid' })
   companyId: string;
 

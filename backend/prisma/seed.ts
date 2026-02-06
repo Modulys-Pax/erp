@@ -35,9 +35,14 @@ async function main() {
   await prisma.expense.deleteMany();
   await prisma.vacation.deleteMany();
   await prisma.salary.deleteMany();
+  await prisma.fiscalDocument.deleteMany();
   await prisma.accountReceivable.deleteMany();
   await prisma.accountPayable.deleteMany();
   await prisma.financialTransaction.deleteMany();
+  await prisma.purchaseOrderItem.deleteMany();
+  await prisma.purchaseOrder.deleteMany();
+  await prisma.salesOrderItem.deleteMany();
+  await prisma.salesOrder.deleteMany();
   await prisma.stockMovement.deleteMany();
   await prisma.stock.deleteMany();
   await prisma.warehouse.deleteMany();
@@ -50,6 +55,11 @@ async function main() {
   await prisma.vehicle.deleteMany();
   await prisma.employee.deleteMany();
   await prisma.product.deleteMany();
+  await prisma.supplier.deleteMany();
+  await prisma.customer.deleteMany();
+  await prisma.costCenter.deleteMany();
+  await prisma.bankStatementItem.deleteMany();
+  await prisma.bankStatement.deleteMany();
   await prisma.branch.deleteMany();
   await prisma.company.deleteMany();
   await prisma.refreshToken.deleteMany();

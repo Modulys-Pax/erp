@@ -11,6 +11,8 @@ import {
   WalletBalanceDto,
   MonthlyMovementDto,
   BalanceAdjustmentResponseDto,
+  CashFlowProjectionDto,
+  CashFlowProjectionMonthDto,
 } from './dto/wallet-response.dto';
 import { Decimal } from '@prisma/client/runtime/library';
 
@@ -295,6 +297,75 @@ export class WalletService {
       referenceMonth: month,
       referenceYear: year,
     };
+  }
+
+  /**
+   * Fluxo de caixa projetado: próximos N meses com saldo inicial, recebimentos previstos (CR pendentes),
+   * pagamentos previstos (CP pendentes) e saldo projetado final por mês.
+   */
+  async getCashFlowProjection(
+    branchId: string,
+    months = 6,
+  ): Promise<CashFlowProjectionDto> {
+    const branch = await this.prisma.branch.findFirst({
+      where: { id: branchId, deletedAt: null },
+    });
+    if (!branch) {
+      throw new NotFoundException('Filial não encontrada');
+    }
+
+    const branchBalance = await this.getOrCreateBranchBalance(branchId);
+    let runningBalance = branchBalance.balance;
+
+    const result: CashFlowProjectionMonthDto[] = [];
+    const now = new Date();
+    const startYear = now.getFullYear();
+    const startMonth = now.getMonth() + 1;
+
+    for (let i = 0; i < months; i++) {
+      const y = startYear + Math.floor((startMonth - 1 + i) / 12);
+      const m = ((startMonth - 1 + i) % 12) + 1;
+      const yearMonth = `${y}-${String(m).padStart(2, '0')}`;
+      const monthStart = new Date(y, m - 1, 1);
+      const monthEnd = new Date(y, m, 0, 23, 59, 59, 999);
+
+      const [receivables, payables] = await Promise.all([
+        this.prisma.accountReceivable.findMany({
+          where: {
+            branchId,
+            deletedAt: null,
+            status: 'PENDING',
+            dueDate: { gte: monthStart, lte: monthEnd },
+          },
+          select: { amount: true },
+        }),
+        this.prisma.accountPayable.findMany({
+          where: {
+            branchId,
+            deletedAt: null,
+            status: 'PENDING',
+            dueDate: { gte: monthStart, lte: monthEnd },
+          },
+          select: { amount: true },
+        }),
+      ]);
+
+      const totalExpectedReceipts = receivables.reduce((s, r) => s + Number(r.amount), 0);
+      const totalExpectedPayments = payables.reduce((s, p) => s + Number(p.amount), 0);
+      const initialBalance = runningBalance;
+      const projectedEndBalance = initialBalance + totalExpectedReceipts - totalExpectedPayments;
+      runningBalance = projectedEndBalance;
+
+      result.push({
+        yearMonth,
+        initialBalance,
+        totalExpectedReceipts,
+        totalExpectedPayments,
+        projectedEndBalance,
+      });
+    }
+
+    return { branchId, months: result };
   }
 
   /**

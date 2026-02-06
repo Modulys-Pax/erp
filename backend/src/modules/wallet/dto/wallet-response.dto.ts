@@ -92,6 +92,31 @@ export class WalletSummaryDto {
   referenceYear: number;
 }
 
+export class CashFlowProjectionMonthDto {
+  @ApiProperty({ description: 'Ano e mês (YYYY-MM)' })
+  yearMonth: string;
+
+  @ApiProperty({ description: 'Saldo inicial do mês' })
+  initialBalance: number;
+
+  @ApiProperty({ description: 'Total de recebimentos previstos (CR pendentes com vencimento no mês)' })
+  totalExpectedReceipts: number;
+
+  @ApiProperty({ description: 'Total de pagamentos previstos (CP pendentes com vencimento no mês)' })
+  totalExpectedPayments: number;
+
+  @ApiProperty({ description: 'Saldo projetado no fim do mês' })
+  projectedEndBalance: number;
+}
+
+export class CashFlowProjectionDto {
+  @ApiProperty({ description: 'ID da filial' })
+  branchId: string;
+
+  @ApiProperty({ description: 'Projeção por mês', type: [CashFlowProjectionMonthDto] })
+  months: CashFlowProjectionMonthDto[];
+}
+
 export class WalletBalanceDto {
   @ApiProperty({ description: 'ID do saldo' })
   id: string;

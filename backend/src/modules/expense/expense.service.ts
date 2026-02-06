@@ -77,6 +77,7 @@ export class ExpenseService {
           description: createDto.description,
           expenseDate: new Date(createDto.expenseDate),
           documentNumber: createDto.documentNumber,
+          costCenterId: createDto.costCenterId ?? undefined,
           companyId: companyId,
           branchId: createDto.branchId,
           createdBy: userId,
@@ -101,6 +102,7 @@ export class ExpenseService {
           originId: expense.id,
           documentNumber: createDto.documentNumber,
           notes: `Despesa ${createDto.type}${createDto.employeeId ? ` - Funcionário: ${expense.employee?.name}` : ''}`,
+          costCenterId: createDto.costCenterId ?? undefined,
           companyId: companyId,
           branchId: createDto.branchId,
           createdBy: userId,
@@ -266,6 +268,9 @@ export class ExpenseService {
         ...(updateDto.documentNumber !== undefined && {
           documentNumber: updateDto.documentNumber,
         }),
+        ...(updateDto.costCenterId !== undefined && {
+          costCenterId: updateDto.costCenterId ?? null,
+        }),
       },
       include: {
         employee: {
@@ -320,6 +325,7 @@ export class ExpenseService {
       description: expense.description,
       expenseDate: expense.expenseDate,
       documentNumber: expense.documentNumber,
+      costCenterId: expense.costCenterId ?? undefined,
       companyId: expense.companyId,
       branchId: expense.branchId,
       financialTransactionId: expense.financialTransactionId,

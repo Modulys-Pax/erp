@@ -78,6 +78,24 @@ export class CreateStockMovementDto {
   maintenanceOrderId?: string;
 
   @ApiProperty({
+    description: 'ID do pedido de compra (se aplicável)',
+    example: 'uuid',
+    required: false,
+  })
+  @IsUUID('4', { message: 'ID do pedido de compra deve ser um UUID válido' })
+  @IsOptional()
+  purchaseOrderId?: string;
+
+  @ApiProperty({
+    description: 'ID do pedido de venda (se aplicável)',
+    example: 'uuid',
+    required: false,
+  })
+  @IsUUID('4', { message: 'ID do pedido de venda deve ser um UUID válido' })
+  @IsOptional()
+  salesOrderId?: string;
+
+  @ApiProperty({
     description: 'ID da empresa',
     example: 'uuid',
   })

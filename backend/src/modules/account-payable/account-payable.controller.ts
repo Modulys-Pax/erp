@@ -19,6 +19,7 @@ import { PayAccountPayableDto } from './dto/pay-account-payable.dto';
 import { AccountPayableResponseDto } from './dto/account-payable-response.dto';
 import { FinancialAccountsSummaryResponseDto } from './dto/financial-accounts-summary-response.dto';
 import { AccountPayableSummaryResponseDto } from './dto/account-payable-summary-response.dto';
+import { ReportBySupplierResponseDto } from './dto/report-by-supplier-response.dto';
 import {
   ProcessPayrollDto,
   ProcessPayrollResultDto,
@@ -321,7 +322,7 @@ export class AccountPayableController {
   @ApiResponse({ status: 404, description: 'Conta a pagar não encontrada' })
   findOne(@Param('id') id: string, @CurrentUser() user: any): Promise<AccountPayableResponseDto> {
     // Prevenir que 'summary' seja tratado como ID
-    if (id === 'summary') {
+    if (id === 'summary' || id === 'report') {
       throw new NotFoundException('Conta a pagar não encontrada');
     }
     return this.accountPayableService.findOne(id, user);

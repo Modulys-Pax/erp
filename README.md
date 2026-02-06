@@ -165,7 +165,8 @@ Access: [http://localhost:3000](http://localhost:3000)
 | `npm run start:dev` | Start in development mode (watch) |
 | `npm run start:prod` | Start in production mode |
 | `npm run build` | Build the project |
-| `npm run prisma:migrate` | Run pending migrations |
+| `npm run prisma:migrate` | Run migrations em desenvolvimento (cria/aplica) |
+| `npm run prisma:migrate:deploy` | Aplicar migrations em produção (deploy) |
 | `npm run prisma:studio` | Open Prisma Studio (database GUI) |
 | `npm run prisma:seed` | Populate database with sample data |
 | `npm run setup:admin` | Set up company and admin user |
@@ -314,6 +315,25 @@ Company (1) ─────── (*) Branch
 | `AccountReceivable` | Accounts receivable |
 
 ## Deployment
+
+### Migrations no servidor (importante)
+
+**As migrations não rodam sozinhas no deploy.** Ao subir o backend no servidor (SSH, Docker, etc.), é preciso aplicar as migrations no banco de produção manualmente ou no seu script de deploy.
+
+No servidor, na pasta do backend, com `DATABASE_URL` apontando para o banco de produção:
+
+```bash
+cd backend
+npm run prisma:migrate:deploy
+```
+
+Ou diretamente:
+
+```bash
+npx prisma migrate deploy
+```
+
+Recomendação: inclua esse comando no seu processo de deploy (script de deploy, CI/CD ou entrypoint do container) **antes** de iniciar a aplicação, para que novas migrations sejam aplicadas a cada release.
 
 ### Environment Variables (Production)
 

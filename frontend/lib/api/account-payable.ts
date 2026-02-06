@@ -19,6 +19,10 @@ export interface AccountPayable {
   originId?: string;
   documentNumber?: string;
   notes?: string;
+  supplierId?: string;
+  supplierName?: string;
+  costCenterId?: string;
+  costCenterName?: string;
   companyId: string;
   branchId: string;
   financialTransactionId?: string;
@@ -36,6 +40,8 @@ export interface CreateAccountPayableDto {
   originId?: string;
   documentNumber?: string;
   notes?: string;
+  supplierId?: string;
+  costCenterId?: string;
   companyId: string;
   branchId: string;
 }
@@ -57,6 +63,19 @@ export interface AccountPayableDetail {
   status: AccountPayableStatus;
   documentNumber?: string;
   createdAt?: Date;
+}
+
+export interface AccountPayableBySupplierGroup {
+  supplierId: string | null;
+  supplierName: string;
+  total: number;
+  count: number;
+  items: AccountPayable[];
+}
+
+export interface ReportBySupplierResponse {
+  groups: AccountPayableBySupplierGroup[];
+  totalAmount: number;
 }
 
 export interface AccountReceivableDetail {
@@ -232,6 +251,18 @@ export const accountPayableApi = {
       {
         params: { branchId, startDate, endDate, status, page, limit, originType },
       },
+    );
+    return response.data;
+  },
+
+  getReportBySupplier: async (
+    branchId?: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<ReportBySupplierResponse> => {
+    const response = await api.get<ReportBySupplierResponse>(
+      '/accounts-payable/report/by-supplier',
+      { params: { branchId, startDate, endDate } },
     );
     return response.data;
   },

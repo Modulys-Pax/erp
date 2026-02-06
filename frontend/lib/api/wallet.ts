@@ -64,6 +64,19 @@ export interface BalanceHistoryResponse {
   totalPages: number;
 }
 
+export interface CashFlowProjectionMonth {
+  yearMonth: string;
+  initialBalance: number;
+  totalExpectedReceipts: number;
+  totalExpectedPayments: number;
+  projectedEndBalance: number;
+}
+
+export interface CashFlowProjection {
+  branchId: string;
+  months: CashFlowProjectionMonth[];
+}
+
 export const walletApi = {
   /**
    * Obter resumo da carteira para um mês/ano
@@ -142,6 +155,22 @@ export const walletApi = {
 
     const response = await api.get<BalanceHistoryResponse>(
       `/wallet/history?${params.toString()}`,
+    );
+    return response.data;
+  },
+
+  /**
+   * Fluxo de caixa projetado (próximos N meses)
+   */
+  getCashFlowProjection: async (
+    branchId?: string,
+    months = 6,
+  ): Promise<CashFlowProjection> => {
+    const params = new URLSearchParams();
+    params.append('months', months.toString());
+    if (branchId) params.append('branchId', branchId);
+    const response = await api.get<CashFlowProjection>(
+      `/wallet/cash-flow-projection?${params.toString()}`,
     );
     return response.data;
   },

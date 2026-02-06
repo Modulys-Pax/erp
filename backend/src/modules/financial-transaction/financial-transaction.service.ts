@@ -69,6 +69,7 @@ export class FinancialTransactionService {
         originId: createDto.originId,
         documentNumber: createDto.documentNumber,
         notes: createDto.notes,
+        costCenterId: createDto.costCenterId ?? undefined,
         companyId: companyId,
         branchId: createDto.branchId,
         createdBy: userId,
@@ -161,6 +162,9 @@ export class FinancialTransactionService {
           documentNumber: updateDto.documentNumber,
         }),
         ...(updateDto.notes !== undefined && { notes: updateDto.notes }),
+        ...(updateDto.costCenterId !== undefined && {
+          costCenterId: updateDto.costCenterId ?? null,
+        }),
       },
       include: {},
     });
@@ -208,6 +212,7 @@ export class FinancialTransactionService {
       originId: transaction.originId,
       documentNumber: transaction.documentNumber,
       notes: transaction.notes,
+      costCenterId: transaction.costCenterId ?? undefined,
       companyId: transaction.companyId,
       branchId: transaction.branchId,
       createdAt: transaction.createdAt,

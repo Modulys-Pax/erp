@@ -28,6 +28,9 @@ export class FinancialTransactionResponseDto {
   @ApiProperty({ example: 'Pagamento realizado via PIX', required: false })
   notes?: string;
 
+  @ApiProperty({ example: 'uuid', required: false })
+  costCenterId?: string;
+
   @ApiProperty({ example: 'uuid' })
   companyId: string;
 

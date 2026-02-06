@@ -360,6 +360,8 @@ export class StockService {
           documentNumber: createDto.documentNumber,
           notes: createDto.notes,
           maintenanceOrderId: createDto.maintenanceOrderId,
+          purchaseOrderId: createDto.purchaseOrderId,
+          salesOrderId: createDto.salesOrderId,
           companyId: companyId,
           branchId: createDto.branchId,
           createdBy: userId,
@@ -392,8 +394,13 @@ export class StockService {
       return newMovement;
     });
 
-    // Criar conta a pagar automaticamente para entradas de estoque com custo
-    if (movementType === StockMovementType.ENTRY && totalCost && totalCost > 0) {
+    // Criar conta a pagar automaticamente para entradas de estoque com custo (exceto quando origem é pedido de compra)
+    if (
+      movementType === StockMovementType.ENTRY &&
+      totalCost &&
+      totalCost > 0 &&
+      !createDto.purchaseOrderId
+    ) {
       try {
         await this.accountPayableService.create(
           {

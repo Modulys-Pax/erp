@@ -20,6 +20,10 @@ export interface AccountReceivable {
   originId?: string;
   documentNumber?: string;
   notes?: string;
+  customerId?: string;
+  customerName?: string;
+  costCenterId?: string;
+  costCenterName?: string;
   companyId: string;
   branchId: string;
   financialTransactionId?: string;
@@ -37,6 +41,8 @@ export interface CreateAccountReceivableDto {
   originId?: string;
   documentNumber?: string;
   notes?: string;
+  customerId?: string;
+  costCenterId?: string;
   companyId: string;
   branchId: string;
 }
@@ -62,6 +68,19 @@ export interface AccountReceivableSummary {
 export interface AccountReceivableSummaryResponse {
   summary: AccountReceivableSummary;
   accountsReceivable: PaginatedResponse<AccountReceivableDetail>;
+}
+
+export interface AccountReceivableByCustomerGroup {
+  customerId: string | null;
+  customerName: string;
+  total: number;
+  count: number;
+  items: AccountReceivable[];
+}
+
+export interface ReportByCustomerResponse {
+  groups: AccountReceivableByCustomerGroup[];
+  totalAmount: number;
 }
 
 export const accountReceivableApi = {
@@ -144,6 +163,18 @@ export const accountReceivableApi = {
       {
         params: { branchId, startDate, endDate, status, page, limit },
       },
+    );
+    return response.data;
+  },
+
+  getReportByCustomer: async (
+    branchId?: string,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<ReportByCustomerResponse> => {
+    const response = await api.get<ReportByCustomerResponse>(
+      '/accounts-receivable/report/by-customer',
+      { params: { branchId, startDate, endDate } },
     );
     return response.data;
   },

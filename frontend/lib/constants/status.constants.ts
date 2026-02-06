@@ -326,3 +326,63 @@ export const EXPENSE_TYPE_COLORS: Record<ExpenseTypeEnum, string> = {
   OTHER: '!bg-gray-100 !text-gray-800 dark:!bg-gray-800 dark:!text-gray-100',
 };
 
+// =============================================================================
+// STATUS DE PEDIDO DE COMPRA
+// =============================================================================
+
+export const PURCHASE_ORDER_STATUS = {
+  DRAFT: 'DRAFT',
+  SENT: 'SENT',
+  PARTIALLY_RECEIVED: 'PARTIALLY_RECEIVED',
+  RECEIVED: 'RECEIVED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export type PurchaseOrderStatus = (typeof PURCHASE_ORDER_STATUS)[keyof typeof PURCHASE_ORDER_STATUS];
+
+export const PURCHASE_ORDER_STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
+  DRAFT: 'Rascunho',
+  SENT: 'Enviado',
+  PARTIALLY_RECEIVED: 'Parcialmente recebido',
+  RECEIVED: 'Recebido',
+  CANCELLED: 'Cancelado',
+};
+
+export const PURCHASE_ORDER_STATUS_COLORS: Record<PurchaseOrderStatus, string> = {
+  DRAFT: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
+  SENT: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  PARTIALLY_RECEIVED: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  RECEIVED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+};
+
+// =============================================================================
+// STATUS DE PEDIDO DE VENDA
+// =============================================================================
+
+export const SALES_ORDER_STATUS = {
+  DRAFT: 'DRAFT',
+  CONFIRMED: 'CONFIRMED',
+  PARTIALLY_DELIVERED: 'PARTIALLY_DELIVERED',
+  DELIVERED: 'DELIVERED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export type SalesOrderStatus = (typeof SALES_ORDER_STATUS)[keyof typeof SALES_ORDER_STATUS];
+
+export const SALES_ORDER_STATUS_LABELS: Record<SalesOrderStatus, string> = {
+  DRAFT: 'Rascunho',
+  CONFIRMED: 'Confirmado',
+  PARTIALLY_DELIVERED: 'Parcialmente entregue',
+  DELIVERED: 'Entregue',
+  CANCELLED: 'Cancelado',
+};
+
+export const SALES_ORDER_STATUS_COLORS: Record<SalesOrderStatus, string> = {
+  DRAFT: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
+  CONFIRMED: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  PARTIALLY_DELIVERED: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  DELIVERED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+};
+

@@ -26,6 +26,9 @@ export class ExpenseResponseDto {
   @ApiProperty({ example: 'REC-001234', required: false })
   documentNumber?: string;
 
+  @ApiProperty({ example: 'uuid', required: false })
+  costCenterId?: string;
+
   @ApiProperty({ example: 'uuid' })
   companyId: string;
 

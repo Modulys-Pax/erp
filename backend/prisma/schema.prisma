@@ -155,6 +155,12 @@ model Company {
   employeeBenefits      EmployeeBenefit[]
   vehicleMarkings       VehicleMarking[]
   maintenanceLabels      MaintenanceLabel[]
+  suppliers             Supplier[]
+  customers             Customer[]
+  costCenters           CostCenter[]
+  fiscalDocuments       FiscalDocument[]
+  purchaseOrders        PurchaseOrder[]
+  salesOrders           SalesOrder[]
 
   @@map("companies")
 }
@@ -197,9 +203,201 @@ model Branch {
   vehicleMarkings       VehicleMarking[]
   maintenanceLabels     MaintenanceLabel[]
   branchBalance         BranchBalance?
+  suppliers             Supplier[]
+  customers             Customer[]
+  costCenters           CostCenter[]
+  fiscalDocuments       FiscalDocument[]
+  bankStatements        BankStatement[]
+  purchaseOrders        PurchaseOrder[]
+  salesOrders           SalesOrder[]
 
   @@unique([companyId, code])
   @@map("branches")
+}
+
+// ============================================
+// FORNECEDORES E CLIENTES (Fase 1 - CORE vs TOTVS)
+// ============================================
+
+model Supplier {
+  id        String    @id @default(uuid())
+  name      String
+  document  String?   // CNPJ ou CPF
+  email     String?
+  phone     String?
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?
+  companyId String
+  branchId  String
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch    Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+  deletedAt DateTime?
+
+  accountsPayable   AccountPayable[]
+  fiscalDocuments   FiscalDocument[]
+  purchaseOrders    PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+// ============================================
+// FASE 4 - PEDIDO DE COMPRA
+// ============================================
+
+enum PurchaseOrderStatus {
+  DRAFT                 // Rascunho
+  SENT                  // Enviado
+  PARTIALLY_RECEIVED    // Parcialmente recebido
+  RECEIVED              // Recebido
+  CANCELLED             // Cancelado
+}
+
+model PurchaseOrder {
+  id                    String                @id @default(uuid())
+  number                String                // Número único por filial (ex: PC-001)
+  supplierId            String
+  supplier              Supplier              @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  companyId             String
+  branchId              String
+  company               Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch                Branch                 @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  expectedDeliveryDate  DateTime?             // Data prevista de entrega
+  status                PurchaseOrderStatus   @default(DRAFT)
+  notes                 String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  createdBy             String?
+  deletedAt             DateTime?
+
+  items                 PurchaseOrderItem[]
+  stockMovements        StockMovement[]
+
+  @@unique([branchId, number])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id                String         @id @default(uuid())
+  purchaseOrderId   String
+  purchaseOrder     PurchaseOrder   @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity          Decimal        // Quantidade pedida
+  quantityReceived  Decimal        @default(0) // Quantidade já recebida
+  unitPrice         Decimal?       // Preço unitário (opcional)
+  total             Decimal?      // Total do item (quantity * unitPrice)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@map("purchase_order_items")
+}
+
+// ============================================
+// FASE 5 - PEDIDO DE VENDA
+// ============================================
+
+enum SalesOrderStatus {
+  DRAFT                 // Rascunho
+  CONFIRMED             // Confirmado
+  PARTIALLY_DELIVERED   // Parcialmente entregue
+  DELIVERED             // Entregue
+  CANCELLED             // Cancelado
+}
+
+model SalesOrder {
+  id           String           @id @default(uuid())
+  number       String           // Número único por filial (ex: PV-001)
+  customerId   String
+  customer     Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  companyId    String
+  branchId     String
+  company      Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch       Branch           @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  orderDate    DateTime?        // Data do pedido
+  status       SalesOrderStatus @default(DRAFT)
+  notes        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  createdBy    String?
+  deletedAt    DateTime?
+
+  items          SalesOrderItem[]
+  stockMovements StockMovement[]
+
+  @@unique([branchId, number])
+  @@map("sales_orders")
+}
+
+model SalesOrderItem {
+  id             String      @id @default(uuid())
+  salesOrderId   String
+  salesOrder     SalesOrder  @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity       Decimal     // Quantidade pedida
+  quantityInvoiced Decimal   @default(0) // Quantidade já faturada (saída de estoque)
+  unitPrice      Decimal?    // Preço unitário (opcional)
+  total          Decimal?    // Total do item (quantity * unitPrice)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@map("sales_order_items")
+}
+
+model Customer {
+  id        String    @id @default(uuid())
+  name      String
+  document  String?   // CNPJ ou CPF
+  email     String?
+  phone     String?
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?
+  companyId String
+  branchId  String
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch    Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+  deletedAt DateTime?
+
+  accountsReceivable AccountReceivable[]
+  fiscalDocuments    FiscalDocument[]
+  salesOrders        SalesOrder[]
+
+  @@map("customers")
+}
+
+model CostCenter {
+  id        String    @id @default(uuid())
+  code      String
+  name      String
+  companyId String
+  branchId  String
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch    Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+  deletedAt DateTime?
+
+  financialTransactions FinancialTransaction[]
+  accountsPayable       AccountPayable[]
+  accountsReceivable    AccountReceivable[]
+  expenses              Expense[]
+
+  @@unique([companyId, branchId, code])
+  @@map("cost_centers")
 }
 
 model Product {
@@ -225,6 +423,8 @@ model Product {
   maintenanceMaterials     MaintenanceMaterial[]
   stocks                   Stock[]
   stockMovements           StockMovement[]
+  purchaseOrderItems       PurchaseOrderItem[]
+  salesOrderItems          SalesOrderItem[]
 
   @@unique([companyId, branchId, code])
   @@map("products")
@@ -600,6 +800,10 @@ model StockMovement {
   notes              String? // Observações
   maintenanceOrderId String? // Se a movimentação foi gerada por uma ordem de manutenção
   maintenanceOrder   MaintenanceOrder? @relation(fields: [maintenanceOrderId], references: [id])
+  purchaseOrderId    String? // Se a movimentação foi gerada por recebimento de pedido de compra
+  purchaseOrder      PurchaseOrder?   @relation(fields: [purchaseOrderId], references: [id])
+  salesOrderId       String? // Se a movimentação foi gerada por faturamento de pedido de venda
+  salesOrder         SalesOrder?     @relation(fields: [salesOrderId], references: [id])
   companyId          String
   branchId           String
   company            Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -626,6 +830,8 @@ enum TransactionOriginType {
   STOCK // Estoque
   HR // Recursos Humanos
   MANUAL // Manual
+  PURCHASE_ORDER // Pedido de compra
+  SALE_ORDER // Pedido de venda
 }
 
 enum AccountPayableStatus {
@@ -650,6 +856,8 @@ model FinancialTransaction {
   originId        String? // ID da origem (ex: maintenanceOrderId)
   documentNumber  String? // Número do documento (NF, etc)
   notes           String? // Observações
+  costCenterId    String? // Centro de custo (opcional)
+  costCenter      CostCenter?            @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
   companyId       String
   branchId        String
   company         Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -663,6 +871,8 @@ model FinancialTransaction {
   accountReceivable AccountReceivable?
   salary            Salary?
   expense           Expense?
+  fiscalDocuments   FiscalDocument[]
+  bankStatementItems BankStatementItem[]
 
   @@map("financial_transactions")
 }
@@ -678,12 +888,17 @@ model AccountPayable {
   originId               String? // ID da origem
   documentNumber         String? // Número do documento (NF, etc)
   notes                  String? // Observações
+  supplierId             String? // Fornecedor (opcional)
+  supplier               Supplier?             @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  costCenterId           String? // Centro de custo (opcional)
+  costCenter             CostCenter?            @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
   companyId              String
   branchId               String
   company                Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
   branch                 Branch                 @relation(fields: [branchId], references: [id], onDelete: Cascade)
   financialTransactionId String?                @unique // Transação financeira gerada quando paga
   financialTransaction   FinancialTransaction?  @relation(fields: [financialTransactionId], references: [id])
+  fiscalDocuments        FiscalDocument[]
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
   createdBy              String?
@@ -703,18 +918,111 @@ model AccountReceivable {
   originId               String? // ID da origem
   documentNumber         String? // Número do documento (NF, etc)
   notes                  String? // Observações
+  customerId             String? // Cliente (opcional)
+  customer               Customer?              @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  costCenterId           String? // Centro de custo (opcional)
+  costCenter             CostCenter?            @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
   companyId              String
   branchId               String
   company                Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
   branch                 Branch                  @relation(fields: [branchId], references: [id], onDelete: Cascade)
   financialTransactionId String?                 @unique // Transação financeira gerada quando recebida
   financialTransaction   FinancialTransaction?   @relation(fields: [financialTransactionId], references: [id])
+  fiscalDocuments        FiscalDocument[]
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
   createdBy              String?
   deletedAt              DateTime?
 
   @@map("accounts_receivable")
+}
+
+// ============================================
+// FASE 2 - DOCUMENTO FISCAL (rastreabilidade, preparado para NF-e)
+// ============================================
+
+enum FiscalDocumentType {
+  ENTRY  // Entrada
+  EXIT   // Saída
+}
+
+enum FiscalDocumentStatus {
+  REGISTERED // Registrado
+  CANCELLED  // Cancelado
+}
+
+model FiscalDocument {
+  id                    String                @id @default(uuid())
+  type                  FiscalDocumentType    // ENTRY | EXIT
+  number                String                // Número do documento
+  series                String?               // Série (opcional)
+  issueDate             DateTime              // Data de emissão
+  totalAmount           Decimal               // Valor total
+  status                FiscalDocumentStatus  @default(REGISTERED) // REGISTERED | CANCELLED
+  companyId             String
+  branchId              String
+  company               Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch                Branch                @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  supplierId            String?
+  supplier              Supplier?             @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  customerId            String?
+  customer              Customer?            @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  accountPayableId      String?
+  accountPayable        AccountPayable?       @relation(fields: [accountPayableId], references: [id], onDelete: SetNull)
+  accountReceivableId   String?
+  accountReceivable     AccountReceivable?   @relation(fields: [accountReceivableId], references: [id], onDelete: SetNull)
+  financialTransactionId String?
+  financialTransaction  FinancialTransaction? @relation(fields: [financialTransactionId], references: [id], onDelete: SetNull)
+  notes                 String?
+  externalKey           String?               // Chave NF-e (futuro)
+  issuedAt              DateTime?             // Data/hora emissão NF-e (futuro)
+  xmlPath               String?               // Caminho do XML (futuro)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  createdBy             String?
+  deletedAt             DateTime?
+
+  @@map("fiscal_documents")
+}
+
+// ============================================
+// FASE 3 - CONCILIAÇÃO BANCÁRIA
+// ============================================
+
+enum BankStatementItemType {
+  CREDIT // Crédito
+  DEBIT  // Débito
+}
+
+model BankStatement {
+  id             String    @id @default(uuid())
+  branchId       String
+  branch         Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  description    String?
+  referenceMonth Int       // Mês de referência (1-12)
+  referenceYear  Int       // Ano de referência
+  uploadedAt     DateTime? // Data do upload (se importado)
+  createdAt      DateTime  @default(now())
+  createdBy      String?
+
+  items BankStatementItem[]
+
+  @@map("bank_statements")
+}
+
+model BankStatementItem {
+  id                     String               @id @default(uuid())
+  bankStatementId        String
+  bankStatement          BankStatement        @relation(fields: [bankStatementId], references: [id], onDelete: Cascade)
+  transactionDate        DateTime             // Data do lançamento no extrato
+  amount                 Decimal              // Valor (sempre positivo; tipo indica crédito/débito)
+  description            String?
+  type                   BankStatementItemType // CREDIT | DEBIT
+  financialTransactionId String?               // Transação conciliada
+  financialTransaction   FinancialTransaction? @relation(fields: [financialTransactionId], references: [id], onDelete: SetNull)
+  createdAt              DateTime             @default(now())
+
+  @@map("bank_statement_items")
 }
 
 // ============================================
@@ -846,10 +1154,12 @@ model Expense {
   description            String // Descrição da despesa
   expenseDate            DateTime // Data da despesa
   documentNumber         String? // Número do documento (recibo, etc)
+  costCenterId           String? // Centro de custo (opcional)
+  costCenter             CostCenter?           @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
   companyId              String
   branchId               String
   company                Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  branch                 Branch                @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  branch                 Branch                 @relation(fields: [branchId], references: [id], onDelete: Cascade)
   financialTransactionId String?               @unique // Transação financeira gerada
   financialTransaction   FinancialTransaction? @relation(fields: [financialTransactionId], references: [id])
   createdAt              DateTime              @default(now())

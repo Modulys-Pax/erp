@@ -16,6 +16,10 @@ import {
   PayrollEmployeeDetail,
   PayrollEmployeeBenefitDetail,
 } from './dto/process-payroll.dto';
+import {
+  ReportBySupplierResponseDto,
+  AccountPayableBySupplierGroupDto,
+} from './dto/report-by-supplier-response.dto';
 import { getWorkingDaysInMonth } from '../../shared/utils/working-days.util';
 import {
   FinancialAccountsSummaryResponseDto,
@@ -88,6 +92,8 @@ export class AccountPayableService {
         originId: createDto.originId,
         documentNumber: createDto.documentNumber,
         notes: createDto.notes,
+        supplierId: createDto.supplierId ?? undefined,
+        costCenterId: createDto.costCenterId ?? undefined,
         companyId: companyId,
         branchId: createDto.branchId,
         status: 'PENDING',
@@ -134,6 +140,7 @@ export class AccountPayableService {
     const accountsPayable = await this.prisma.accountPayable.findMany({
       where,
       orderBy: { dueDate: 'asc' },
+      include: { supplier: true, costCenter: true },
     });
 
     return accountsPayable.map((account) => this.mapToResponse(account));
@@ -147,6 +154,8 @@ export class AccountPayableService {
       },
       include: {
         financialTransaction: true,
+        supplier: true,
+        costCenter: true,
       },
     });
 
@@ -203,6 +212,8 @@ export class AccountPayableService {
           documentNumber: updateDto.documentNumber,
         }),
         ...(updateDto.notes !== undefined && { notes: updateDto.notes }),
+        ...(updateDto.supplierId !== undefined && { supplierId: updateDto.supplierId ?? null }),
+        ...(updateDto.costCenterId !== undefined && { costCenterId: updateDto.costCenterId ?? null }),
       },
     });
 
@@ -264,6 +275,7 @@ export class AccountPayableService {
           originId: accountPayable.originId,
           documentNumber: accountPayable.documentNumber,
           notes: payDto.notes || accountPayable.notes,
+          costCenterId: accountPayable.costCenterId ?? undefined,
           companyId: accountPayable.companyId,
           branchId: accountPayable.branchId,
           createdBy: userId,
@@ -320,6 +332,71 @@ export class AccountPayableService {
     });
 
     return this.mapToResponse(updatedAccount);
+  }
+
+  /**
+   * Relatório de contas a pagar agrupadas por fornecedor (período/filial).
+   */
+  async getReportBySupplier(
+    branchId?: string,
+    startDate?: string,
+    endDate?: string,
+    user?: any,
+  ): Promise<ReportBySupplierResponseDto> {
+    const companyId = DEFAULT_COMPANY_ID;
+    let effectiveBranchId = branchId;
+    if (user) {
+      const isAdmin = user.role?.toLowerCase() === 'admin';
+      if (!isAdmin && !branchId) effectiveBranchId = user.branchId;
+      if (effectiveBranchId) {
+        validateBranchAccess(user.branchId, user.role, effectiveBranchId, undefined);
+      }
+    }
+
+    const where: Prisma.AccountPayableWhereInput = {
+      companyId,
+      deletedAt: null,
+      ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+    };
+    if (startDate || endDate) {
+      where.dueDate = {};
+      if (startDate) where.dueDate.gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.dueDate.lte = end;
+      }
+    }
+
+    const accounts = await this.prisma.accountPayable.findMany({
+      where,
+      orderBy: [{ supplierId: 'asc' }, { dueDate: 'asc' }],
+      include: { supplier: true, costCenter: true },
+    });
+
+    const map = new Map<string | null, AccountPayableResponseDto[]>();
+    for (const acc of accounts) {
+      const key = acc.supplierId ?? null;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(this.mapToResponse(acc));
+    }
+
+    const groups: AccountPayableBySupplierGroupDto[] = [];
+    let totalAmount = 0;
+    for (const [supplierId, items] of map) {
+      const total = items.reduce((s, i) => s + i.amount, 0);
+      totalAmount += total;
+      groups.push({
+        supplierId,
+        supplierName: items[0]?.supplierName ?? 'Sem fornecedor',
+        total,
+        count: items.length,
+        items,
+      });
+    }
+    groups.sort((a, b) => (b.total - a.total));
+
+    return { groups, totalAmount };
   }
 
   async remove(id: string, user?: any): Promise<void> {
@@ -1113,6 +1190,10 @@ export class AccountPayableService {
       originId: account.originId,
       documentNumber: account.documentNumber,
       notes: account.notes,
+      supplierId: account.supplierId ?? undefined,
+      supplierName: account.supplier?.name ?? undefined,
+      costCenterId: account.costCenterId ?? undefined,
+      costCenterName: account.costCenter?.name ?? undefined,
       companyId: account.companyId,
       branchId: account.branchId,
       financialTransactionId: account.financialTransactionId,

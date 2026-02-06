@@ -11,6 +11,10 @@ import {
   CreateAccountPayableDto,
 } from '@/lib/api/account-payable';
 import { branchApi } from '@/lib/api/branch';
+import { supplierApi } from '@/lib/api/supplier';
+import { costCenterApi } from '@/lib/api/cost-center';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { toSelectOptions } from '@/lib/hooks/use-searchable-select';
 import { DEFAULT_COMPANY_ID } from '@/lib/constants/company.constants';
 import { useEffectiveBranch } from '@/lib/hooks/use-effective-branch';
 import { PageHeader } from '@/components/layout/page-header';
@@ -29,6 +33,8 @@ const accountPayableSchema = z.object({
   dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
   documentNumber: z.string().optional(),
   notes: z.string().optional(),
+  supplierId: z.string().uuid().optional().or(z.literal('')),
+  costCenterId: z.string().uuid().optional().or(z.literal('')),
   branchId: z.string().uuid('Selecione uma filial'),
 });
 
@@ -49,6 +55,8 @@ export default function NewAccountPayablePage() {
     defaultValues: {
       amount: undefined,
       branchId: effectiveBranchId || '',
+      supplierId: '',
+      costCenterId: '',
     },
   });
 
@@ -65,7 +73,21 @@ export default function NewAccountPayablePage() {
     enabled: false,
   });
 
+  const { data: suppliersResponse } = useQuery({
+    queryKey: ['suppliers', effectiveBranchId],
+    queryFn: () => supplierApi.getAll(effectiveBranchId ?? undefined, false, 1, 500),
+    enabled: !!effectiveBranchId,
+  });
+
+  const { data: costCentersResponse } = useQuery({
+    queryKey: ['cost-centers', effectiveBranchId],
+    queryFn: () => costCenterApi.getAll(effectiveBranchId ?? undefined, 1, 500),
+    enabled: !!effectiveBranchId,
+  });
+
   const branches = branchesResponse?.data || [];
+  const suppliers = suppliersResponse?.data || [];
+  const costCenters = costCentersResponse?.data || [];
 
   const createMutation = useMutation({
     mutationFn: (data: CreateAccountPayableDto) =>
@@ -88,6 +110,8 @@ export default function NewAccountPayablePage() {
       amount,
       companyId: DEFAULT_COMPANY_ID,
       branchId: data.branchId,
+      supplierId: data.supplierId || undefined,
+      costCenterId: data.costCenterId || undefined,
     });
   };
 
@@ -152,6 +176,43 @@ export default function NewAccountPayablePage() {
 
           {/* Campo de filial oculto - preenchido automaticamente com a filial efetiva */}
           <input type="hidden" {...register('branchId')} value={effectiveBranchId || ''} />
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm text-muted-foreground mb-2">Fornecedor</Label>
+              <SearchableSelect
+                id="supplierId"
+                options={[
+                  { value: '', label: 'Nenhum' },
+                  ...toSelectOptions(
+                    suppliers.filter((s) => s.active && !s.deletedAt),
+                    (s) => s.id,
+                    (s) => s.name,
+                  ),
+                ]}
+                value={watch('supplierId') || ''}
+                onChange={(value) => setValue('supplierId', value || '', { shouldValidate: true })}
+                placeholder="Selecione o fornecedor"
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-muted-foreground mb-2">Centro de custo</Label>
+              <SearchableSelect
+                id="costCenterId"
+                options={[
+                  { value: '', label: 'Nenhum' },
+                  ...toSelectOptions(
+                    costCenters.filter((c) => c.active),
+                    (c) => c.id,
+                    (c) => `${c.code} - ${c.name}`,
+                  ),
+                ]}
+                value={watch('costCenterId') || ''}
+                onChange={(value) => setValue('costCenterId', value || '', { shouldValidate: true })}
+                placeholder="Selecione o centro de custo"
+              />
+            </div>
+          </div>
 
           <div>
             <Label htmlFor="documentNumber" className="text-sm text-muted-foreground mb-2">

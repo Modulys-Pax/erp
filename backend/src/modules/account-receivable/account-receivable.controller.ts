@@ -9,6 +9,7 @@ import {
   UseGuards,
   Query,
   Put,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AccountReceivableService } from './account-receivable.service';
@@ -17,6 +18,7 @@ import { UpdateAccountReceivableDto } from './dto/update-account-receivable.dto'
 import { ReceiveAccountReceivableDto } from './dto/receive-account-receivable.dto';
 import { AccountReceivableResponseDto } from './dto/account-receivable-response.dto';
 import { AccountReceivableSummaryResponseDto } from './dto/account-receivable-summary-response.dto';
+import { ReportByCustomerResponseDto } from './dto/report-by-customer-response.dto';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../shared/guards/permission.guard';
 import { RequirePermission } from '../../shared/decorators/require-permission.decorator';
@@ -114,6 +116,27 @@ export class AccountReceivableController {
     );
   }
 
+  @Get('report/by-customer')
+  @RequirePermission('accounts-receivable.view')
+  @ApiOperation({ summary: 'Relatório de contas a receber por cliente' })
+  @ApiQuery({ name: 'branchId', required: false })
+  @ApiQuery({ name: 'startDate', required: false })
+  @ApiQuery({ name: 'endDate', required: false })
+  @ApiResponse({ status: 200, description: 'Relatório agrupado por cliente' })
+  getReportByCustomer(
+    @Query('branchId') branchId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @CurrentUser() user?: any,
+  ): Promise<ReportByCustomerResponseDto> {
+    return this.accountReceivableService.getReportByCustomer(
+      branchId,
+      startDate,
+      endDate,
+      user,
+    );
+  }
+
   @Get()
   @RequirePermission('accounts-receivable.view')
   @ApiOperation({ summary: 'Listar todas as contas a receber' })
@@ -176,6 +199,9 @@ export class AccountReceivableController {
     @Param('id') id: string,
     @CurrentUser() user: any,
   ): Promise<AccountReceivableResponseDto> {
+    if (id === 'summary' || id === 'report') {
+      throw new NotFoundException('Conta a receber não encontrada');
+    }
     return this.accountReceivableService.findOne(id, user);
   }
 

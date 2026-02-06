@@ -15,6 +15,7 @@ import {
   WalletSummaryDto,
   WalletBalanceDto,
   BalanceAdjustmentResponseDto,
+  CashFlowProjectionDto,
 } from './dto/wallet-response.dto';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../shared/guards/permission.guard';
@@ -104,6 +105,22 @@ export class WalletController {
       ...result,
       requiredAmount: amountNumber,
     };
+  }
+
+  @Get('cash-flow-projection')
+  @RequirePermission('wallet.view')
+  @ApiOperation({ summary: 'Fluxo de caixa projetado (próximos N meses)' })
+  @ApiQuery({ name: 'branchId', required: false, description: 'ID da filial' })
+  @ApiQuery({ name: 'months', required: false, description: 'Número de meses (default 6)' })
+  @ApiResponse({ status: 200, description: 'Projeção por mês', type: CashFlowProjectionDto })
+  async getCashFlowProjection(
+    @Query('branchId') branchId: string | undefined,
+    @Query('months') monthsStr: string | undefined,
+    @CurrentUser() user: any,
+  ): Promise<CashFlowProjectionDto> {
+    const effectiveBranchId = getBranchId(branchId, user);
+    const months = monthsStr ? parseInt(monthsStr, 10) : 6;
+    return this.walletService.getCashFlowProjection(effectiveBranchId, Math.min(Math.max(months, 1), 24));
   }
 
   @Get('history')

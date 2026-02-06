@@ -31,6 +31,18 @@ export class AccountReceivableResponseDto {
   @ApiProperty({ example: 'Recebimento parcelado em 3x', required: false })
   notes?: string;
 
+  @ApiProperty({ example: 'uuid', required: false })
+  customerId?: string;
+
+  @ApiProperty({ example: 'Cliente XYZ', required: false })
+  customerName?: string;
+
+  @ApiProperty({ example: 'uuid', required: false })
+  costCenterId?: string;
+
+  @ApiProperty({ example: 'Frota', required: false })
+  costCenterName?: string;
+
   @ApiProperty({ example: 'uuid' })
   companyId: string;
 

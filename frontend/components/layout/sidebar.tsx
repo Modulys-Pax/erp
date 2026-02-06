@@ -34,6 +34,12 @@ import {
   MapPinnedIcon,
   Wallet,
   MessageCircle,
+  Building2,
+  LayoutGrid,
+  TrendingUp,
+  RefreshCw,
+  ShoppingCart,
+  ShoppingBag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect, useMemo } from 'react';
@@ -67,7 +73,15 @@ const navigationGroups: NavigationGroup[] = [
       { name: 'Despesas', href: '/financial/expenses', icon: DollarSign, permission: 'expenses.view' },
       { name: 'Resumo Financeiro', href: '/financial/summary', icon: BarChart3, permission: 'wallet.view' },
       { name: 'Contas a Pagar', href: '/accounts-payable', icon: DollarSign, permission: 'accounts-payable.view' },
+      { name: 'Pedidos de Compra', href: '/purchase-orders', icon: ShoppingCart, permission: 'purchase-orders.view' },
+      { name: 'Pedidos de Venda', href: '/sales-orders', icon: ShoppingBag, permission: 'sales-orders.view' },
       { name: 'Contas a Receber', href: '/accounts-receivable', icon: DollarSign, permission: 'accounts-receivable.view' },
+      { name: 'Documentos Fiscais', href: '/fiscal-documents', icon: FileText, permission: 'fiscal-documents.view' },
+      { name: 'Fluxo de Caixa Projetado', href: '/financial/cash-flow', icon: TrendingUp, permission: 'wallet.view' },
+      { name: 'Resultado por Período (DRE)', href: '/financial/result-by-period', icon: BarChart3, permission: 'wallet.view' },
+      { name: 'CP por Fornecedor', href: '/financial/reports/payable-by-supplier', icon: BarChart3, permission: 'accounts-payable.view' },
+      { name: 'CR por Cliente', href: '/financial/reports/receivable-by-customer', icon: BarChart3, permission: 'accounts-receivable.view' },
+      { name: 'Conciliação Bancária', href: '/financial/bank-reconciliation', icon: RefreshCw, permission: 'bank-reconciliation.view' },
     ],
   },
   {
@@ -100,6 +114,9 @@ const navigationGroups: NavigationGroup[] = [
     icon: Settings,
     items: [
       { name: 'Filiais', href: '/branches', icon: MapPin, permission: 'branches.view' },
+      { name: 'Fornecedores', href: '/suppliers', icon: Building2, permission: 'suppliers.view' },
+      { name: 'Clientes', href: '/customers', icon: UserCircle, permission: 'customers.view' },
+      { name: 'Centros de Custo', href: '/cost-centers', icon: LayoutGrid, permission: 'cost-centers.view' },
       { name: 'Marcas de Veículos', href: '/vehicle-brands', icon: Truck, permission: 'vehicle-brands.view' },
       { name: 'Modelos de Veículos', href: '/vehicle-models', icon: Truck, permission: 'vehicle-models.view' },
       { name: 'Cargos', href: '/roles', icon: ShieldCheck, permission: 'roles.view' },

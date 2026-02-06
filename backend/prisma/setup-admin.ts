@@ -289,6 +289,35 @@ export function validateDefaultCompanyId(): void {
     console.log(`   ✅ Constante salva em: ${constantsPath}`);
 
     // ============================================
+    // 6.1 SALVAR DEFAULT_COMPANY_ID NO FRONTEND
+    // ============================================
+    const frontendConstantsPath = path.join(__dirname, '../../frontend/lib/constants/company.constants.ts');
+    const frontendConstantsContent = `/**
+ * Constante da Empresa Padrão do Sistema
+ * 
+ * Esta constante armazena o ID da empresa única do sistema.
+ * O sistema funciona como single-tenant, mas está preparado
+ * para se tornar SaaS no futuro.
+ * 
+ * IMPORTANTE: Este ID deve corresponder ao DEFAULT_COMPANY_ID
+ * do backend. Mantenha sincronizado.
+ * 
+ * Este arquivo é gerado automaticamente pelo setup-admin.
+ * NÃO edite manualmente.
+ */
+
+export const DEFAULT_COMPANY_ID = '${DEFAULT_COMPANY_ID}';
+`;
+
+    const frontendConstantsDir = path.dirname(frontendConstantsPath);
+    if (!fs.existsSync(frontendConstantsDir)) {
+      fs.mkdirSync(frontendConstantsDir, { recursive: true });
+    }
+
+    fs.writeFileSync(frontendConstantsPath, frontendConstantsContent, 'utf-8');
+    console.log(`   ✅ Constante salva no frontend: ${frontendConstantsPath}`);
+
+    // ============================================
     // 7. CRIAR USUÁRIO ADMIN
     // ============================================
     console.log('\n👤 Criando usuário admin...');

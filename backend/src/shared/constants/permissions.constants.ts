@@ -679,6 +679,86 @@ export const PERMISSIONS: PermissionModule[] = [
   },
 
   // ============================================
+  // PEDIDOS DE COMPRA
+  // ============================================
+  {
+    module: 'purchase-orders',
+    moduleName: 'Pedidos de Compra',
+    permissions: [
+      {
+        name: 'purchase-orders.view',
+        description: 'Visualizar pedidos de compra',
+        module: 'purchase-orders',
+        action: 'view',
+      },
+      {
+        name: 'purchase-orders.create',
+        description: 'Criar pedidos de compra',
+        module: 'purchase-orders',
+        action: 'create',
+      },
+      {
+        name: 'purchase-orders.update',
+        description: 'Editar pedidos de compra',
+        module: 'purchase-orders',
+        action: 'update',
+      },
+      {
+        name: 'purchase-orders.delete',
+        description: 'Excluir pedidos de compra',
+        module: 'purchase-orders',
+        action: 'delete',
+      },
+      {
+        name: 'purchase-orders.receive',
+        description: 'Registrar recebimento de pedido',
+        module: 'purchase-orders',
+        action: 'receive',
+      },
+    ],
+  },
+
+  // ============================================
+  // PEDIDOS DE VENDA
+  // ============================================
+  {
+    module: 'sales-orders',
+    moduleName: 'Pedidos de Venda',
+    permissions: [
+      {
+        name: 'sales-orders.view',
+        description: 'Visualizar pedidos de venda',
+        module: 'sales-orders',
+        action: 'view',
+      },
+      {
+        name: 'sales-orders.create',
+        description: 'Criar pedidos de venda',
+        module: 'sales-orders',
+        action: 'create',
+      },
+      {
+        name: 'sales-orders.update',
+        description: 'Editar pedidos de venda',
+        module: 'sales-orders',
+        action: 'update',
+      },
+      {
+        name: 'sales-orders.delete',
+        description: 'Excluir pedidos de venda',
+        module: 'sales-orders',
+        action: 'delete',
+      },
+      {
+        name: 'sales-orders.invoice',
+        description: 'Faturar pedido (gerar CR e baixa de estoque)',
+        module: 'sales-orders',
+        action: 'invoice',
+      },
+    ],
+  },
+
+  // ============================================
   // CARTEIRA DA EMPRESA
   // ============================================
   {
@@ -702,6 +782,164 @@ export const PERMISSIONS: PermissionModule[] = [
         description: 'Visualizar histórico de ajustes',
         module: 'wallet',
         action: 'view-history',
+      },
+    ],
+  },
+
+  // ============================================
+  // FORNECEDORES
+  // ============================================
+  {
+    module: 'suppliers',
+    moduleName: 'Fornecedores',
+    permissions: [
+      {
+        name: 'suppliers.view',
+        description: 'Visualizar fornecedores',
+        module: 'suppliers',
+        action: 'view',
+      },
+      {
+        name: 'suppliers.create',
+        description: 'Cadastrar fornecedores',
+        module: 'suppliers',
+        action: 'create',
+      },
+      {
+        name: 'suppliers.update',
+        description: 'Editar fornecedores',
+        module: 'suppliers',
+        action: 'update',
+      },
+      {
+        name: 'suppliers.delete',
+        description: 'Excluir fornecedores',
+        module: 'suppliers',
+        action: 'delete',
+      },
+    ],
+  },
+
+  // ============================================
+  // CLIENTES
+  // ============================================
+  {
+    module: 'customers',
+    moduleName: 'Clientes',
+    permissions: [
+      {
+        name: 'customers.view',
+        description: 'Visualizar clientes',
+        module: 'customers',
+        action: 'view',
+      },
+      {
+        name: 'customers.create',
+        description: 'Cadastrar clientes',
+        module: 'customers',
+        action: 'create',
+      },
+      {
+        name: 'customers.update',
+        description: 'Editar clientes',
+        module: 'customers',
+        action: 'update',
+      },
+      {
+        name: 'customers.delete',
+        description: 'Excluir clientes',
+        module: 'customers',
+        action: 'delete',
+      },
+    ],
+  },
+
+  // ============================================
+  // CENTROS DE CUSTO
+  // ============================================
+  {
+    module: 'cost-centers',
+    moduleName: 'Centros de Custo',
+    permissions: [
+      {
+        name: 'cost-centers.view',
+        description: 'Visualizar centros de custo',
+        module: 'cost-centers',
+        action: 'view',
+      },
+      {
+        name: 'cost-centers.create',
+        description: 'Cadastrar centros de custo',
+        module: 'cost-centers',
+        action: 'create',
+      },
+      {
+        name: 'cost-centers.update',
+        description: 'Editar centros de custo',
+        module: 'cost-centers',
+        action: 'update',
+      },
+      {
+        name: 'cost-centers.delete',
+        description: 'Excluir centros de custo',
+        module: 'cost-centers',
+        action: 'delete',
+      },
+    ],
+  },
+
+  // ============================================
+  // DOCUMENTOS FISCAIS (Fase 2 - rastreabilidade)
+  // ============================================
+  {
+    module: 'fiscal-documents',
+    moduleName: 'Documentos Fiscais',
+    permissions: [
+      {
+        name: 'fiscal-documents.view',
+        description: 'Visualizar documentos fiscais',
+        module: 'fiscal-documents',
+        action: 'view',
+      },
+      {
+        name: 'fiscal-documents.create',
+        description: 'Cadastrar documentos fiscais',
+        module: 'fiscal-documents',
+        action: 'create',
+      },
+      {
+        name: 'fiscal-documents.update',
+        description: 'Editar documentos fiscais',
+        module: 'fiscal-documents',
+        action: 'update',
+      },
+      {
+        name: 'fiscal-documents.delete',
+        description: 'Excluir documentos fiscais',
+        module: 'fiscal-documents',
+        action: 'delete',
+      },
+    ],
+  },
+
+  // ============================================
+  // CONCILIAÇÃO BANCÁRIA (Fase 3)
+  // ============================================
+  {
+    module: 'bank-reconciliation',
+    moduleName: 'Conciliação Bancária',
+    permissions: [
+      {
+        name: 'bank-reconciliation.view',
+        description: 'Visualizar extratos e itens de conciliação',
+        module: 'bank-reconciliation',
+        action: 'view',
+      },
+      {
+        name: 'bank-reconciliation.manage',
+        description: 'Criar extrato, lançar itens e conciliar',
+        module: 'bank-reconciliation',
+        action: 'manage',
       },
     ],
   },

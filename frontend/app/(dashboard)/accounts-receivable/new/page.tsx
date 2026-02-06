@@ -11,6 +11,10 @@ import {
   CreateAccountReceivableDto,
 } from '@/lib/api/account-receivable';
 import { branchApi } from '@/lib/api/branch';
+import { customerApi } from '@/lib/api/customer';
+import { costCenterApi } from '@/lib/api/cost-center';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { toSelectOptions } from '@/lib/hooks/use-searchable-select';
 import { DEFAULT_COMPANY_ID } from '@/lib/constants/company.constants';
 import { useEffectiveBranch } from '@/lib/hooks/use-effective-branch';
 import { PageHeader } from '@/components/layout/page-header';
@@ -28,6 +32,8 @@ const accountReceivableSchema = z.object({
   dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
   documentNumber: z.string().optional(),
   notes: z.string().optional(),
+  customerId: z.string().uuid().optional().or(z.literal('')),
+  costCenterId: z.string().uuid().optional().or(z.literal('')),
   branchId: z.string().uuid('Selecione uma filial'),
 });
 
@@ -48,6 +54,8 @@ export default function NewAccountReceivablePage() {
     defaultValues: {
       amount: undefined,
       branchId: effectiveBranchId || '',
+      customerId: '',
+      costCenterId: '',
     },
   });
 
@@ -64,7 +72,21 @@ export default function NewAccountReceivablePage() {
     enabled: false,
   });
 
+  const { data: customersResponse } = useQuery({
+    queryKey: ['customers', effectiveBranchId],
+    queryFn: () => customerApi.getAll(effectiveBranchId ?? undefined, false, 1, 500),
+    enabled: !!effectiveBranchId,
+  });
+
+  const { data: costCentersResponse } = useQuery({
+    queryKey: ['cost-centers', effectiveBranchId],
+    queryFn: () => costCenterApi.getAll(effectiveBranchId ?? undefined, 1, 500),
+    enabled: !!effectiveBranchId,
+  });
+
   const branches = branchesResponse?.data || [];
+  const customers = customersResponse?.data || [];
+  const costCenters = costCentersResponse?.data || [];
 
   const createMutation = useMutation({
     mutationFn: (data: CreateAccountReceivableDto) =>
@@ -87,6 +109,8 @@ export default function NewAccountReceivablePage() {
       amount,
       companyId: DEFAULT_COMPANY_ID,
       branchId: data.branchId,
+      customerId: data.customerId || undefined,
+      costCenterId: data.costCenterId || undefined,
     });
   };
 
@@ -146,6 +170,43 @@ export default function NewAccountReceivablePage() {
               {errors.dueDate && (
                 <p className="text-sm text-destructive mt-1">{errors.dueDate.message}</p>
               )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm text-muted-foreground mb-2">Cliente</Label>
+              <SearchableSelect
+                id="customerId"
+                options={[
+                  { value: '', label: 'Nenhum' },
+                  ...toSelectOptions(
+                    customers.filter((c) => c.active && !c.deletedAt),
+                    (c) => c.id,
+                    (c) => c.name,
+                  ),
+                ]}
+                value={watch('customerId') || ''}
+                onChange={(value) => setValue('customerId', value || '', { shouldValidate: true })}
+                placeholder="Selecione o cliente"
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-muted-foreground mb-2">Centro de custo</Label>
+              <SearchableSelect
+                id="costCenterId"
+                options={[
+                  { value: '', label: 'Nenhum' },
+                  ...toSelectOptions(
+                    costCenters.filter((c) => c.active),
+                    (c) => c.id,
+                    (c) => `${c.code} - ${c.name}`,
+                  ),
+                ]}
+                value={watch('costCenterId') || ''}
+                onChange={(value) => setValue('costCenterId', value || '', { shouldValidate: true })}
+                placeholder="Selecione o centro de custo"
+              />
             </div>
           </div>
 

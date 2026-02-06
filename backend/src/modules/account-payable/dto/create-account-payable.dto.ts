@@ -95,4 +95,22 @@ export class CreateAccountPayableDto {
   @IsUUID('4', { message: 'ID da filial deve ser um UUID válido' })
   @IsNotEmpty({ message: 'ID da filial é obrigatório' })
   branchId: string;
+
+  @ApiProperty({
+    description: 'ID do fornecedor',
+    example: 'uuid',
+    required: false,
+  })
+  @IsUUID('4', { message: 'ID do fornecedor deve ser um UUID válido' })
+  @IsOptional()
+  supplierId?: string;
+
+  @ApiProperty({
+    description: 'ID do centro de custo',
+    example: 'uuid',
+    required: false,
+  })
+  @IsUUID('4', { message: 'ID do centro de custo deve ser um UUID válido' })
+  @IsOptional()
+  costCenterId?: string;
 }

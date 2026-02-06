@@ -11,6 +11,8 @@ import {
   UpdateAccountPayableDto,
 } from '@/lib/api/account-payable';
 import { branchApi } from '@/lib/api/branch';
+import { supplierApi } from '@/lib/api/supplier';
+import { costCenterApi } from '@/lib/api/cost-center';
 import { DEFAULT_COMPANY_ID } from '@/lib/constants/company.constants';
 import { PageHeader } from '@/components/layout/page-header';
 import { toastSuccess } from '@/lib/utils';
@@ -30,6 +32,8 @@ const accountPayableSchema = z.object({
   dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
   documentNumber: z.string().optional(),
   notes: z.string().optional(),
+  supplierId: z.string().uuid().optional().or(z.literal('')),
+  costCenterId: z.string().uuid().optional().or(z.literal('')),
   branchId: z.string().uuid('Selecione uma filial'),
 });
 
@@ -63,7 +67,23 @@ export default function EditAccountPayablePage() {
     queryFn: () => branchApi.getAll(false, 1, 1000),
   });
 
+  const branchIdForLists = accountPayable?.branchId;
+
+  const { data: suppliersResponse } = useQuery({
+    queryKey: ['suppliers', branchIdForLists],
+    queryFn: () => supplierApi.getAll(branchIdForLists ?? undefined, false, 1, 500),
+    enabled: !!branchIdForLists,
+  });
+
+  const { data: costCentersResponse } = useQuery({
+    queryKey: ['cost-centers', branchIdForLists],
+    queryFn: () => costCenterApi.getAll(branchIdForLists ?? undefined, 1, 500),
+    enabled: !!branchIdForLists,
+  });
+
   const branches = branchesResponse?.data || [];
+  const suppliers = suppliersResponse?.data ?? [];
+  const costCenters = costCentersResponse?.data ?? [];
 
   const updateMutation = useMutation({
     mutationFn: (data: UpdateAccountPayableDto) =>
@@ -85,6 +105,8 @@ export default function EditAccountPayablePage() {
       dueDate: new Date(accountPayable.dueDate).toISOString().split('T')[0],
       documentNumber: accountPayable.documentNumber || '',
       notes: accountPayable.notes || '',
+      supplierId: accountPayable.supplierId || '',
+      costCenterId: accountPayable.costCenterId || '',
       branchId: accountPayable.branchId,
     });
   }, [accountPayable, reset]);
@@ -98,6 +120,8 @@ export default function EditAccountPayablePage() {
       ...data,
       amount,
       companyId: DEFAULT_COMPANY_ID,
+      supplierId: data.supplierId || undefined,
+      costCenterId: data.costCenterId || undefined,
     });
   };
 
@@ -202,6 +226,43 @@ export default function EditAccountPayablePage() {
               {errors.dueDate && (
                 <p className="text-sm text-destructive mt-1">{errors.dueDate.message}</p>
               )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm text-muted-foreground mb-2">Fornecedor</Label>
+              <SearchableSelect
+                id="supplierId"
+                options={[
+                  { value: '', label: 'Nenhum' },
+                  ...toSelectOptions(
+                    suppliers.filter((s) => s.active && !s.deletedAt),
+                    (s) => s.id,
+                    (s) => s.name,
+                  ),
+                ]}
+                value={watch('supplierId') || ''}
+                onChange={(value) => setValue('supplierId', value || '', { shouldValidate: true })}
+                placeholder="Selecione o fornecedor"
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-muted-foreground mb-2">Centro de custo</Label>
+              <SearchableSelect
+                id="costCenterId"
+                options={[
+                  { value: '', label: 'Nenhum' },
+                  ...toSelectOptions(
+                    costCenters.filter((c) => c.active),
+                    (c) => c.id,
+                    (c) => `${c.code} - ${c.name}`,
+                  ),
+                ]}
+                value={watch('costCenterId') || ''}
+                onChange={(value) => setValue('costCenterId', value || '', { shouldValidate: true })}
+                placeholder="Selecione o centro de custo"
+              />
             </div>
           </div>
 

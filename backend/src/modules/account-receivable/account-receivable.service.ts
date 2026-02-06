@@ -16,6 +16,10 @@ import {
 } from './dto/account-receivable-summary-response.dto';
 import { AccountReceivableDetailDto } from '../account-payable/dto/financial-accounts-summary-response.dto';
 import { PaginatedResponseDto } from '../../shared/dto/paginated-response.dto';
+import {
+  ReportByCustomerResponseDto,
+  AccountReceivableByCustomerGroupDto,
+} from './dto/report-by-customer-response.dto';
 import { Prisma } from '@prisma/client';
 import { DEFAULT_COMPANY_ID } from '../../shared/constants/company.constants';
 import { validateBranchAccess } from '../../shared/utils/branch-access.util';
@@ -76,6 +80,8 @@ export class AccountReceivableService {
         originId: createDto.originId,
         documentNumber: createDto.documentNumber,
         notes: createDto.notes,
+        customerId: createDto.customerId ?? undefined,
+        costCenterId: createDto.costCenterId ?? undefined,
         companyId: companyId,
         branchId: createDto.branchId,
         status: 'PENDING',
@@ -122,6 +128,7 @@ export class AccountReceivableService {
     const accountsReceivable = await this.prisma.accountReceivable.findMany({
       where,
       orderBy: { dueDate: 'asc' },
+      include: { customer: true, costCenter: true },
     });
 
     return accountsReceivable.map((account) => this.mapToResponse(account));
@@ -135,6 +142,8 @@ export class AccountReceivableService {
       },
       include: {
         financialTransaction: true,
+        customer: true,
+        costCenter: true,
       },
     });
 
@@ -191,6 +200,8 @@ export class AccountReceivableService {
           documentNumber: updateDto.documentNumber,
         }),
         ...(updateDto.notes !== undefined && { notes: updateDto.notes }),
+        ...(updateDto.customerId !== undefined && { customerId: updateDto.customerId ?? null }),
+        ...(updateDto.costCenterId !== undefined && { costCenterId: updateDto.costCenterId ?? null }),
       },
     });
 
@@ -237,6 +248,7 @@ export class AccountReceivableService {
           originId: accountReceivable.originId,
           documentNumber: accountReceivable.documentNumber,
           notes: receiveDto.notes || accountReceivable.notes,
+          costCenterId: accountReceivable.costCenterId ?? undefined,
           companyId: accountReceivable.companyId,
           branchId: accountReceivable.branchId,
           createdBy: userId,
@@ -294,6 +306,71 @@ export class AccountReceivableService {
     });
 
     return this.mapToResponse(updatedAccount);
+  }
+
+  /**
+   * Relatório de contas a receber agrupadas por cliente (período/filial).
+   */
+  async getReportByCustomer(
+    branchId?: string,
+    startDate?: string,
+    endDate?: string,
+    user?: any,
+  ): Promise<ReportByCustomerResponseDto> {
+    const companyId = DEFAULT_COMPANY_ID;
+    let effectiveBranchId = branchId;
+    if (user) {
+      const isAdmin = user.role?.toLowerCase() === 'admin';
+      if (!isAdmin && !branchId) effectiveBranchId = user.branchId;
+      if (effectiveBranchId) {
+        validateBranchAccess(user.branchId, user.role, effectiveBranchId, undefined);
+      }
+    }
+
+    const where: Prisma.AccountReceivableWhereInput = {
+      companyId,
+      deletedAt: null,
+      ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+    };
+    if (startDate || endDate) {
+      where.dueDate = {};
+      if (startDate) where.dueDate.gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.dueDate.lte = end;
+      }
+    }
+
+    const accounts = await this.prisma.accountReceivable.findMany({
+      where,
+      orderBy: [{ customerId: 'asc' }, { dueDate: 'asc' }],
+      include: { customer: true, costCenter: true },
+    });
+
+    const map = new Map<string | null, AccountReceivableResponseDto[]>();
+    for (const acc of accounts) {
+      const key = acc.customerId ?? null;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(this.mapToResponse(acc));
+    }
+
+    const groups: AccountReceivableByCustomerGroupDto[] = [];
+    let totalAmount = 0;
+    for (const [customerId, items] of map) {
+      const total = items.reduce((s, i) => s + i.amount, 0);
+      totalAmount += total;
+      groups.push({
+        customerId,
+        customerName: items[0]?.customerName ?? 'Sem cliente',
+        total,
+        count: items.length,
+        items,
+      });
+    }
+    groups.sort((a, b) => b.total - a.total);
+
+    return { groups, totalAmount };
   }
 
   async remove(id: string, user?: any): Promise<void> {
@@ -477,6 +554,10 @@ export class AccountReceivableService {
       originId: account.originId,
       documentNumber: account.documentNumber,
       notes: account.notes,
+      customerId: account.customerId ?? undefined,
+      customerName: account.customer?.name ?? undefined,
+      costCenterId: account.costCenterId ?? undefined,
+      costCenterName: account.costCenter?.name ?? undefined,
       companyId: account.companyId,
       branchId: account.branchId,
       financialTransactionId: account.financialTransactionId,

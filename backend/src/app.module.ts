@@ -6,6 +6,10 @@ import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CompanyModule } from './modules/company/company.module';
 import { BranchModule } from './modules/branch/branch.module';
+import { SupplierModule } from './modules/supplier/supplier.module';
+import { CustomerModule } from './modules/customer/customer.module';
+import { CostCenterModule } from './modules/cost-center/cost-center.module';
+import { FiscalDocumentModule } from './modules/fiscal-document/fiscal-document.module';
 import { UserModule } from './modules/user/user.module';
 import { ProductModule } from './modules/product/product.module';
 import { EmployeeModule } from './modules/employee/employee.module';
@@ -28,6 +32,10 @@ import { VehicleDocumentModule } from './modules/vehicle-document/vehicle-docume
 import { VehicleMarkingModule } from './modules/vehicle-marking/vehicle-marking.module';
 import { MaintenanceLabelModule } from './modules/maintenance-label/maintenance-label.module';
 import { WalletModule } from './modules/wallet/wallet.module';
+import { FinancialModule } from './modules/financial/financial.module';
+import { BankReconciliationModule } from './modules/bank-reconciliation/bank-reconciliation.module';
+import { PurchaseOrderModule } from './modules/purchase-order/purchase-order.module';
+import { SalesOrderModule } from './modules/sales-order/sales-order.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { ConfigService } from './shared/config/config.service';
 import { BranchFilterInterceptor } from './shared/interceptors/branch-filter.interceptor';
@@ -43,6 +51,10 @@ import { BranchFilterInterceptor } from './shared/interceptors/branch-filter.int
     AuthModule,
     CompanyModule,
     BranchModule,
+    SupplierModule,
+    CustomerModule,
+    CostCenterModule,
+    FiscalDocumentModule,
     UserModule,
     ProductModule,
     EmployeeModule,
@@ -65,6 +77,10 @@ import { BranchFilterInterceptor } from './shared/interceptors/branch-filter.int
     VehicleMarkingModule,
     MaintenanceLabelModule,
     WalletModule,
+    FinancialModule,
+    BankReconciliationModule,
+    PurchaseOrderModule,
+    SalesOrderModule,
     ChatModule,
   ],
   providers: [
