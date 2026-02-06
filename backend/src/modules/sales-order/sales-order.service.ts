@@ -199,11 +199,8 @@ export class SalesOrderService {
     }
 
     const updateData: Prisma.SalesOrderUpdateInput = {};
-    if (dto.customerId !== undefined) {
-      updateData.customer =
-        dto.customerId != null
-          ? { connect: { id: dto.customerId } }
-          : { disconnect: true };
+    if (dto.customerId !== undefined && dto.customerId != null) {
+      updateData.customer = { connect: { id: dto.customerId } };
     }
     if (dto.orderDate !== undefined) {
       updateData.orderDate = dto.orderDate ? new Date(dto.orderDate) : null;

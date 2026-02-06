@@ -201,11 +201,8 @@ export class PurchaseOrderService {
     }
 
     const updateData: Prisma.PurchaseOrderUpdateInput = {};
-    if (dto.supplierId !== undefined) {
-      updateData.supplier =
-        dto.supplierId != null
-          ? { connect: { id: dto.supplierId } }
-          : { disconnect: true };
+    if (dto.supplierId !== undefined && dto.supplierId != null) {
+      updateData.supplier = { connect: { id: dto.supplierId } };
     }
     if (dto.expectedDeliveryDate !== undefined) {
       updateData.expectedDeliveryDate = dto.expectedDeliveryDate

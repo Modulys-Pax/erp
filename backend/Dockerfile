@@ -69,5 +69,5 @@ EXPOSE 3001
 # Usar dumb-init para gerenciamento de processos
 ENTRYPOINT ["dumb-init", "--"]
 
-# Comando de inicialização
-CMD ["node", "dist/main.js"]
+# Rodar migrations e depois iniciar a aplicação (DATABASE_URL deve estar definida)
+CMD ["sh", "-c", "npx prisma migrate deploy && exec node dist/main.js"]

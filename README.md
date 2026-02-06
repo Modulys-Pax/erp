@@ -335,6 +335,29 @@ npx prisma migrate deploy
 
 Recomendação: inclua esse comando no seu processo de deploy (script de deploy, CI/CD ou entrypoint do container) **antes** de iniciar a aplicação, para que novas migrations sejam aplicadas a cada release.
 
+**Com Docker:** o backend já está configurado para rodar `prisma migrate deploy` ao subir o container (ver `backend/Dockerfile`). Basta garantir que `DATABASE_URL` esteja definida no ambiente do container.
+
+### Comandos Docker (build e subir)
+
+Na raiz do projeto, com `.env` (ou variáveis de ambiente) configurado:
+
+```bash
+# Build de todas as imagens
+docker compose build --no-cache
+
+# Subir em background (PostgreSQL, backend, frontend, nginx, certbot)
+docker compose up -d
+```
+
+O backend aplica as migrations automaticamente na inicialização. Para rebuildar só um serviço:
+
+```bash
+docker compose build backend --no-cache
+docker compose up -d backend
+```
+
+Variáveis obrigatórias no `.env` na raiz (para o `docker-compose.yml`): `DB_PASSWORD`, `JWT_SECRET`. Opcionais: `DB_USER`, `DB_NAME`, `CORS_ORIGIN`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL`.
+
 ### Environment Variables (Production)
 
 **Backend:**
