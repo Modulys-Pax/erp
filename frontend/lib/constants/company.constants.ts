@@ -12,4 +12,4 @@
  * NÃO edite manualmente.
  */
 
-export const DEFAULT_COMPANY_ID = '9d8fb179-ede4-4ea5-98d2-6db222ba6f66';
+export const DEFAULT_COMPANY_ID = 'a4771684-cd63-4ecd-8771-545ddb937278';
