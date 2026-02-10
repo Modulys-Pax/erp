@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsUUID, IsArray, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsUUID, IsArray, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateMaintenanceLabelDto {

@@ -72,20 +72,21 @@ export class MaintenanceLabelService {
       throw new NotFoundException('Filial não encontrada');
     }
 
-    // Se productIds não for informado ou estiver vazio, usar todos os itens do veículo
     const allItemIds = (vehicle.replacementItems ?? []).map((r) => r.id);
-    const dtoProductIds = createMaintenanceLabelDto.productIds;
-    const productIds: string[] =
-      dtoProductIds && dtoProductIds.length > 0 ? dtoProductIds : allItemIds;
-
-    if (productIds.length === 0) {
+    if (allItemIds.length === 0) {
       throw new BadRequestException(
         'Este veículo não possui itens de troca por KM configurados. Cadastre-os na edição do veículo.',
       );
     }
 
+    // productIds = itens SELECIONADOS (trocados agora) — ao menos um obrigatório
+    const dtoProductIds = createMaintenanceLabelDto.productIds;
+    const selectedProductIds: string[] =
+      dtoProductIds && dtoProductIds.length > 0 ? dtoProductIds : allItemIds;
+    const selectedSet = new Set(selectedProductIds);
+
     const vehicleItemIds = new Set(allItemIds);
-    const invalidIds = productIds.filter((id) => !vehicleItemIds.has(id));
+    const invalidIds = selectedProductIds.filter((id) => !vehicleItemIds.has(id));
     if (invalidIds.length > 0) {
       throw new BadRequestException(
         'Um ou mais itens não estão configurados para troca por KM neste veículo. Cadastre-os na edição do veículo.',
@@ -93,15 +94,10 @@ export class MaintenanceLabelService {
     }
 
     /**
-     * REGRA: A referência para cálculo é sempre a KM em que o veículo CHEGOU NA EMPRESA (marcação).
+     * REGRA: Para produtos selecionados (trocados agora), usa a KM ATUAL do veículo.
+     * A etiqueta NÃO atualiza a KM do veículo - isso é feito por Marcação ou Troca na Estrada.
      */
-    const lastMarking = await this.prisma.vehicleMarking.findFirst({
-      where: {
-        vehicles: { some: { vehicleId: createMaintenanceLabelDto.vehicleId } },
-        companyId,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const referenceKm = vehicle.currentKm ?? 0;
 
     const label = await this.prisma.$transaction(async (tx) => {
       const newLabel = await tx.maintenanceLabel.create({
@@ -115,22 +111,33 @@ export class MaintenanceLabelService {
         },
       });
 
-      for (const vehicleReplacementItemId of productIds) {
-        const lastChange = await tx.maintenanceLabelReplacementItem.findFirst({
-          where: {
-            vehicleReplacementItemId,
-            maintenanceLabel: { vehicles: { some: { vehicleId: createMaintenanceLabelDto.vehicleId } } },
-          },
-          orderBy: { createdAt: 'desc' },
-        });
-        // Priorizar KM atual do veículo/marcações para etiqueta "antes da troca"
-        const lastChangeKm = lastChange?.lastChangeKm ?? vehicle.currentKm ?? lastMarking?.km ?? 0;
+      // Etiqueta inclui TODOS os itens do veículo
+      for (const vehicleReplacementItemId of allItemIds) {
+        const wasSelected = selectedSet.has(vehicleReplacementItemId);
+
+        let lastChangeKm: number;
+        if (wasSelected) {
+          // Selecionado = trocado agora — atualiza com KM atual do veículo
+          lastChangeKm = referenceKm;
+        } else {
+          // Não selecionado = não trocou — busca a última KM desse produto específico
+          const lastChange = await tx.maintenanceLabelReplacementItem.findFirst({
+            where: {
+              vehicleReplacementItemId,
+              maintenanceLabel: { vehicles: { some: { vehicleId: createMaintenanceLabelDto.vehicleId } } },
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+          // Se nunca foi trocado, usa KM atual do veículo como referência inicial
+          lastChangeKm = lastChange?.lastChangeKm ?? referenceKm;
+        }
 
         await tx.maintenanceLabelReplacementItem.create({
           data: {
             maintenanceLabelId: newLabel.id,
             vehicleReplacementItemId,
             lastChangeKm,
+            updatedInThisLabel: wasSelected,
             createdBy: userId,
           },
         });
@@ -265,7 +272,8 @@ export class MaintenanceLabelService {
         orderBy: { createdAt: 'desc' },
       });
 
-      const lastChangeKm = lastChange?.lastChangeKm ?? lastMarking?.km ?? vehicle.currentKm ?? 0;
+      // Se nunca foi trocado, usa KM atual do veículo como referência inicial
+      const lastChangeKm = lastChange?.lastChangeKm ?? referenceKm;
       const replaceEveryKm = ri.replaceEveryKm;
       const nextChangeKm = lastChangeKm + replaceEveryKm;
 
@@ -409,6 +417,7 @@ export class MaintenanceLabelService {
             maintenanceLabelId: label.id,
             vehicleReplacementItemId: item.vehicleReplacementItemId,
             lastChangeKm: registerProductChangeDto.changeKm,
+            updatedInThisLabel: true,
             createdBy: userId,
           },
         });
@@ -535,6 +544,7 @@ export class MaintenanceLabelService {
         replaceEveryKm: replaceEveryKm != null ? Number(replaceEveryKm) : undefined,
         lastChangeKm,
         nextChangeKm,
+        updatedInThisLabel: lr.updatedInThisLabel ?? true,
       };
     });
 

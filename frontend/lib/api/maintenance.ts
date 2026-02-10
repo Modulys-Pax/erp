@@ -99,7 +99,8 @@ export interface CreateMaintenanceOrderDto {
   /** IDs dos veículos/placas (1 a 4) que compõem o combo nesta manutenção */
   vehicleIds: string[];
   type: 'PREVENTIVE' | 'CORRECTIVE';
-  kmAtEntry?: number;
+  /** Quilometragem na entrada (obrigatório) */
+  kmAtEntry: number;
   description?: string;
   observations?: string;
   companyId: string;

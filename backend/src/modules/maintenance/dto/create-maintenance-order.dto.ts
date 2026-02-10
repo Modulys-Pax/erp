@@ -108,15 +108,15 @@ export class CreateMaintenanceOrderDto {
   @ApiProperty({
     description: 'Quilometragem na entrada',
     example: 50000,
-    required: false,
+    required: true,
   })
   @Transform(({ value }) =>
     value != null && !Number.isNaN(Number(value)) ? Math.round(Number(value)) : value,
   )
   @IsInt({ message: 'KM deve ser um número inteiro' })
   @Min(0, { message: 'KM não pode ser negativo' })
-  @IsOptional()
-  kmAtEntry?: number;
+  @IsNotEmpty({ message: 'Quilometragem na entrada é obrigatória' })
+  kmAtEntry: number;
 
   @ApiProperty({
     description: 'Descrição do problema/serviço',

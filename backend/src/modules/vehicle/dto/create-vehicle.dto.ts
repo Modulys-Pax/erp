@@ -110,12 +110,12 @@ export class CreateVehicleDto {
   @ApiProperty({
     description: 'Quilometragem atual do veículo',
     example: 50000,
-    required: false,
+    required: true,
   })
   @IsInt({ message: 'Quilometragem deve ser um número inteiro' })
   @Min(0, { message: 'Quilometragem não pode ser negativa' })
-  @IsOptional()
-  currentKm?: number;
+  @IsNotEmpty({ message: 'Quilometragem atual é obrigatória' })
+  currentKm: number;
 
   @ApiProperty({
     description: 'Status do veículo',

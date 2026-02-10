@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { vehicleMarkingApi, VehicleMarking, CreateVehicleMarkingDto } from '@/lib/api/vehicle-marking';
+import { vehicleApi } from '@/lib/api/vehicle';
 import { useEffectiveBranch } from '@/lib/hooks/use-effective-branch';
 import { DEFAULT_COMPANY_ID } from '@/lib/constants/company.constants';
 import { PageHeader } from '@/components/layout/page-header';
@@ -305,22 +306,10 @@ export default function MarkingsPage() {
                 placeholder="Ex: 50000"
                 className="rounded-xl"
                 disabled={createMutation.isPending}
+                required
               />
             </div>
           </div>
-
-          {selectedVehicleId && selectedVehicle && (
-            <div className="space-y-2 rounded-xl border border-border p-4 bg-muted/20">
-              <h3 className="text-sm font-medium text-foreground">Composição do veículo</h3>
-              <p className="text-xs text-muted-foreground">
-                Altere se o veículo está com outra composição de placas. Ao salvar, o cadastro será atualizado.
-              </p>
-              <VehicleCompositionEditor
-                value={compositionPlates}
-                onChange={setCompositionPlates}
-              />
-            </div>
-          )}
 
           <div className="flex gap-2">
             <Button

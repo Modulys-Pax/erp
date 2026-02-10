@@ -62,7 +62,8 @@ export interface CreateVehicleDto {
   color?: string;
   chassis?: string;
   renavam?: string;
-  currentKm?: number;
+  /** Quilometragem atual (obrigatório) */
+  currentKm: number;
   status?: 'ACTIVE' | 'MAINTENANCE' | 'STOPPED';
   companyId: string;
   branchId: string;

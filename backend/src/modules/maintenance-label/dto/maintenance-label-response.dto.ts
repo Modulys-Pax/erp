@@ -18,6 +18,12 @@ export class MaintenanceLabelProductResponseDto {
 
   @ApiProperty({ example: 60000 })
   nextChangeKm: number;
+
+  @ApiProperty({
+    description: 'Indica se o produto foi trocado nesta etiqueta (true) ou apenas exibido com valor atual (false)',
+    example: true,
+  })
+  updatedInThisLabel: boolean;
 }
 
 export class MaintenanceLabelResponseDto {

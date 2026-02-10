@@ -65,6 +65,7 @@ describe('VehicleController', () => {
         year: 2023,
         branchId: 'branch-1',
         companyId: 'company-1',
+        currentKm: 50000,
       };
 
       mockVehicleService.create.mockResolvedValue(mockVehicle);

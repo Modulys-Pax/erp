@@ -9,6 +9,7 @@ import {
   RegisterProductChangeDto,
 } from '@/lib/api/maintenance-label';
 import { maintenanceApi } from '@/lib/api/maintenance';
+import { vehicleApi } from '@/lib/api/vehicle';
 import { useEffectiveBranch } from '@/lib/hooks/use-effective-branch';
 import { DEFAULT_COMPANY_ID } from '@/lib/constants/company.constants';
 import { PageHeader } from '@/components/layout/page-header';
@@ -60,7 +61,7 @@ export default function NewProductChangePage() {
     name: 'items',
   });
 
-  const selectedVehicleId = watch('vehicleId');
+  const selectedVehicleIds = watch('vehicleIds') ?? [];
 
   const { data: vehiclesResponse } = useQuery({
     queryKey: ['vehicles', effectiveBranchId],
@@ -271,7 +272,8 @@ export default function NewProductChangePage() {
               placeholder="Ex: 60000"
               className="rounded-xl"
               disabled={registerMutation.isPending}
-              {...register('changeKm')}
+              required
+              {...register('changeKm', { required: true })}
             />
             <p className="text-xs text-muted-foreground mt-1">
               KM em que os itens foram trocados na estrada
@@ -407,7 +409,7 @@ export default function NewProductChangePage() {
               );
               })}
             </div>
-            {replacementItems.length === 0 && selectedVehicleId && (
+            {replacementItems.length === 0 && selectedVehicleIds.length > 0 && (
               <p className="text-sm text-muted-foreground mt-1">
                 Este veículo não tem itens de troca por KM configurados. Configure na
                 edição do veículo.
@@ -436,7 +438,7 @@ export default function NewProductChangePage() {
               disabled={
                 registerMutation.isPending ||
                 !effectiveBranchId ||
-                !watch('vehicleId') ||
+                selectedVehicleIds.length === 0 ||
                 !watch('changeKm')?.trim() ||
                 validItemsLength(watch('items')) === 0
               }

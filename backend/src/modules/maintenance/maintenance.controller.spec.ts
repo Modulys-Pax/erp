@@ -49,6 +49,7 @@ describe('MaintenanceController', () => {
         companyId: 'company-1',
         description: 'Troca de óleo',
         type: 'CORRECTIVE' as const,
+        kmAtEntry: 50000,
       };
       mockMaintenanceService.create.mockResolvedValue(mockOrder);
 

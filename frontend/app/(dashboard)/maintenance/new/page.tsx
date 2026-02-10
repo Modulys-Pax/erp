@@ -37,12 +37,15 @@ const maintenanceSchema = z.object({
   // String no input evita alteração por ponto flutuante (ex: 20000 → 19995)
   kmAtEntry: z
     .union([z.string(), z.number()])
-    .optional()
-    .or(z.literal(''))
+    .refine((v) => v !== '' && v !== undefined && v !== null, {
+      message: 'Informe a quilometragem na entrada',
+    })
     .transform((v) => {
-      if (v === '' || v === undefined || v === null) return undefined;
       const num = typeof v === 'number' ? v : parseInt(String(v).replace(/\D/g, ''), 10);
       return Number.isNaN(num) || num < 0 ? undefined : Math.round(num);
+    })
+    .refine((v) => v !== undefined && v >= 0, {
+      message: 'Informe uma quilometragem válida',
     }),
   description: z.string().optional(),
   observations: z.string().optional(),
@@ -536,7 +539,7 @@ export default function NewMaintenancePage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="kmAtEntry" className="text-sm text-muted-foreground mb-2">
-                  KM na Entrada
+                  KM na Entrada *
                 </Label>
                 <Input
                   id="kmAtEntry"
@@ -544,9 +547,13 @@ export default function NewMaintenancePage() {
                   inputMode="numeric"
                   min={0}
                   placeholder="Ex: 10000"
-                  {...register('kmAtEntry')}
+                  required
+                  {...register('kmAtEntry', { required: true })}
                   className="rounded-xl"
                 />
+                {errors.kmAtEntry && (
+                  <p className="text-sm text-destructive mt-1">{errors.kmAtEntry.message}</p>
+                )}
               </div>
             </div>
 

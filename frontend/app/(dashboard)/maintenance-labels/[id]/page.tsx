@@ -140,9 +140,14 @@ export default function MaintenanceLabelViewPage() {
               {label.products.map((product, index) => (
                 <tr
                   key={product.id}
-                  className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} text-black`}
+                  className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} text-black ${product.updatedInThisLabel ? 'product-updated-in-label' : ''}`}
                 >
                   <td className="border border-black p-2 text-black">
+                    {product.updatedInThisLabel && (
+                      <span className="inline-block bg-green-600 text-white text-xs font-bold px-1.5 py-0.5 rounded mr-2">
+                        TROCADO
+                      </span>
+                    )}
                     {product.productName}
                     {product.replaceEveryKm && (
                       <span className="text-xs ml-2 text-gray-700">
@@ -198,6 +203,22 @@ export default function MaintenanceLabelViewPage() {
           body .maintenance-label-print-area .border-border {
             border-color: #000 !important;
           }
+          /* Produtos trocados nesta etiqueta - fundo verde claro + borda esquerda */
+          body .maintenance-label-print-area .product-updated-in-label,
+          body .maintenance-label-print-area .product-updated-in-label td {
+            background-color: #bbf7d0 !important;
+          }
+          body .maintenance-label-print-area .product-updated-in-label td:first-child {
+            border-left: 4px solid #16a34a !important;
+          }
+        }
+        /* Tela: destaque para produtos trocados */
+        .product-updated-in-label,
+        .product-updated-in-label td {
+          background-color: #bbf7d0 !important;
+        }
+        .product-updated-in-label td:first-child {
+          border-left: 4px solid #16a34a !important;
         }
       `}</style>
     </>

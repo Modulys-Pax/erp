@@ -1330,6 +1330,7 @@ model MaintenanceLabelReplacementItem {
   vehicleReplacementItemId String
   vehicleReplacementItem VehicleReplacementItem @relation(fields: [vehicleReplacementItemId], references: [id], onDelete: Cascade)
   lastChangeKm           Int
+  updatedInThisLabel     Boolean                @default(true) // true = trocado nesta etiqueta, false = apenas exibido
   createdAt              DateTime               @default(now())
   createdBy              String?
 

@@ -8,6 +8,8 @@ export interface MaintenanceLabelProduct {
   replaceEveryKm?: number;
   lastChangeKm: number;
   nextChangeKm: number;
+  /** true = trocado nesta etiqueta, false = apenas exibido com valor atual */
+  updatedInThisLabel?: boolean;
 }
 
 export interface MaintenanceLabel {
@@ -23,7 +25,7 @@ export interface MaintenanceLabel {
 
 export interface CreateMaintenanceLabelDto {
   vehicleId: string;
-  /** Se omitido ou vazio, o backend usa todos os itens de troca por KM do veículo. */
+  /** IDs dos itens de troca que foram trocados. A etiqueta mostra todos, mas só estes têm KM atualizada. */
   productIds?: string[];
   companyId: string;
   branchId: string;

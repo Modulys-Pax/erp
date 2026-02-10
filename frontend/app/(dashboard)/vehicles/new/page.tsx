@@ -38,7 +38,10 @@ const vehicleSchema = z.object({
   color: z.string().optional(),
   chassis: z.string().optional(),
   renavam: z.string().optional(),
-  currentKm: z.coerce.number().int().min(0).optional().or(z.nan()),
+  currentKm: z.coerce
+    .number({ invalid_type_error: 'Informe a quilometragem atual' })
+    .int('Quilometragem deve ser um número inteiro')
+    .min(0, 'Quilometragem não pode ser negativa'),
   status: z.enum(['ACTIVE', 'MAINTENANCE', 'STOPPED']).optional(),
   branchId: z.string().uuid('Selecione uma filial').optional(),
   active: z.boolean().default(true),
@@ -137,7 +140,7 @@ export default function NewVehiclePage() {
       color: data.color || undefined,
       chassis: data.chassis || undefined,
       renavam: data.renavam || undefined,
-      currentKm: isNaN(data.currentKm as number) ? undefined : data.currentKm,
+      currentKm: data.currentKm,
       status: data.status || 'ACTIVE',
       branchId: effectiveBranchId,
       active: data.active,
@@ -330,14 +333,20 @@ export default function NewVehiclePage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="currentKm" className="text-sm text-muted-foreground mb-2">
-                Quilometragem Atual
+                Quilometragem Atual *
               </Label>
               <Input
                 id="currentKm"
                 type="number"
-                {...register('currentKm', { valueAsNumber: true })}
+                min={0}
+                placeholder="Ex: 50000"
+                required
+                {...register('currentKm', { valueAsNumber: true, required: true })}
                 className="rounded-xl"
               />
+              {errors.currentKm && (
+                <p className="text-sm text-destructive mt-1">{errors.currentKm.message}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="status" className="text-sm text-muted-foreground mb-2">
