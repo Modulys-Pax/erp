@@ -52,6 +52,7 @@ import {
   Gauge,
   Shield,
   AlertTriangle,
+  Download,
 } from 'lucide-react';
 
 export default function MaintenanceDetailPage() {
@@ -231,9 +232,20 @@ export default function MaintenanceDetailPage() {
         title={order.orderNumber}
         subtitle={isRoadsideChange ? 'Troca na estrada' : 'Ordem de manutenção'}
         actions={
-          <Link href="/maintenance">
-            <Button variant="outline">Voltar</Button>
-          </Link>
+          <div className="flex items-center gap-2 no-print">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.print()}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Exportar / Imprimir
+            </Button>
+            <Link href="/maintenance">
+              <Button variant="outline">Voltar</Button>
+            </Link>
+          </div>
         }
       />
 
@@ -573,6 +585,174 @@ export default function MaintenanceDetailPage() {
           </div>
         </SectionCard>
       )}
+
+      {/* Área de impressão/exportação (visível apenas ao imprimir) */}
+      <div className="maintenance-order-print-area hidden print:block bg-white text-black">
+        <div className="max-w-3xl mx-auto p-8">
+          {/* Cabeçalho */}
+          <div className="border-b-2 border-slate-800 pb-4 mb-6">
+            <p className="text-xs uppercase tracking-widest text-slate-500 mb-1">Ordem de Serviço</p>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{order.orderNumber}</h1>
+            <div className="flex gap-4 mt-2">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">
+                {MAINTENANCE_STATUS_LABELS[order.status]}
+              </span>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">
+                {MAINTENANCE_TYPE_LABELS[order.type]}
+              </span>
+            </div>
+          </div>
+
+          {/* Dados principais em grid */}
+          <div className="grid grid-cols-2 gap-x-12 gap-y-3 text-sm mb-6 p-4 rounded-lg bg-slate-50 border border-slate-200">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Veículo</p>
+              <p className="font-semibold text-slate-900">{order.vehiclePlate}</p>
+            </div>
+            {order.kmAtEntry != null && (
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">KM na entrada</p>
+                <p className="font-semibold text-slate-900">{order.kmAtEntry.toLocaleString('pt-BR')} km</p>
+              </div>
+            )}
+            {order.serviceDate && (
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Data do serviço</p>
+                <p className="font-semibold text-slate-900">{formatDate(order.serviceDate)}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Custo total</p>
+              <p className="font-semibold text-slate-900">{formatCurrency(order.totalCost || 0)}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Tempo total</p>
+              <p className="font-semibold text-slate-900">{formatTime(order.totalTimeMinutes)}</p>
+            </div>
+          </div>
+
+          {(order.description || order.observations) && (
+            <div className="mb-6 space-y-2">
+              {order.description && (
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-0.5">Descrição</p>
+                  <p className="text-sm text-slate-800">{order.description}</p>
+                </div>
+              )}
+              {order.observations && (
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-0.5">Observações</p>
+                  <p className="text-sm text-slate-800">{order.observations}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {order.workers && order.workers.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">Funcionários</h2>
+              <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
+                <thead>
+                  <tr className="bg-slate-100">
+                    <th className="text-left py-2 px-3 font-semibold text-slate-700">Nome</th>
+                    <th className="text-left py-2 px-3 font-semibold text-slate-700 w-28">Função</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {order.workers.map((w) => (
+                    <tr key={w.id} className="border-t border-slate-200">
+                      <td className="py-2 px-3 text-slate-900">{w.employeeName}</td>
+                      <td className="py-2 px-3 text-slate-600">{w.isResponsible ? 'Responsável' : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {order.services && order.services.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">Serviços</h2>
+              <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
+                <thead>
+                  <tr className="bg-slate-100">
+                    <th className="text-left py-2 px-3 font-semibold text-slate-700">Descrição</th>
+                    <th className="text-right py-2 px-3 font-semibold text-slate-700 w-24">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {order.services.map((s) => (
+                    <tr key={s.id} className="border-t border-slate-200">
+                      <td className="py-2 px-3 text-slate-900">{s.description}</td>
+                      <td className="py-2 px-3 text-right text-slate-900 font-medium">
+                        {s.cost != null && s.cost > 0 ? formatCurrency(s.cost) : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {order.materials && order.materials.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">Materiais</h2>
+              <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
+                <thead>
+                  <tr className="bg-slate-100">
+                    <th className="text-left py-2 px-3 font-semibold text-slate-700">Produto</th>
+                    <th className="text-center py-2 px-3 font-semibold text-slate-700 w-20">Qtd</th>
+                    <th className="text-right py-2 px-3 font-semibold text-slate-700 w-24">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {order.materials.map((m) => (
+                    <tr key={m.id} className="border-t border-slate-200">
+                      <td className="py-2 px-3 text-slate-900">{m.productName}</td>
+                      <td className="py-2 px-3 text-center text-slate-700">
+                        {m.quantity} {m.productUnit}
+                      </td>
+                      <td className="py-2 px-3 text-right text-slate-900 font-medium">
+                        {m.totalCost != null ? formatCurrency(Number(m.totalCost)) : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Rodapé */}
+          <div className="pt-6 mt-6 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500">
+            <span>Documento gerado em {formatDateTime(new Date().toISOString())}</span>
+            <span>Ordem de Serviço · {order.orderNumber}</span>
+          </div>
+        </div>
+      </div>
+
+      <style jsx global>{`
+        @media print {
+          body { background: white !important; }
+          .no-print { display: none !important; }
+          body * { visibility: hidden; }
+          body .maintenance-order-print-area,
+          body .maintenance-order-print-area * { visibility: visible; }
+          body .maintenance-order-print-area {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            border: none !important;
+          }
+          .maintenance-order-print-area table { border-collapse: collapse; }
+          .maintenance-order-print-area th,
+          .maintenance-order-print-area td { border: 1px solid #e2e8f0; }
+        }
+      `}</style>
     </div>
   );
 }

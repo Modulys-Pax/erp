@@ -20,6 +20,11 @@ import { Label } from '@/components/ui/label';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { toSelectOptions } from '@/lib/hooks/use-searchable-select';
+import {
+  INSALUBRITY_OPTIONS,
+  RISK_ADDITION_LABELS,
+  type InsalubrityDegree,
+} from '@/lib/constants/risk-addition.constants';
 
 const employeeSchema = z
   .object({
@@ -37,6 +42,8 @@ const employeeSchema = z
       .or(z.nan()),
     branchId: z.string().uuid('Selecione uma filial'),
     active: z.boolean().default(true),
+    riskAdditionType: z.enum(['INSALUBRIDADE', 'PERICULOSIDADE']).optional().or(z.literal('')),
+    insalubrityDegree: z.enum(['MINIMO', 'MEDIO', 'MAXIMO']).optional().or(z.literal('')),
     hasSystemAccess: z.boolean().default(false),
     systemEmail: z.string().email('Email de acesso inválido').optional().or(z.literal('')),
     password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres').optional().or(z.literal('')),
@@ -69,6 +76,13 @@ const employeeSchema = z
         });
       }
     }
+    if (data.riskAdditionType === 'INSALUBRIDADE' && !data.insalubrityDegree) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Selecione o grau de insalubridade',
+        path: ['insalubrityDegree'],
+      });
+    }
   });
 
 type EmployeeFormData = z.infer<typeof employeeSchema>;
@@ -88,6 +102,8 @@ export default function NewEmployeePage() {
     defaultValues: {
       active: true,
       branchId: '',
+      riskAdditionType: '',
+      insalubrityDegree: '',
       hasSystemAccess: false,
     },
   });
@@ -130,6 +146,8 @@ export default function NewEmployeePage() {
         companyId: DEFAULT_COMPANY_ID,
         branchId: data.branchId,
         active: data.active,
+        riskAdditionType: data.riskAdditionType || undefined,
+        insalubrityDegree: data.riskAdditionType === 'INSALUBRIDADE' ? (data.insalubrityDegree as 'MINIMO' | 'MEDIO' | 'MAXIMO') : undefined,
       };
 
       // Criar funcionário
@@ -281,6 +299,77 @@ export default function NewEmployeePage() {
                 {errors.monthlySalary.message}
               </p>
             )}
+          </div>
+
+          <div className="border-t pt-4 mt-4 space-y-4">
+            <Label className="text-sm text-muted-foreground mb-2 block">
+              Adicional de risco (insalubridade ou periculosidade)
+            </Label>
+            <p className="text-xs text-muted-foreground mb-3">
+              Por lei (CLT), não é permitido acumular os dois; escolha apenas um.
+            </p>
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="riskAdditionType"
+                  checked={(watch('riskAdditionType') || '') === ''}
+                  onChange={() => {
+                    setValue('riskAdditionType', '', { shouldValidate: true });
+                    setValue('insalubrityDegree', '', { shouldValidate: true });
+                  }}
+                  className="rounded border-border"
+                />
+                <span className="text-sm">Nenhum</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="riskAdditionType"
+                  checked={watch('riskAdditionType') === 'PERICULOSIDADE'}
+                  onChange={() => {
+                    setValue('riskAdditionType', 'PERICULOSIDADE', { shouldValidate: true });
+                    setValue('insalubrityDegree', '', { shouldValidate: true });
+                  }}
+                  className="rounded border-border"
+                />
+                <span className="text-sm">{RISK_ADDITION_LABELS.PERICULOSIDADE}</span>
+              </label>
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="riskAdditionType"
+                    checked={watch('riskAdditionType') === 'INSALUBRIDADE'}
+                    onChange={() => setValue('riskAdditionType', 'INSALUBRIDADE', { shouldValidate: true })}
+                    className="rounded border-border"
+                  />
+                  <span className="text-sm">{RISK_ADDITION_LABELS.INSALUBRIDADE}</span>
+                </label>
+                {watch('riskAdditionType') === 'INSALUBRIDADE' && (
+                  <div className="ml-6 mt-2 space-y-2">
+                    {(Object.entries(INSALUBRITY_OPTIONS) as [InsalubrityDegree, typeof INSALUBRITY_OPTIONS[InsalubrityDegree]][]).map(([degree, opt]) => (
+                      <label key={degree} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="insalubrityDegree"
+                          checked={watch('insalubrityDegree') === degree}
+                          onChange={() => setValue('insalubrityDegree', degree, { shouldValidate: true })}
+                          className="rounded border-border"
+                        />
+                        <span className="text-sm">
+                          {opt.label} — R$ {opt.valueMonthly.toFixed(2)}/mês
+                        </span>
+                        <span className="text-xs text-muted-foreground">({opt.example})</span>
+                      </label>
+                    ))}
+                    {errors.insalubrityDegree && (
+                      <p className="text-sm text-destructive mt-1">{errors.insalubrityDegree.message}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           <div>

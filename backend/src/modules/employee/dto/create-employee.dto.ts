@@ -8,9 +8,12 @@ import {
   IsDateString,
   IsNumber,
   Min,
+  IsIn,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { RISK_ADDITION_TYPES, INSALUBRITY_DEGREES } from '../../../shared/constants/risk-addition.constants';
 
 export class CreateEmployeeDto {
   @ApiProperty({ description: 'Nome do funcionário', example: 'João Silva' })
@@ -109,4 +112,23 @@ export class CreateEmployeeDto {
   @IsBoolean({ message: 'Ativo deve ser um booleano' })
   @IsOptional()
   active?: boolean;
+
+  @ApiProperty({
+    description: 'Tipo de adicional de risco (apenas um: insalubridade OU periculosidade, não acumulam)',
+    enum: RISK_ADDITION_TYPES,
+    required: false,
+  })
+  @IsIn(RISK_ADDITION_TYPES, { message: 'Tipo de adicional deve ser INSALUBRIDADE ou PERICULOSIDADE' })
+  @IsOptional()
+  riskAdditionType?: 'INSALUBRIDADE' | 'PERICULOSIDADE';
+
+  @ApiProperty({
+    description: 'Grau de insalubridade (obrigatório quando riskAdditionType = INSALUBRIDADE)',
+    enum: INSALUBRITY_DEGREES,
+    required: false,
+  })
+  @ValidateIf((o) => o.riskAdditionType === 'INSALUBRIDADE')
+  @IsIn(INSALUBRITY_DEGREES, { message: 'Grau de insalubridade deve ser MINIMO, MEDIO ou MAXIMO' })
+  @IsNotEmpty({ message: 'Grau de insalubridade é obrigatório quando o tipo é Insalubridade' })
+  insalubrityDegree?: 'MINIMO' | 'MEDIO' | 'MAXIMO';
 }

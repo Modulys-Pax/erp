@@ -398,7 +398,11 @@ export default function PayrollPage() {
                     <div>
                       <span className="font-medium text-foreground">{account.description}</span>
                       {account.notes && (
-                        <p className="text-xs text-muted-foreground">{account.notes}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {account.riskAdditionLabel
+                            ? account.notes.replace(/\bAdicional\b/g, account.riskAdditionLabel)
+                            : account.notes}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -539,9 +543,12 @@ export default function PayrollPage() {
                                   <p className="font-medium text-sm">{employee.employeeName}</p>
                                   <p className="text-xs text-muted-foreground">
                                     Salário: {formatCurrency(employee.baseSalary)}
+                                    {(employee.riskAdditionAmount ?? 0) > 0 && (
+                                      <span className="ml-1">+ {employee.riskAdditionLabel || 'Adicional'}: {formatCurrency(employee.riskAdditionAmount!)}</span>
+                                    )}
                                     {employee.benefits.length > 0 && (
                                       <span className="ml-1 text-green-600">
-                                        + {employee.benefits.map((b) => `${b.benefitName} (${formatCurrency(b.value)})`).join(', ')}
+                                        + {employee.benefits.map((b) => `${b.benefitName} (${formatCurrency(b.amount)})`).join(', ')}
                                       </span>
                                     )}
                                   </p>

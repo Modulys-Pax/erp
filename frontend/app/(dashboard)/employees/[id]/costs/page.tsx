@@ -88,6 +88,13 @@ export default function EmployeeDetailCostsPage() {
           value={formatCurrency(costsData.monthlySalary ?? 0)}
           icon={DollarSign}
         />
+        {(costsData.riskAdditionAmount ?? 0) > 0 && (
+          <StatCard
+            title={costsData.riskAdditionLabel || 'Insalubridade / Periculosidade'}
+            value={formatCurrency(costsData.riskAdditionAmount ?? 0)}
+            icon={DollarSign}
+          />
+        )}
         <StatCard
           title="Benefícios Mensais"
           value={formatCurrency(costsData.totalBenefits ?? 0)}
@@ -246,6 +253,14 @@ export default function EmployeeDetailCostsPage() {
               {formatCurrency(costsData.monthlySalary ?? 0)}
             </span>
           </div>
+          {(costsData.riskAdditionAmount ?? 0) > 0 && (
+            <div className="flex justify-between items-center py-2 border-b border-border">
+              <span className="text-muted-foreground">{costsData.riskAdditionLabel || 'Insalubridade / Periculosidade'}:</span>
+              <span className="font-medium text-foreground">
+                {formatCurrency(costsData.riskAdditionAmount ?? 0)}
+              </span>
+            </div>
+          )}
           {costsData.employeeINSS !== undefined && costsData.employeeINSSRate !== undefined && (
             <div className="flex justify-between items-center py-2 border-b border-border">
               <span className="text-muted-foreground">

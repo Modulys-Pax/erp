@@ -431,24 +431,28 @@ model Product {
 }
 
 model Employee {
-  id            String    @id @default(uuid())
-  name          String
-  cpf           String?
-  email         String?
-  phone         String?
-  position      String? // cargo
-  department    String? // departamento
-  hireDate      DateTime?
-  monthlySalary Decimal?  @default(0) // Salário mensal base do funcionário
-  companyId     String
-  branchId      String
-  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  branch        Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  active        Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  createdBy     String?
-  deletedAt     DateTime?
+  id                String    @id @default(uuid())
+  name              String
+  cpf               String?
+  email             String?
+  phone             String?
+  position          String? // cargo
+  department        String? // departamento
+  hireDate          DateTime?
+  monthlySalary     Decimal?  @default(0) // Salário mensal base do funcionário
+  /// Tipo de adicional de risco: apenas um permitido (CLT - não acumula insalubridade e periculosidade)
+  riskAdditionType  String?   // INSALUBRIDADE | PERICULOSIDADE
+  /// Grau de insalubridade (obrigatório quando riskAdditionType = INSALUBRIDADE): MINIMO 10% | MEDIO 20% | MAXIMO 40% sobre SM
+  insalubrityDegree String?   // MINIMO | MEDIO | MAXIMO
+  companyId         String
+  branchId          String
+  company           Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch            Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  active            Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  createdBy         String?
+  deletedAt         DateTime?
 
   user User?
 

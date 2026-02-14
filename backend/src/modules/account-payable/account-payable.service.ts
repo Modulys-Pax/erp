@@ -34,6 +34,7 @@ import {
 import { PaginatedResponseDto } from '../../shared/dto/paginated-response.dto';
 import { Prisma } from '@prisma/client';
 import { DEFAULT_COMPANY_ID } from '../../shared/constants/company.constants';
+import { calculateRiskAdditionAmount, getRiskAdditionDisplayName } from '../../shared/constants/risk-addition.constants';
 import { validateBranchAccess } from '../../shared/utils/branch-access.util';
 import { WalletService } from '../wallet/wallet.service';
 
@@ -143,7 +144,29 @@ export class AccountPayableService {
       include: { supplier: true, costCenter: true },
     });
 
-    return accountsPayable.map((account) => this.mapToResponse(account));
+    const hrOriginIds = accountsPayable
+      .filter((a) => a.originType === 'HR' && a.originId)
+      .map((a) => a.originId as string);
+    const employeeLabelMap = new Map<string, string>();
+    if (hrOriginIds.length > 0) {
+      const employees = await this.prisma.employee.findMany({
+        where: { id: { in: hrOriginIds }, deletedAt: null },
+        select: { id: true, riskAdditionType: true, insalubrityDegree: true },
+      });
+      for (const emp of employees) {
+        const label = getRiskAdditionDisplayName(emp.riskAdditionType, emp.insalubrityDegree);
+        if (label) employeeLabelMap.set(emp.id, label);
+      }
+    }
+
+    return accountsPayable.map((account) => {
+      const dto = this.mapToResponse(account);
+      if (account.originType === 'HR' && account.originId) {
+        const label = employeeLabelMap.get(account.originId);
+        if (label) dto.riskAdditionLabel = label;
+      }
+      return dto;
+    });
   }
 
   async findOne(id: string, user?: any): Promise<AccountPayableResponseDto> {
@@ -929,6 +952,12 @@ export class AccountPayableService {
 
     for (const employee of employees) {
       const monthlySalary = employee.monthlySalary ? Number(employee.monthlySalary) : 0;
+      const riskAdditionAmount = calculateRiskAdditionAmount(
+        employee.riskAdditionType,
+        employee.insalubrityDegree,
+        monthlySalary,
+      );
+      const riskAdditionLabel = getRiskAdditionDisplayName(employee.riskAdditionType, employee.insalubrityDegree);
 
       // Verificar se já existe conta a pagar
       const existing = existingMap.get(employee.id);
@@ -938,6 +967,8 @@ export class AccountPayableService {
           employeeId: employee.id,
           employeeName: employee.name,
           baseSalary: monthlySalary,
+          riskAdditionAmount: riskAdditionAmount > 0 ? riskAdditionAmount : undefined,
+          riskAdditionLabel: riskAdditionLabel || undefined,
           totalBenefits: 0,
           totalAmount: Number(existing.amount),
           benefits: [],
@@ -1000,17 +1031,23 @@ export class AccountPayableService {
         });
       }
 
-      const employeeTotal = monthlySalary + totalBenefits;
+      const employeeTotal = monthlySalary + riskAdditionAmount + totalBenefits;
       totalAmount += employeeTotal;
 
       // Criar descrição detalhada
       let description = `Folha de Pagamento - ${employee.name} - ${monthName}/${processDto.referenceYear}`;
+      const salaryPart = riskAdditionAmount > 0 && riskAdditionLabel
+        ? `Salário: R$ ${monthlySalary.toFixed(2)} + ${riskAdditionLabel}: R$ ${riskAdditionAmount.toFixed(2)}`
+        : `Salário: R$ ${monthlySalary.toFixed(2)}`;
       if (benefitDetails.length > 0) {
         const benefitsSummary = benefitDetails
           .map((b) => `${b.benefitName}: R$ ${b.amount.toFixed(2)}`)
           .join(', ');
-        description += ` (Salário: R$ ${monthlySalary.toFixed(2)} + Benefícios: ${benefitsSummary})`;
+        description += ` (${salaryPart} + Benefícios: ${benefitsSummary})`;
       }
+
+      const notesParts = [salaryPart];
+      if (totalBenefits > 0) notesParts.push(`Benefícios: R$ ${totalBenefits.toFixed(2)}`);
 
       // Criar conta a pagar
       const accountPayable = await this.prisma.accountPayable.create({
@@ -1022,7 +1059,7 @@ export class AccountPayableService {
           originType: 'HR',
           originId: employee.id,
           documentNumber: `FOLHA-${processDto.referenceMonth.toString().padStart(2, '0')}/${processDto.referenceYear}-${employee.id}`,
-          notes: `Salário: R$ ${monthlySalary.toFixed(2)}${totalBenefits > 0 ? ` | Benefícios: R$ ${totalBenefits.toFixed(2)}` : ''}`,
+          notes: notesParts.join(' | '),
           companyId,
           branchId: processDto.branchId,
           createdBy: userId,
@@ -1034,6 +1071,8 @@ export class AccountPayableService {
         employeeId: employee.id,
         employeeName: employee.name,
         baseSalary: monthlySalary,
+        riskAdditionAmount: riskAdditionAmount > 0 ? riskAdditionAmount : undefined,
+        riskAdditionLabel: riskAdditionLabel || undefined,
         totalBenefits,
         totalAmount: employeeTotal,
         benefits: benefitDetails,
@@ -1099,6 +1138,12 @@ export class AccountPayableService {
 
     for (const employee of employees) {
       const monthlySalary = employee.monthlySalary ? Number(employee.monthlySalary) : 0;
+      const riskAdditionAmount = calculateRiskAdditionAmount(
+        employee.riskAdditionType,
+        employee.insalubrityDegree,
+        monthlySalary,
+      );
+      const riskAdditionLabel = getRiskAdditionDisplayName(employee.riskAdditionType, employee.insalubrityDegree);
       const existing = existingMap.get(employee.id);
 
       if (existing) {
@@ -1106,6 +1151,8 @@ export class AccountPayableService {
           employeeId: employee.id,
           employeeName: employee.name,
           baseSalary: monthlySalary,
+          riskAdditionAmount: riskAdditionAmount > 0 ? riskAdditionAmount : undefined,
+          riskAdditionLabel: riskAdditionLabel || undefined,
           totalBenefits: 0,
           totalAmount: Number(existing.amount),
           benefits: [],
@@ -1164,12 +1211,15 @@ export class AccountPayableService {
         });
       }
 
+      const employeeTotal = monthlySalary + riskAdditionAmount + totalBenefits;
       details.push({
         employeeId: employee.id,
         employeeName: employee.name,
         baseSalary: monthlySalary,
+        riskAdditionAmount: riskAdditionAmount > 0 ? riskAdditionAmount : undefined,
+        riskAdditionLabel: riskAdditionLabel || undefined,
         totalBenefits,
-        totalAmount: monthlySalary + totalBenefits,
+        totalAmount: employeeTotal,
         benefits: benefitDetails,
         status: 'created',
       });

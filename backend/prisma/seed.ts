@@ -6,7 +6,7 @@ import * as path from 'path';
 const prisma = new PrismaClient();
 
 // ID da empresa padrão (será preenchido após criação)
-let DEFAULT_COMPANY_ID = 'a4771684-cd63-4ecd-8771-545ddb937278';
+let DEFAULT_COMPANY_ID = '9d8fb179-ede4-4ea5-98d2-6db222ba6f66';
 
 // Função auxiliar para gerar datas aleatórias
 function randomDate(start: Date, end: Date): Date {

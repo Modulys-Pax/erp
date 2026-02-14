@@ -31,6 +31,10 @@ export class AccountPayableResponseDto {
   @ApiProperty({ example: 'Pagamento parcelado em 3x', required: false })
   notes?: string;
 
+  /** Para contas de folha (HR): nome do adicional para exibição ("Periculosidade" ou "Insalubridade (Médio)") */
+  @ApiProperty({ required: false })
+  riskAdditionLabel?: string;
+
   @ApiProperty({ example: 'uuid', required: false })
   supplierId?: string;
 

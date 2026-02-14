@@ -223,6 +223,7 @@ export function EmployeesExpensesTab() {
                       { key: 'employeeName', header: 'Funcionário' },
                       { key: 'position', header: 'Cargo' },
                       { key: 'monthlySalary', header: 'Salário', getValue: (e) => formatCurrency(e.monthlySalary ?? 0) },
+                      { key: 'riskAddition', header: 'Insalubridade / Periculosidade', getValue: (e) => (e.riskAdditionLabel ? `${e.riskAdditionLabel}: ${formatCurrency(e.riskAdditionAmount ?? 0)}` : '—') },
                       { key: 'totalBenefits', header: 'Benefícios', getValue: (e) => formatCurrency(e.totalBenefits ?? 0) },
                       { key: 'totalTaxes', header: 'Impostos', getValue: (e) => formatCurrency(e.totalTaxes ?? 0) },
                       { key: 'totalMonthlyCost', header: 'Custo Mensal', getValue: (e) => formatCurrency(e.totalMonthlyCost ?? 0) },
@@ -283,6 +284,20 @@ export function EmployeesExpensesTab() {
                         key: 'monthlySalary',
                         header: 'Salário',
                         render: (employee) => formatCurrency(employee.monthlySalary ?? 0),
+                        className: 'text-right',
+                      },
+                      {
+                        key: 'riskAddition',
+                        header: 'Insalub. / Peric.',
+                        render: (employee) => {
+                          if (!employee.riskAdditionAmount || employee.riskAdditionAmount <= 0) return '—';
+                          const label = employee.riskAdditionLabel || 'Adicional';
+                          return (
+                            <span title={label}>
+                              {label}: {formatCurrency(employee.riskAdditionAmount)}
+                            </span>
+                          );
+                        },
                         className: 'text-right',
                       },
                       {

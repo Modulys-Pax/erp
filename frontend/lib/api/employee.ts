@@ -14,6 +14,10 @@ export interface Employee {
   companyId: string;
   branchId: string;
   active: boolean;
+  /** Tipo de adicional de risco: apenas um (não acumulam) */
+  riskAdditionType?: 'INSALUBRIDADE' | 'PERICULOSIDADE';
+  /** Grau de insalubridade quando riskAdditionType = INSALUBRIDADE */
+  insalubrityDegree?: 'MINIMO' | 'MEDIO' | 'MAXIMO';
   createdAt: Date;
   updatedAt: Date;
   createdBy?: string;
@@ -32,6 +36,8 @@ export interface CreateEmployeeDto {
   companyId: string;
   branchId: string;
   active?: boolean;
+  riskAdditionType?: 'INSALUBRIDADE' | 'PERICULOSIDADE';
+  insalubrityDegree?: 'MINIMO' | 'MEDIO' | 'MAXIMO';
 }
 
 export interface UpdateEmployeeDto extends Partial<CreateEmployeeDto> {}
@@ -59,6 +65,10 @@ export interface EmployeeCostDetail {
   position?: string;
   department?: string;
   monthlySalary: number;
+  /** Valor do adicional de risco */
+  riskAdditionAmount?: number;
+  /** Nome para exibição: "Periculosidade" ou "Insalubridade (Mínimo/Médio/Máximo)" */
+  riskAdditionLabel?: string;
   totalBenefits: number;
   totalTaxes: number;
   totalMonthlyCost: number;
@@ -107,6 +117,10 @@ export interface EmployeeDetailCostsResponse {
   position?: string;
   department?: string;
   monthlySalary: number;
+  /** Valor do adicional de risco */
+  riskAdditionAmount?: number;
+  /** Nome para exibição: "Periculosidade" ou "Insalubridade (Mínimo/Médio/Máximo)" */
+  riskAdditionLabel?: string;
   benefits: EmployeeBenefitCost[];
   totalBenefits: number;
   taxes: EmployeeTaxCost[];

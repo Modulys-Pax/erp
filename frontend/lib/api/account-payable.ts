@@ -19,6 +19,8 @@ export interface AccountPayable {
   originId?: string;
   documentNumber?: string;
   notes?: string;
+  /** Para contas de folha (HR): "Periculosidade" ou "Insalubridade (Mínimo/Médio/Máximo)" para exibir no lugar de "Adicional" */
+  riskAdditionLabel?: string;
   supplierId?: string;
   supplierName?: string;
   costCenterId?: string;
@@ -146,6 +148,10 @@ export interface PayrollEmployeeDetail {
   employeeId: string;
   employeeName: string;
   baseSalary: number;
+  /** Valor do adicional de risco */
+  riskAdditionAmount?: number;
+  /** Nome para exibição: "Periculosidade" ou "Insalubridade (Mínimo/Médio/Máximo)" */
+  riskAdditionLabel?: string;
   totalBenefits: number;
   totalAmount: number;
   benefits: PayrollEmployeeBenefitDetail[];

@@ -65,10 +65,22 @@ export class PayrollEmployeeDetail {
   @ApiProperty({ description: 'Salário base' })
   baseSalary: number;
 
+  @ApiProperty({
+    description: 'Adicional de insalubridade ou periculosidade',
+    required: false,
+  })
+  riskAdditionAmount?: number;
+
+  @ApiProperty({
+    description: 'Nome do adicional para exibição: "Periculosidade" ou "Insalubridade (Mínimo/Médio/Máximo)"',
+    required: false,
+  })
+  riskAdditionLabel?: string;
+
   @ApiProperty({ description: 'Total de benefícios' })
   totalBenefits: number;
 
-  @ApiProperty({ description: 'Total a pagar (salário + benefícios)' })
+  @ApiProperty({ description: 'Total a pagar (salário + adicional de risco + benefícios)' })
   totalAmount: number;
 
   @ApiProperty({ description: 'Detalhes dos benefícios' })

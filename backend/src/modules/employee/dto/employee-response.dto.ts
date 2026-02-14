@@ -52,4 +52,18 @@ export class EmployeeResponseDto {
 
   @ApiProperty({ required: false })
   deletedAt?: Date;
+
+  @ApiProperty({
+    description: 'Tipo de adicional de risco (insalubridade ou periculosidade - não acumulam)',
+    enum: ['INSALUBRIDADE', 'PERICULOSIDADE'],
+    required: false,
+  })
+  riskAdditionType?: 'INSALUBRIDADE' | 'PERICULOSIDADE';
+
+  @ApiProperty({
+    description: 'Grau de insalubridade (quando riskAdditionType = INSALUBRIDADE)',
+    enum: ['MINIMO', 'MEDIO', 'MAXIMO'],
+    required: false,
+  })
+  insalubrityDegree?: 'MINIMO' | 'MEDIO' | 'MAXIMO';
 }

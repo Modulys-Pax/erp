@@ -17,6 +17,20 @@ export class EmployeeCostDetailDto {
   @ApiProperty({ example: 3500.0, description: 'Salário mensal base' })
   monthlySalary: number;
 
+  @ApiProperty({
+    example: 455.0,
+    description: 'Valor do adicional de risco (insalubridade ou periculosidade)',
+    required: false,
+  })
+  riskAdditionAmount?: number;
+
+  @ApiProperty({
+    example: 'Periculosidade',
+    description: 'Nome para exibição: "Periculosidade" ou "Insalubridade (Mínimo/Médio/Máximo)"',
+    required: false,
+  })
+  riskAdditionLabel?: string;
+
   @ApiProperty({ example: 150.0, description: 'Total de benefícios mensais' })
   totalBenefits: number;
 
