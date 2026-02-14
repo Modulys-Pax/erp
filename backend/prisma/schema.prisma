@@ -456,7 +456,8 @@ model Employee {
 
   user User?
 
-  maintenanceWorkers MaintenanceWorker[]
+  maintenanceWorkers       MaintenanceWorker[]
+  maintenanceServiceWorkers MaintenanceServiceWorker[]
   salaries           Salary[]
   vacations          Vacation[]
   expenses           Expense[]
@@ -703,18 +704,36 @@ model MaintenanceService {
   id                 String           @id @default(uuid())
   maintenanceOrderId String
   maintenanceOrder   MaintenanceOrder @relation(fields: [maintenanceOrderId], references: [id], onDelete: Cascade)
-  description        String // Descrição do serviço realizado
-  cost               Decimal?         @default(0) // Custo do serviço
+  description        String // Descrição do serviço (apenas descritivo, sem valor)
   createdAt          DateTime         @default(now())
   createdBy          String?
 
+  serviceWorkers MaintenanceServiceWorker[] // Funcionários que executaram este serviço
+  materials       MaintenanceMaterial[]     // Materiais vinculados a este serviço (opcional)
+
   @@map("maintenance_services")
+}
+
+/// Funcionário que executou um serviço específico da ordem (informado antes de fechar a ordem).
+model MaintenanceServiceWorker {
+  id                 String           @id @default(uuid())
+  maintenanceServiceId String
+  maintenanceService   MaintenanceService @relation(fields: [maintenanceServiceId], references: [id], onDelete: Cascade)
+  employeeId         String
+  employee           Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt          DateTime         @default(now())
+  createdBy          String?
+
+  @@unique([maintenanceServiceId, employeeId])
+  @@map("maintenance_service_workers")
 }
 
 model MaintenanceMaterial {
   id                     String                 @id @default(uuid())
   maintenanceOrderId     String
   maintenanceOrder       MaintenanceOrder       @relation(fields: [maintenanceOrderId], references: [id], onDelete: Cascade)
+  maintenanceServiceId   String?                 // Serviço ao qual este material está vinculado (opcional)
+  maintenanceService     MaintenanceService?     @relation(fields: [maintenanceServiceId], references: [id], onDelete: SetNull)
   productId              String
   product                Product                @relation(fields: [productId], references: [id], onDelete: Cascade)
   vehicleReplacementItemId String?               // Item de troca por KM ao qual este material está vinculado (opcional)

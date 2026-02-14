@@ -166,22 +166,10 @@ export class MaintenanceService {
       return orderTotalCost;
     }
 
-    // 2. Se não tiver, calcular: serviços + materiais
+    // 2. Se não tiver, calcular: apenas materiais (serviços são apenas descritivos)
     let total = 0;
 
-    // Soma dos serviços
-    if (order.services && order.services.length > 0) {
-      for (const service of order.services) {
-        const cost = service.cost
-          ? typeof service.cost === 'object' && 'toNumber' in service.cost
-            ? (service.cost as any).toNumber()
-            : Number(service.cost)
-          : 0;
-        total += cost;
-      }
-    }
-
-    // Soma dos materiais: quantity * unitPrice do produto
+    // Soma dos materiais: quantity * unitCost (ou unitPrice do produto)
     if (order.materials && order.materials.length > 0) {
       for (const material of order.materials) {
         // Converter quantity para number
@@ -267,6 +255,10 @@ export class MaintenanceService {
       throw new NotFoundException(
         'Um ou mais veículos não foram encontrados ou não pertencem a esta filial.',
       );
+    }
+
+    if (!createDto.services || createDto.services.length === 0) {
+      throw new BadRequestException('Informe ao menos um serviço a ser realizado na ordem.');
     }
 
     // Validar itens de troca por KM (replacementItemsChanged devem ser de um dos veículos)
@@ -367,9 +359,8 @@ export class MaintenanceService {
     // Gerar número da ordem
     const orderNumber = await this.generateOrderNumber(companyId, createDto.branchId);
 
-    // Criar ordem com transação
+    // Criar ordem com transação (status OPEN: apenas veículo + serviços; impressão resumo disponível)
     const order = await this.prisma.$transaction(async (tx) => {
-      // Criar ordem já em execução (não requer início manual)
       const newOrder = await tx.maintenanceOrder.create({
         data: {
           orderNumber,
@@ -377,7 +368,7 @@ export class MaintenanceService {
             create: createDto.vehicleIds.map((vehicleId) => ({ vehicleId })),
           },
           type: createDto.type,
-          status: 'IN_PROGRESS',
+          status: 'OPEN',
           kmAtEntry: createDto.kmAtEntry,
           description: createDto.description,
           observations: createDto.observations,
@@ -405,16 +396,26 @@ export class MaintenanceService {
           data: createDto.services.map((s) => ({
             maintenanceOrderId: newOrder.id,
             description: s.description,
-            cost: s.cost || 0,
             createdBy: userId,
           })),
         });
       }
 
-      // Criar materials (arredondar quantidade e custos para evitar perda por float)
+      // Criar materials (opcional na abertura; quando enviado, pode vincular a serviço)
       if (createDto.materials && createDto.materials.length > 0) {
+        const orderServiceIds = new Set(
+          (await tx.maintenanceService.findMany({
+            where: { maintenanceOrderId: newOrder.id },
+            select: { id: true },
+          })).map((s) => s.id),
+        );
         const materialsData = await Promise.all(
           createDto.materials.map(async (m) => {
+            if (m.maintenanceServiceId && !orderServiceIds.has(m.maintenanceServiceId)) {
+              throw new BadRequestException(
+                `Serviço ${m.maintenanceServiceId} não pertence a esta ordem`,
+              );
+            }
             const rawUnitCost =
               m.unitCost !== undefined && m.unitCost !== null
                 ? m.unitCost
@@ -424,6 +425,7 @@ export class MaintenanceService {
             const totalCost = roundCurrency(quantity * unitCost);
             return {
               maintenanceOrderId: newOrder.id,
+              maintenanceServiceId: m.maintenanceServiceId ?? null,
               productId: m.productId,
               vehicleReplacementItemId: m.vehicleReplacementItemId ?? null,
               quantity,
@@ -438,6 +440,7 @@ export class MaintenanceService {
           await tx.maintenanceMaterial.create({
             data: {
               maintenanceOrderId: data.maintenanceOrderId,
+              ...(data.maintenanceServiceId ? { maintenanceServiceId: data.maintenanceServiceId } : {}),
               productId: data.productId,
               ...(data.vehicleReplacementItemId
                 ? { vehicleReplacementItemId: data.vehicleReplacementItemId }
@@ -551,12 +554,12 @@ export class MaintenanceService {
         }
       }
 
-      // Criar evento inicial na timeline
+      // Evento inicial: ordem aberta (impressão resumo disponível)
       await tx.maintenanceTimeline.create({
         data: {
           maintenanceOrderId: newOrder.id,
           event: 'STARTED',
-          notes: 'Ordem de manutenção criada',
+          notes: 'Ordem aberta – imprimir com veículo e serviços',
           createdBy: userId,
         },
       });
@@ -755,7 +758,15 @@ export class MaintenanceService {
             },
           },
         },
-        services: true,
+        services: {
+          include: {
+            serviceWorkers: {
+              include: {
+                employee: { select: { id: true, name: true } },
+              },
+            },
+          } as Prisma.MaintenanceServiceInclude,
+        },
         materials: {
           include: {
             product: {
@@ -765,10 +776,11 @@ export class MaintenanceService {
                 unitPrice: true,
               },
             },
+            maintenanceService: { select: { id: true, description: true } },
             vehicleReplacementItem: {
               select: { id: true, name: true },
             },
-          },
+          } as Prisma.MaintenanceMaterialInclude,
         },
         timeline: {
           orderBy: {
@@ -863,9 +875,48 @@ export class MaintenanceService {
             data: updateDto.services.map((s) => ({
               maintenanceOrderId: id,
               description: s.description,
-              cost: s.cost || 0,
               createdBy: userId,
             })),
+          });
+        }
+      }
+
+      // Atualizar funcionários por serviço (quem executou cada serviço)
+      if (updateDto.serviceWorkers !== undefined) {
+        const orderServices = await tx.maintenanceService.findMany({
+          where: { maintenanceOrderId: id },
+          select: { id: true },
+        });
+        const serviceIds = new Set(orderServices.map((s) => s.id));
+
+        await (tx as any).maintenanceServiceWorker.deleteMany({
+          where: { maintenanceServiceId: { in: Array.from(serviceIds) } },
+        });
+
+        for (const sw of updateDto.serviceWorkers) {
+          if (!serviceIds.has(sw.maintenanceServiceId)) {
+            throw new BadRequestException(
+              `Serviço ${sw.maintenanceServiceId} não pertence a esta ordem de manutenção`,
+            );
+          }
+          const employee = await tx.employee.findFirst({
+            where: {
+              id: sw.employeeId,
+              companyId: order.companyId,
+              branchId: order.branchId,
+              deletedAt: null,
+              active: true,
+            },
+          });
+          if (!employee) {
+            throw new NotFoundException(`Funcionário ${sw.employeeId} não encontrado`);
+          }
+          await (tx as any).maintenanceServiceWorker.create({
+            data: {
+              maintenanceServiceId: sw.maintenanceServiceId,
+              employeeId: sw.employeeId,
+              createdBy: userId,
+            },
           });
         }
       }
@@ -931,9 +982,23 @@ export class MaintenanceService {
 
         // Criar novos materials com custos calculados automaticamente
         if (updateDto.materials.length > 0) {
+          const orderServiceIds =
+            updateDto.materials.some((m) => m.maintenanceServiceId) ?
+              new Set(
+                (await tx.maintenanceService.findMany({
+                  where: { maintenanceOrderId: id },
+                  select: { id: true },
+                })).map((s) => s.id),
+              )
+            : null;
+
           const materialsData = await Promise.all(
             updateDto.materials.map(async (m) => {
-              // Buscar custo unitário do produto (Stock ou Product)
+              if (m.maintenanceServiceId && orderServiceIds && !orderServiceIds.has(m.maintenanceServiceId)) {
+                throw new BadRequestException(
+                  `Serviço ${m.maintenanceServiceId} não pertence a esta ordem de manutenção`,
+                );
+              }
               const unitCost =
                 m.unitCost !== undefined && m.unitCost !== null
                   ? m.unitCost
@@ -943,6 +1008,7 @@ export class MaintenanceService {
 
               return {
                 maintenanceOrderId: id,
+                maintenanceServiceId: m.maintenanceServiceId ?? null,
                 productId: m.productId,
                 vehicleReplacementItemId: m.vehicleReplacementItemId ?? null,
                 quantity: m.quantity,
@@ -957,6 +1023,7 @@ export class MaintenanceService {
             await tx.maintenanceMaterial.create({
               data: {
                 maintenanceOrderId: data.maintenanceOrderId,
+                ...(data.maintenanceServiceId ? { maintenanceServiceId: data.maintenanceServiceId } : {}),
                 productId: data.productId,
                 ...(data.vehicleReplacementItemId
                   ? { vehicleReplacementItemId: data.vehicleReplacementItemId }
@@ -1054,10 +1121,14 @@ export class MaintenanceService {
       include: {
         vehicles: true,
         timeline: true,
-        services: true,
+        services: {
+          include: {
+            serviceWorkers: true,
+          } as Prisma.MaintenanceServiceInclude,
+        },
         materials: {
           include: {
-            product: true, // Incluir produto para acessar unitPrice
+            product: true,
           },
         },
       },
@@ -1067,7 +1138,12 @@ export class MaintenanceService {
       throw new NotFoundException('Ordem de manutenção não encontrada');
     }
 
-    const primaryVehicleId = order.vehicles?.[0]?.vehicleId;
+    const orderWithRelations = order as typeof order & {
+      vehicles: { vehicleId: string }[];
+      services: { id: string; description: string; serviceWorkers?: unknown[] }[];
+      timeline: { createdAt: Date }[];
+    };
+    const primaryVehicleId = orderWithRelations.vehicles?.[0]?.vehicleId;
     if (!primaryVehicleId) {
       throw new BadRequestException('Ordem de manutenção sem veículo associado');
     }
@@ -1076,9 +1152,19 @@ export class MaintenanceService {
       throw new BadRequestException('Ordem já foi concluída ou cancelada');
     }
 
+    // Antes de fechar: todo serviço deve ter pelo menos um funcionário atribuído
+    const servicesWithoutWorker = (orderWithRelations.services ?? []).filter(
+      (s: { serviceWorkers?: unknown[] }) => !s.serviceWorkers?.length,
+    );
+    if (servicesWithoutWorker.length > 0) {
+      throw new BadRequestException(
+        `Informe qual(is) funcionário(s) executaram cada serviço antes de concluir. Serviço(s) sem funcionário: ${servicesWithoutWorker.map((s: { description: string }) => s.description).join(', ')}`,
+      );
+    }
+
     await this.prisma.$transaction(async (tx) => {
       // Calcular tempo e custo
-      const totalTimeMinutes = this.calculateTotalTime(order.timeline);
+      const totalTimeMinutes = this.calculateTotalTime(orderWithRelations.timeline);
       const totalCost = this.calculateTotalCost(order);
 
       await tx.maintenanceOrder.update({
@@ -1371,13 +1457,19 @@ export class MaintenanceService {
         id: s.id,
         maintenanceOrderId: s.maintenanceOrderId,
         description: s.description,
-        cost: Number(s.cost || 0),
+        serviceWorkers: s.serviceWorkers?.map((sw: any) => ({
+          id: sw.id,
+          maintenanceServiceId: sw.maintenanceServiceId,
+          employeeId: sw.employeeId,
+          employeeName: sw.employee?.name,
+        })),
         createdAt: s.createdAt,
         createdBy: s.createdBy,
       })),
       materials: order.materials?.map((m: any) => ({
         id: m.id,
         maintenanceOrderId: m.maintenanceOrderId,
+        maintenanceServiceId: m.maintenanceServiceId ?? undefined,
         productId: m.productId,
         productName: m.product?.name,
         productUnit: m.product?.unit,

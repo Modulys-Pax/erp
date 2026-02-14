@@ -20,6 +20,7 @@ import { CurrencyInput } from '@/components/ui/currency-input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { toSelectOptions } from '@/lib/hooks/use-searchable-select';
 import { toastErrorFromException, toastSuccess } from '@/lib/utils';
+import { getQuantityInputStep } from '@/lib/utils/quantity';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -239,11 +240,16 @@ export default function EditProductPage() {
             <div>
               <Label htmlFor="minQuantity" className="text-sm text-muted-foreground mb-2">
                 Quantidade Mínima em Estoque
+                {(watch('unitOfMeasurementId') && unitsOfMeasurement.find((u) => u.id === watch('unitOfMeasurementId'))?.code) && (
+                  <span className="text-muted-foreground font-normal ml-1">
+                    ({unitsOfMeasurement.find((u) => u.id === watch('unitOfMeasurementId'))?.code})
+                  </span>
+                )}
               </Label>
               <Input
                 id="minQuantity"
                 type="number"
-                step="0.01"
+                step={getQuantityInputStep(unitsOfMeasurement.find((u) => u.id === watch('unitOfMeasurementId'))?.code)}
                 min="0"
                 placeholder="0"
                 {...register('minQuantity', { valueAsNumber: true })}

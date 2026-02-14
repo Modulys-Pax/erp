@@ -614,10 +614,9 @@ export class VehicleService {
       let vehiclePeriodOrders = 0;
 
       for (const order of orders) {
-        // Calcular custos da ordem atual
+        // Calcular custos da ordem atual (apenas materiais; serviços são descritivos)
         let orderMaterialsCost = 0;
-        let orderServicesCost = 0;
-        const orderWithIncludes = order as typeof order & { materials?: { totalCost?: unknown; unitCost?: unknown; quantity?: unknown }[]; services?: { cost?: unknown }[] };
+        const orderWithIncludes = order as typeof order & { materials?: { totalCost?: unknown; unitCost?: unknown; quantity?: unknown }[] };
 
         // Custo de materiais da ordem
         for (const material of orderWithIncludes.materials || []) {
@@ -632,19 +631,8 @@ export class VehicleService {
           vehicleMaterialsCost += materialCost;
         }
 
-        // Custo de serviços da ordem
-        for (const service of orderWithIncludes.services || []) {
-          const serviceCost = service.cost
-            ? typeof service.cost === 'object' && 'toNumber' in service.cost
-              ? (service.cost as any).toNumber()
-              : Number(service.cost)
-            : 0;
-          orderServicesCost += serviceCost;
-          vehicleServicesCost += serviceCost;
-        }
-
         // Custo total da ordem (usar totalCost se não houver detalhamento)
-        const detailedCost = orderMaterialsCost + orderServicesCost;
+        const detailedCost = orderMaterialsCost;
         const orderTotalCost = order.totalCost
           ? typeof order.totalCost === 'object' && 'toNumber' in order.totalCost
             ? (order.totalCost as any).toNumber()
@@ -673,8 +661,8 @@ export class VehicleService {
         }
       }
 
-      // Custo total = materials + services + outros (custos diretos)
-      const vehicleTotalCost = vehicleMaterialsCost + vehicleServicesCost + vehicleOtherCost;
+      // Custo total = materials + outros (custos diretos); serviços são apenas descritivos
+      const vehicleTotalCost = vehicleMaterialsCost + vehicleOtherCost;
 
       vehicleCosts.push({
         vehicleId: vehicle.id,
@@ -682,7 +670,7 @@ export class VehicleService {
         model: vehicle.model?.name,
         totalMaintenanceCost: vehicleTotalCost,
         totalMaterialsCost: vehicleMaterialsCost,
-        totalServicesCost: vehicleServicesCost + vehicleOtherCost, // Incluir custos diretos em serviços
+        totalServicesCost: vehicleOtherCost, // Custos diretos (ex.: troca na estrada)
         totalMaintenanceOrders: orders.length,
         periodCost: vehiclePeriodCost,
         periodOrders: vehiclePeriodOrders,
@@ -690,7 +678,7 @@ export class VehicleService {
 
       totalMaintenanceCost += vehicleTotalCost;
       totalMaterialsCost += vehicleMaterialsCost;
-      totalServicesCost += vehicleServicesCost + vehicleOtherCost;
+      totalServicesCost += vehicleOtherCost;
       totalMaintenanceOrders += orders.length;
     }
 
@@ -708,9 +696,8 @@ export class VehicleService {
     let globalTotalServicesCost = 0;
 
     for (const order of allOrdersForSummary) {
-      const orderWithIncludes = order as typeof order & { materials?: { totalCost?: unknown; unitCost?: unknown; quantity?: unknown }[]; services?: { cost?: unknown }[] };
+      const orderWithIncludes = order as typeof order & { materials?: { totalCost?: unknown; unitCost?: unknown; quantity?: unknown }[] };
       let orderMaterialsCost = 0;
-      let orderServicesCost = 0;
 
       for (const material of orderWithIncludes.materials || []) {
         const cost = material.totalCost
@@ -724,17 +711,7 @@ export class VehicleService {
         globalTotalMaterialsCost += cost;
       }
 
-      for (const service of orderWithIncludes.services || []) {
-        const cost = service.cost
-          ? typeof service.cost === 'object' && 'toNumber' in service.cost
-            ? (service.cost as any).toNumber()
-            : Number(service.cost)
-          : 0;
-        orderServicesCost += cost;
-        globalTotalServicesCost += cost;
-      }
-
-      const detailedCost = orderMaterialsCost + orderServicesCost;
+      const detailedCost = orderMaterialsCost;
       if (detailedCost === 0 && order.totalCost) {
         const directCost =
           typeof order.totalCost === 'object' && 'toNumber' in order.totalCost

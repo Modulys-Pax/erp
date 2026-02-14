@@ -16,6 +16,9 @@ export class PurchaseOrderItemResponseDto {
   @ApiProperty({ description: 'Código do produto' })
   productCode?: string;
 
+  @ApiProperty({ description: 'Unidade de medida do produto (ex: UN, L, KG)', required: false })
+  productUnit?: string;
+
   @ApiProperty()
   quantity: number;
 

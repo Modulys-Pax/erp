@@ -578,7 +578,7 @@ export class StockService {
         skip,
         take: limit,
         include: {
-          product: true,
+          product: { include: { unitOfMeasurement: true } },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -598,7 +598,7 @@ export class StockService {
     const movement = await this.prisma.stockMovement.findUnique({
       where: { id },
       include: {
-        product: true,
+        product: { include: { unitOfMeasurement: true } },
       },
     });
 
@@ -633,6 +633,9 @@ export class StockService {
       id: movement.id,
       type: movement.type,
       productId: movement.productId,
+      productName: movement.product?.name,
+      productCode: movement.product?.code,
+      productUnit: movement.product?.unitOfMeasurement?.code ?? movement.product?.unit ?? undefined,
       quantity: Number(movement.quantity),
       unitCost: movement.unitCost ? Number(movement.unitCost) : undefined,
       totalCost: movement.totalCost ? Number(movement.totalCost) : undefined,

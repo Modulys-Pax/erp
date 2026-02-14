@@ -23,6 +23,20 @@ export class MaintenanceWorkerResponseDto {
   createdBy?: string;
 }
 
+export class MaintenanceServiceWorkerResponseDto {
+  @ApiProperty({ example: 'uuid' })
+  id: string;
+
+  @ApiProperty({ example: 'uuid' })
+  maintenanceServiceId: string;
+
+  @ApiProperty({ example: 'uuid' })
+  employeeId: string;
+
+  @ApiProperty({ example: 'João Silva' })
+  employeeName?: string;
+}
+
 export class MaintenanceServiceResponseDto {
   @ApiProperty({ example: 'uuid' })
   id: string;
@@ -33,8 +47,8 @@ export class MaintenanceServiceResponseDto {
   @ApiProperty({ example: 'Troca de óleo e filtro' })
   description: string;
 
-  @ApiProperty({ example: 150.0, required: false })
-  cost?: number;
+  @ApiProperty({ type: [MaintenanceServiceWorkerResponseDto], required: false })
+  serviceWorkers?: MaintenanceServiceWorkerResponseDto[];
 
   @ApiProperty()
   createdAt: Date;
@@ -49,6 +63,9 @@ export class MaintenanceMaterialResponseDto {
 
   @ApiProperty({ example: 'uuid' })
   maintenanceOrderId: string;
+
+  @ApiProperty({ example: 'uuid', required: false })
+  maintenanceServiceId?: string;
 
   @ApiProperty({ example: 'uuid' })
   productId: string;

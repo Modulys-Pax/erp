@@ -110,7 +110,7 @@ export class SalesOrderService {
       },
       include: {
         customer: true,
-        items: { include: { product: true } },
+        items: { include: { product: { include: { unitOfMeasurement: true } } } },
       },
     });
 
@@ -151,7 +151,7 @@ export class SalesOrderService {
         where,
         skip,
         take: limit,
-        include: { customer: true, items: { include: { product: true } } },
+        include: { customer: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.salesOrder.count({ where }),
@@ -169,7 +169,7 @@ export class SalesOrderService {
   async findOne(id: string, user?: any): Promise<SalesOrderResponseDto> {
     const so = await this.prisma.salesOrder.findFirst({
       where: { id, deletedAt: null },
-      include: { customer: true, items: { include: { product: true } } },
+      include: { customer: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
     });
     if (!so) throw new NotFoundException('Pedido de venda não encontrado');
     if (user) {
@@ -231,7 +231,7 @@ export class SalesOrderService {
     const updated = await this.prisma.salesOrder.update({
       where: { id },
       data: updateData,
-      include: { customer: true, items: { include: { product: true } } },
+      include: { customer: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
     });
     return this.mapToResponse(updated);
   }
@@ -263,7 +263,7 @@ export class SalesOrderService {
   ): Promise<SalesOrderResponseDto> {
     const order = await this.prisma.salesOrder.findFirst({
       where: { id, deletedAt: null },
-      include: { customer: true, items: { include: { product: true } } },
+      include: { customer: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
     });
     if (!order) throw new NotFoundException('Pedido de venda não encontrado');
     if (user) {
@@ -377,6 +377,7 @@ export class SalesOrderService {
         productId: i.productId,
         productName: i.product?.name,
         productCode: i.product?.code,
+        productUnit: i.product?.unitOfMeasurement?.code ?? i.product?.unit ?? undefined,
         quantity: Number(i.quantity),
         quantityInvoiced: Number(i.quantityInvoiced),
         unitPrice: i.unitPrice != null ? Number(i.unitPrice) : undefined,

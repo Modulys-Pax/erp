@@ -25,6 +25,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { toastSuccess, toastErrorFromException } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
+import { formatQuantity, getQuantityInputStep, normalizeQuantityByUnit } from '@/lib/utils/quantity';
 import { formatDate } from '@/lib/utils/date';
 import {
   PURCHASE_ORDER_STATUS_LABELS,
@@ -196,8 +197,8 @@ export default function PurchaseOrderDetailPage() {
                       </span>
                     )}
                   </td>
-                  <td className="py-2 text-right">{item.quantity}</td>
-                  <td className="py-2 text-right">{item.quantityReceived}</td>
+                  <td className="py-2 text-right">{formatQuantity(item.quantity, item.productUnit, { showUnit: true })}</td>
+                  <td className="py-2 text-right">{formatQuantity(item.quantityReceived, item.productUnit, { showUnit: true })}</td>
                   <td className="py-2 text-right">
                     {item.unitPrice != null
                       ? formatCurrency(item.unitPrice)
@@ -234,18 +235,18 @@ export default function PurchaseOrderDetailPage() {
                   className="flex items-center justify-between gap-4 border-b pb-2"
                 >
                   <Label className="flex-1 text-sm font-normal">
-                    {item.productName} (pendente: {pending})
+                    {item.productName} (pendente: {formatQuantity(pending, item.productUnit)})
                   </Label>
                   <Input
                     type="number"
                     min={0}
                     max={pending}
-                    step="0.01"
+                    step={getQuantityInputStep(item.productUnit)}
                     value={receiveQuantities[item.id] ?? ''}
                     onChange={(e) =>
                       setReceiveQuantities((prev) => ({
                         ...prev,
-                        [item.id]: parseFloat(e.target.value) || 0,
+                        [item.id]: normalizeQuantityByUnit(e.target.value, item.productUnit),
                       }))
                     }
                     className="w-24 text-right"

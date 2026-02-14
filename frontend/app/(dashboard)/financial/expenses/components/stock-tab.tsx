@@ -19,6 +19,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { toSelectOptions } from '@/lib/hooks/use-searchable-select';
 import { formatDate } from '@/lib/utils/date';
+import { formatQuantity } from '@/lib/utils/quantity';
 import {
   ACCOUNT_PAYABLE_STATUS_LABELS,
   ACCOUNT_PAYABLE_STATUS_COLORS,
@@ -237,7 +238,7 @@ export function StockExpensesTab() {
                 header: 'Quantidade',
                 render: (movement) => (
                   <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                    +{formatNumber(movement.quantity)}
+                    +{formatQuantity(movement.quantity, movement.productUnit, { showUnit: true })}
                   </Badge>
                 ),
                 className: 'text-center',

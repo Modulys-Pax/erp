@@ -37,6 +37,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils/date';
+import { formatQuantity } from '@/lib/utils/quantity';
 import { ExportButton } from '@/components/ui/export-button';
 
 const DEBOUNCE_MS = 500;
@@ -133,13 +134,6 @@ export default function StockMovementsPage() {
       netValue: totalEntriesValue - totalExitsValue,
     };
   }, [allMovementsResponse]);
-
-  const formatNumber = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  };
 
   const getProductData = (productId: string) => {
     return products.find(p => p.id === productId);
@@ -270,7 +264,7 @@ export default function StockMovementsPage() {
             columns={[
               { key: 'productName', header: 'Produto' },
               { key: 'type', header: 'Tipo', getValue: (m) => STOCK_MOVEMENT_TYPE_LABELS[m.type as keyof typeof STOCK_MOVEMENT_TYPE_LABELS] || m.type },
-              { key: 'quantity', header: 'Quantidade' },
+              { key: 'quantity', header: 'Quantidade', getValue: (m) => formatQuantity(m.quantity, getProductData(m.productId)?.unit, { showUnit: true }) },
               { key: 'unitCost', header: 'Custo Unit.', getValue: (m) => formatCurrency(m.unitCost || 0) },
               { key: 'totalCost', header: 'Custo Total', getValue: (m) => formatCurrency(m.totalCost || 0) },
               { key: 'createdAt', header: 'Data', getValue: (m) => formatDate(m.createdAt) },
@@ -340,8 +334,8 @@ export default function StockMovementsPage() {
                   const product = getProductData(movement.productId);
                   return (
                     <span className={`font-medium ${movement.type === 'ENTRY' ? 'text-green-600' : 'text-red-600'}`}>
-                      {movement.type === 'ENTRY' ? '+' : '-'}{formatNumber(movement.quantity)}
-                      {product?.unit && <span className="text-muted-foreground text-sm ml-1">{product.unit}</span>}
+                      {movement.type === 'ENTRY' ? '+' : '-'}
+                      {formatQuantity(movement.quantity, product?.unit, { showUnit: true })}
                     </span>
                   );
                 },

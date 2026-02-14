@@ -11,6 +11,7 @@ import {
   CreateMaintenanceServiceDto,
   CreateMaintenanceMaterialDto,
   UpdateMaintenanceOrderDto,
+  UpdateMaintenanceServiceWorkerDto,
 } from '@/lib/api/maintenance';
 import { employeeApi } from '@/lib/api/employee';
 import { productApi } from '@/lib/api/product';
@@ -23,6 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { QuantityInput } from '@/components/ui/quantity-input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { toSelectOptions } from '@/lib/hooks/use-searchable-select';
 import {
@@ -36,6 +38,7 @@ import {
 import Link from 'next/link';
 import { toastSuccess, toastError } from '@/lib/utils';
 import { formatDate, formatDateTime } from '@/lib/utils/date';
+import { formatQuantity, normalizeQuantityByUnit } from '@/lib/utils/quantity';
 import {
   Clock,
   DollarSign,
@@ -63,9 +66,10 @@ export default function MaintenanceDetailPage() {
   const [newWorkerEmployeeId, setNewWorkerEmployeeId] = useState('');
   const [newWorkerResponsible, setNewWorkerResponsible] = useState(false);
   const [newServiceDescription, setNewServiceDescription] = useState('');
-  const [newServiceCost, setNewServiceCost] = useState<string>('');
   const [newMaterialProductId, setNewMaterialProductId] = useState('');
-  const [newMaterialQuantity, setNewMaterialQuantity] = useState<string>('');
+  const [newMaterialQuantity, setNewMaterialQuantity] = useState<number | undefined>(undefined);
+  const [newMaterialServiceId, setNewMaterialServiceId] = useState<string>('');
+  const [printMode, setPrintMode] = useState<'summary' | 'full'>('summary');
 
   const { data: order, isLoading } = useQuery({
     queryKey: ['maintenance', id],
@@ -165,26 +169,66 @@ export default function MaintenanceDetailPage() {
   const handleAddService = () => {
     if (!order || !newServiceDescription.trim()) return;
     const existing: CreateMaintenanceServiceDto[] = (order.services ?? []).map(
-      (s) => ({ description: s.description, cost: s.cost ?? 0 }),
+      (s) => ({ description: s.description }),
     );
-    const cost = Number.parseFloat(newServiceCost);
     updateMutation.mutate(
-      { services: [...existing, { description: newServiceDescription.trim(), cost: Number.isNaN(cost) ? 0 : cost }] },
-      { onSuccess: () => { setNewServiceDescription(''); setNewServiceCost(''); } },
+      { services: [...existing, { description: newServiceDescription.trim() }] },
+      { onSuccess: () => { setNewServiceDescription(''); } },
     );
   };
 
   const handleAddMaterial = () => {
-    if (!order || !newMaterialProductId || !newMaterialQuantity) return;
-    const qty = Number.parseFloat(newMaterialQuantity);
-    if (Number.isNaN(qty) || qty <= 0) return;
+    if (!order || !newMaterialProductId || newMaterialQuantity == null || newMaterialQuantity <= 0) return;
+    const product = products.find((p) => p.id === newMaterialProductId);
+    const normalizedQty = normalizeQuantityByUnit(newMaterialQuantity, product?.unit);
+    if (normalizedQty <= 0) return;
     const existing: CreateMaintenanceMaterialDto[] = (order.materials ?? []).map(
-      (m) => ({ productId: m.productId, vehicleReplacementItemId: m.vehicleReplacementItemId, quantity: m.quantity, unitCost: m.unitCost }),
+      (m) => ({
+        productId: m.productId,
+        maintenanceServiceId: m.maintenanceServiceId,
+        vehicleReplacementItemId: m.vehicleReplacementItemId,
+        quantity: m.quantity,
+        unitCost: m.unitCost,
+      }),
     );
     updateMutation.mutate(
-      { materials: [...existing, { productId: newMaterialProductId, quantity: qty }] },
-      { onSuccess: () => { setNewMaterialProductId(''); setNewMaterialQuantity(''); } },
+      {
+        materials: [
+          ...existing,
+          {
+            productId: newMaterialProductId,
+            quantity: normalizedQty,
+            ...(newMaterialServiceId ? { maintenanceServiceId: newMaterialServiceId } : {}),
+          },
+        ],
+      },
+      { onSuccess: () => { setNewMaterialProductId(''); setNewMaterialQuantity(undefined); setNewMaterialServiceId(''); } },
     );
+  };
+
+  const buildServiceWorkersList = (): UpdateMaintenanceServiceWorkerDto[] => {
+    const list: UpdateMaintenanceServiceWorkerDto[] = [];
+    for (const s of order?.services ?? []) {
+      for (const sw of s.serviceWorkers ?? []) {
+        list.push({ maintenanceServiceId: s.id, employeeId: sw.employeeId });
+      }
+    }
+    return list;
+  };
+
+  const handleAddServiceWorker = (maintenanceServiceId: string, employeeId: string) => {
+    if (!order || !employeeId) return;
+    const current = buildServiceWorkersList();
+    if (current.some((sw) => sw.maintenanceServiceId === maintenanceServiceId && sw.employeeId === employeeId)) return;
+    updateMutation.mutate({ serviceWorkers: [...current, { maintenanceServiceId, employeeId }] });
+  };
+
+  const handleRemoveServiceWorker = (maintenanceServiceId: string, employeeId: string) => {
+    if (!order) return;
+    const current = buildServiceWorkersList().filter(
+      (sw) => !(sw.maintenanceServiceId === maintenanceServiceId && sw.employeeId === employeeId),
+    );
+    updateMutation.mutate({ serviceWorkers: current });
   };
 
   const formatTime = (minutes?: number) => {
@@ -236,12 +280,23 @@ export default function MaintenanceDetailPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.print()}
+              onClick={() => { setPrintMode('summary'); setTimeout(() => window.print(), 100); }}
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
-              Exportar / Imprimir
+              Imprimir resumo
             </Button>
+            {order.status === 'COMPLETED' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setPrintMode('full'); setTimeout(() => window.print(), 100); }}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Imprimir completa
+              </Button>
+            )}
             <Link href="/maintenance">
               <Button variant="outline">Voltar</Button>
             </Link>
@@ -490,14 +545,9 @@ export default function MaintenanceDetailPage() {
         {order.services && order.services.length > 0 ? (
           <div className="space-y-2">
             {order.services.map((service) => (
-              <div key={service.id} className="flex justify-between items-center p-3 rounded-lg border bg-card">
-                <div className="flex items-center gap-3">
-                  <Wrench className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{service.description}</span>
-                </div>
-                {service.cost !== undefined && service.cost > 0 && (
-                  <span className="font-semibold text-sm">{formatCurrency(service.cost)}</span>
-                )}
+              <div key={service.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                <Wrench className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">{service.description}</span>
               </div>
             ))}
           </div>
@@ -508,12 +558,60 @@ export default function MaintenanceDetailPage() {
           <div className="pt-4 mt-4 border-t">
             <div className="flex flex-wrap items-end gap-3">
               <Input placeholder="Descrição do serviço" value={newServiceDescription} onChange={(e) => setNewServiceDescription(e.target.value)} className="flex-1 min-w-[200px] rounded-xl" />
-              <Input type="number" step="0.01" min="0" placeholder="Custo (R$)" value={newServiceCost} onChange={(e) => setNewServiceCost(e.target.value)} className="w-32 rounded-xl" />
               <Button size="sm" onClick={handleAddService} disabled={!newServiceDescription.trim() || updateMutation.isPending}>Adicionar</Button>
             </div>
           </div>
         )}
       </SectionCard>
+
+      {/* Funcionários por serviço (obrigatório antes de concluir) */}
+      {order.services && order.services.length > 0 && (
+        <SectionCard
+          title="Funcionários por serviço"
+          description="Informe quem executou cada serviço (obrigatório antes de concluir)"
+        >
+          <div className="space-y-4">
+            {order.services.map((service) => (
+              <div key={service.id} className="p-3 rounded-lg border bg-card space-y-2">
+                <p className="font-medium text-sm text-muted-foreground">{service.description}</p>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {(service.serviceWorkers ?? []).map((sw) => (
+                    <Badge key={sw.id} variant="secondary" className="gap-1">
+                      {sw.employeeName}
+                      {canAdd && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveServiceWorker(service.id, sw.employeeId)}
+                          className="ml-1 hover:text-destructive"
+                          aria-label="Remover"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </Badge>
+                  ))}
+                  {canAdd && (
+                    <SearchableSelect
+                      options={toSelectOptions(
+                        employees.filter(
+                          (e) => !(service.serviceWorkers ?? []).some((sw) => sw.employeeId === e.id),
+                        ),
+                        (e) => e.id,
+                        (e) => e.name,
+                      )}
+                      value=""
+                      onChange={(value) => {
+                        if (value) handleAddServiceWorker(service.id, value);
+                      }}
+                      placeholder="+ Adicionar funcionário..."
+                    />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
 
       {/* Materiais */}
       <SectionCard title="Materiais" description={`${order.materials?.length || 0} utilizado(s)`}>
@@ -526,7 +624,7 @@ export default function MaintenanceDetailPage() {
                   <div>
                     <p className="font-medium text-sm">{material.productName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {material.quantity} {material.productUnit}
+                      {formatQuantity(material.quantity, material.productUnit, { showUnit: true })}
                       {material.unitCost !== undefined && ` × ${formatCurrency(material.unitCost)}`}
                     </p>
                   </div>
@@ -543,6 +641,17 @@ export default function MaintenanceDetailPage() {
         {canAdd && (
           <div className="pt-4 mt-4 border-t">
             <div className="flex flex-wrap items-end gap-3">
+              {order.services && order.services.length > 0 && (
+                <div className="w-48">
+                  <Label className="text-xs text-muted-foreground">Serviço (opcional)</Label>
+                  <SearchableSelect
+                    options={[{ value: '', label: '— Nenhum —' }, ...toSelectOptions(order.services, (s) => s.id, (s) => s.description)]}
+                    value={newMaterialServiceId}
+                    onChange={setNewMaterialServiceId}
+                    placeholder="Vincular a serviço..."
+                  />
+                </div>
+              )}
               <div className="flex-1 min-w-[200px]">
                 <SearchableSelect
                   options={toSelectOptions(products, (p) => p.id, (p) => `${p.name}${p.code ? ` (${p.code})` : ''}${p.unit ? ` - ${p.unit}` : ''}`)}
@@ -551,8 +660,14 @@ export default function MaintenanceDetailPage() {
                   placeholder="Selecione o produto..."
                 />
               </div>
-              <Input type="number" step="0.01" min="0.01" placeholder="Qtd" value={newMaterialQuantity} onChange={(e) => setNewMaterialQuantity(e.target.value)} className="w-24 rounded-xl" />
-              <Button size="sm" onClick={handleAddMaterial} disabled={!newMaterialProductId || !newMaterialQuantity || Number.parseFloat(newMaterialQuantity) <= 0 || updateMutation.isPending}>Adicionar</Button>
+              <QuantityInput
+                unitCode={products.find((p) => p.id === newMaterialProductId)?.unit}
+                placeholder="Qtd"
+                value={newMaterialQuantity}
+                onChange={setNewMaterialQuantity}
+                className="w-24 rounded-xl"
+              />
+              <Button size="sm" onClick={handleAddMaterial} disabled={!newMaterialProductId || newMaterialQuantity == null || newMaterialQuantity <= 0 || updateMutation.isPending}>Adicionar</Button>
             </div>
           </div>
         )}
@@ -586,10 +701,9 @@ export default function MaintenanceDetailPage() {
         </SectionCard>
       )}
 
-      {/* Área de impressão/exportação (visível apenas ao imprimir) */}
+      {/* Área de impressão (resumo: veículo + serviços | completa: tudo) */}
       <div className="maintenance-order-print-area hidden print:block bg-white text-black">
         <div className="max-w-3xl mx-auto p-8">
-          {/* Cabeçalho */}
           <div className="border-b-2 border-slate-800 pb-4 mb-6">
             <p className="text-xs uppercase tracking-widest text-slate-500 mb-1">Ordem de Serviço</p>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{order.orderNumber}</h1>
@@ -603,7 +717,6 @@ export default function MaintenanceDetailPage() {
             </div>
           </div>
 
-          {/* Dados principais em grid */}
           <div className="grid grid-cols-2 gap-x-12 gap-y-3 text-sm mb-6 p-4 rounded-lg bg-slate-50 border border-slate-200">
             <div>
               <p className="text-xs uppercase tracking-wide text-slate-500">Veículo</p>
@@ -615,20 +728,24 @@ export default function MaintenanceDetailPage() {
                 <p className="font-semibold text-slate-900">{order.kmAtEntry.toLocaleString('pt-BR')} km</p>
               </div>
             )}
-            {order.serviceDate && (
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Data do serviço</p>
-                <p className="font-semibold text-slate-900">{formatDate(order.serviceDate)}</p>
-              </div>
+            {printMode === 'full' && (
+              <>
+                {order.serviceDate && (
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Data do serviço</p>
+                    <p className="font-semibold text-slate-900">{formatDate(order.serviceDate)}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Custo total</p>
+                  <p className="font-semibold text-slate-900">{formatCurrency(order.totalCost || 0)}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">Tempo total</p>
+                  <p className="font-semibold text-slate-900">{formatTime(order.totalTimeMinutes)}</p>
+                </div>
+              </>
             )}
-            <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Custo total</p>
-              <p className="font-semibold text-slate-900">{formatCurrency(order.totalCost || 0)}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Tempo total</p>
-              <p className="font-semibold text-slate-900">{formatTime(order.totalTimeMinutes)}</p>
-            </div>
           </div>
 
           {(order.description || order.observations) && (
@@ -648,28 +765,6 @@ export default function MaintenanceDetailPage() {
             </div>
           )}
 
-          {order.workers && order.workers.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">Funcionários</h2>
-              <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
-                <thead>
-                  <tr className="bg-slate-100">
-                    <th className="text-left py-2 px-3 font-semibold text-slate-700">Nome</th>
-                    <th className="text-left py-2 px-3 font-semibold text-slate-700 w-28">Função</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {order.workers.map((w) => (
-                    <tr key={w.id} className="border-t border-slate-200">
-                      <td className="py-2 px-3 text-slate-900">{w.employeeName}</td>
-                      <td className="py-2 px-3 text-slate-600">{w.isResponsible ? 'Responsável' : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
           {order.services && order.services.length > 0 && (
             <div className="mb-6">
               <h2 className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">Serviços</h2>
@@ -677,16 +772,12 @@ export default function MaintenanceDetailPage() {
                 <thead>
                   <tr className="bg-slate-100">
                     <th className="text-left py-2 px-3 font-semibold text-slate-700">Descrição</th>
-                    <th className="text-right py-2 px-3 font-semibold text-slate-700 w-24">Valor</th>
                   </tr>
                 </thead>
                 <tbody>
                   {order.services.map((s) => (
                     <tr key={s.id} className="border-t border-slate-200">
                       <td className="py-2 px-3 text-slate-900">{s.description}</td>
-                      <td className="py-2 px-3 text-right text-slate-900 font-medium">
-                        {s.cost != null && s.cost > 0 ? formatCurrency(s.cost) : '—'}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -694,35 +785,86 @@ export default function MaintenanceDetailPage() {
             </div>
           )}
 
-          {order.materials && order.materials.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">Materiais</h2>
-              <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
-                <thead>
-                  <tr className="bg-slate-100">
-                    <th className="text-left py-2 px-3 font-semibold text-slate-700">Produto</th>
-                    <th className="text-center py-2 px-3 font-semibold text-slate-700 w-20">Qtd</th>
-                    <th className="text-right py-2 px-3 font-semibold text-slate-700 w-24">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {order.materials.map((m) => (
-                    <tr key={m.id} className="border-t border-slate-200">
-                      <td className="py-2 px-3 text-slate-900">{m.productName}</td>
-                      <td className="py-2 px-3 text-center text-slate-700">
-                        {m.quantity} {m.productUnit}
-                      </td>
-                      <td className="py-2 px-3 text-right text-slate-900 font-medium">
-                        {m.totalCost != null ? formatCurrency(Number(m.totalCost)) : '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {printMode === 'full' && (
+            <>
+              {order.services?.filter((s) => (s.serviceWorkers?.length ?? 0) > 0).length ? (
+                <div className="mb-6">
+                  <h2 className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">Funcionários por serviço</h2>
+                  <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
+                    <thead>
+                      <tr className="bg-slate-100">
+                        <th className="text-left py-2 px-3 font-semibold text-slate-700">Serviço</th>
+                        <th className="text-left py-2 px-3 font-semibold text-slate-700">Funcionário(s)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {order.services
+                        ?.filter((s) => (s.serviceWorkers?.length ?? 0) > 0)
+                        .map((s) => (
+                          <tr key={s.id} className="border-t border-slate-200">
+                            <td className="py-2 px-3 text-slate-900">{s.description}</td>
+                            <td className="py-2 px-3 text-slate-700">
+                              {(s.serviceWorkers ?? []).map((sw) => sw.employeeName).join(', ')}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+
+              {order.workers && order.workers.length > 0 && (
+                <div className="mb-6">
+                  <h2 className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">Funcionários (ordem)</h2>
+                  <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
+                    <thead>
+                      <tr className="bg-slate-100">
+                        <th className="text-left py-2 px-3 font-semibold text-slate-700">Nome</th>
+                        <th className="text-left py-2 px-3 font-semibold text-slate-700 w-28">Função</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {order.workers.map((w) => (
+                        <tr key={w.id} className="border-t border-slate-200">
+                          <td className="py-2 px-3 text-slate-900">{w.employeeName}</td>
+                          <td className="py-2 px-3 text-slate-600">{w.isResponsible ? 'Responsável' : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {order.materials && order.materials.length > 0 && (
+                <div className="mb-6">
+                  <h2 className="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2">Materiais</h2>
+                  <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
+                    <thead>
+                      <tr className="bg-slate-100">
+                        <th className="text-left py-2 px-3 font-semibold text-slate-700">Produto</th>
+                        <th className="text-center py-2 px-3 font-semibold text-slate-700 w-20">Qtd</th>
+                        <th className="text-right py-2 px-3 font-semibold text-slate-700 w-24">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {order.materials.map((m) => (
+                        <tr key={m.id} className="border-t border-slate-200">
+                          <td className="py-2 px-3 text-slate-900">{m.productName}</td>
+                          <td className="py-2 px-3 text-center text-slate-700">
+                            {formatQuantity(m.quantity, m.productUnit, { showUnit: true })}
+                          </td>
+                          <td className="py-2 px-3 text-right text-slate-900 font-medium">
+                            {m.totalCost != null ? formatCurrency(Number(m.totalCost)) : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
           )}
 
-          {/* Rodapé */}
           <div className="pt-6 mt-6 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500">
             <span>Documento gerado em {formatDateTime(new Date().toISOString())}</span>
             <span>Ordem de Serviço · {order.orderNumber}</span>

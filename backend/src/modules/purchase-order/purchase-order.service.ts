@@ -111,7 +111,7 @@ export class PurchaseOrderService {
       },
       include: {
         supplier: true,
-        items: { include: { product: true } },
+        items: { include: { product: { include: { unitOfMeasurement: true } } } },
       },
     });
 
@@ -153,7 +153,7 @@ export class PurchaseOrderService {
         where,
         skip,
         take: limit,
-        include: { supplier: true, items: { include: { product: true } } },
+        include: { supplier: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.purchaseOrder.count({ where }),
@@ -171,7 +171,7 @@ export class PurchaseOrderService {
   async findOne(id: string, user?: any): Promise<PurchaseOrderResponseDto> {
     const po = await this.prisma.purchaseOrder.findFirst({
       where: { id, deletedAt: null },
-      include: { supplier: true, items: { include: { product: true } } },
+      include: { supplier: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
     });
     if (!po) throw new NotFoundException('Pedido de compra não encontrado');
     if (user) {
@@ -235,7 +235,7 @@ export class PurchaseOrderService {
     const updated = await this.prisma.purchaseOrder.update({
       where: { id },
       data: updateData,
-      include: { supplier: true, items: { include: { product: true } } },
+      include: { supplier: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
     });
     return this.mapToResponse(updated);
   }
@@ -267,7 +267,7 @@ export class PurchaseOrderService {
   ): Promise<PurchaseOrderResponseDto> {
     const po = await this.prisma.purchaseOrder.findFirst({
       where: { id, deletedAt: null },
-      include: { supplier: true, items: { include: { product: true } } },
+      include: { supplier: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
     });
     if (!po) throw new NotFoundException('Pedido de compra não encontrado');
     if (user) {
@@ -368,6 +368,7 @@ export class PurchaseOrderService {
         productId: i.productId,
         productName: i.product?.name,
         productCode: i.product?.code,
+        productUnit: i.product?.unitOfMeasurement?.code ?? i.product?.unit ?? undefined,
         quantity: Number(i.quantity),
         quantityReceived: Number(i.quantityReceived),
         unitPrice: i.unitPrice != null ? Number(i.unitPrice) : undefined,

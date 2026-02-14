@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productApi, Product } from '@/lib/api/product';
 import { formatCurrency } from '@/lib/utils/currency';
+import { formatQuantity } from '@/lib/utils/quantity';
 import { useEffectiveBranch } from '@/lib/hooks/use-effective-branch';
 import { PageHeader } from '@/components/layout/page-header';
 import { SectionCard } from '@/components/ui/section-card';
@@ -185,13 +186,12 @@ export default function ProductsPage() {
               {level === 'low' && <AlertTriangle className="h-4 w-4 text-yellow-500" />}
               {level === 'ok' && minQuantity > 0 && <CheckCircle className="h-4 w-4 text-green-500" />}
               <span className={`text-sm font-semibold ${STOCK_LEVEL_COLORS[level]}`}>
-                {stock.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                {product.unit && ` ${product.unit}`}
+                {formatQuantity(stock, product.unit, { showUnit: true })}
               </span>
             </div>
             {minQuantity > 0 && (
               <span className="text-xs text-muted-foreground">
-                Mín: {minQuantity.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                Mín: {formatQuantity(minQuantity, product.unit)}
               </span>
             )}
           </div>

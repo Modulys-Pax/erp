@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { stockApi, Stock } from '@/lib/api/stock';
 import { formatCurrency } from '@/lib/utils/currency';
+import { formatQuantity } from '@/lib/utils/quantity';
 import { productApi, Product } from '@/lib/api/product';
 import { useEffectiveBranch } from '@/lib/hooks/use-effective-branch';
 import { useDebounce } from '@/lib/hooks/use-debounce';
@@ -110,12 +111,6 @@ export default function StockPage() {
     };
   }, [allStocksResponse, products]);
 
-  const formatNumber = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  };
 
   // Função para obter dados do produto
   const getProductData = (productId: string) => {
@@ -163,8 +158,8 @@ export default function StockPage() {
             className="border-l-4 border-l-primary"
           />
           <StatCard
-            title="Quantidade Total"
-            value={formatNumber(metrics.totalItems)}
+            title="Itens em estoque"
+            value={metrics.totalProducts}
             icon={Warehouse}
             className="border-l-4 border-l-blue-500"
           />
@@ -220,8 +215,7 @@ export default function StockPage() {
             columns={[
               { key: 'product.name', header: 'Produto', getValue: (s) => getProductData(s.productId)?.name || s.productId },
               { key: 'product.code', header: 'Código', getValue: (s) => getProductData(s.productId)?.code || '' },
-              { key: 'quantity', header: 'Quantidade', getValue: (s) => formatNumber(Number(s.quantity)) },
-              { key: 'unit', header: 'Unidade', getValue: (s) => getProductData(s.productId)?.unit || '' },
+              { key: 'quantity', header: 'Quantidade', getValue: (s) => formatQuantity(Number(s.quantity), getProductData(s.productId)?.unit, { showUnit: true }) },
               { key: 'averageCost', header: 'Custo Médio', getValue: (s) => formatCurrency(Number(s.averageCost || 0)) },
               { key: 'totalValue', header: 'Valor Total', getValue: (s) => formatCurrency(Number(s.quantity) * Number(s.averageCost || 0)) },
             ]}
@@ -273,14 +267,11 @@ export default function StockPage() {
                   return (
                     <div>
                       <span className={`font-semibold ${STOCK_LEVEL_COLORS[level]}`}>
-                        {formatNumber(stock.quantity)}
+                        {formatQuantity(stock.quantity, product?.unit, { showUnit: true })}
                       </span>
-                      {product?.unit && (
-                        <span className="text-muted-foreground text-sm ml-1">{product.unit}</span>
-                      )}
-                      {product?.minQuantity && product.minQuantity > 0 && (
+                      {product?.minQuantity != null && Number(product.minQuantity) > 0 && (
                         <p className="text-xs text-muted-foreground">
-                          Mín: {formatNumber(product.minQuantity)}
+                          Mín: {formatQuantity(product.minQuantity, product?.unit)}
                         </p>
                       )}
                     </div>

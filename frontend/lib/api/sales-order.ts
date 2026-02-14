@@ -14,6 +14,7 @@ export interface SalesOrderItem {
   productId: string;
   productName?: string;
   productCode?: string;
+  productUnit?: string;
   quantity: number;
   quantityInvoiced: number;
   unitPrice?: number;

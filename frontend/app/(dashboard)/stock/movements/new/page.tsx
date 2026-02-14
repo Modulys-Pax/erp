@@ -24,6 +24,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { toSelectOptions } from '@/lib/hooks/use-searchable-select';
 import { Textarea } from '@/components/ui/textarea';
 import { toastSuccess, toastErrorFromException } from '@/lib/utils';
+import { getQuantityInputStep, normalizeQuantityByUnit } from '@/lib/utils/quantity';
 
 const movementSchema = z.object({
   productId: z.string().uuid('Selecione um produto'),
@@ -121,10 +122,15 @@ export default function NewStockMovementPage() {
       return;
     }
 
+    const quantity = normalizeQuantityByUnit(data.quantity, product?.unit);
+    if (quantity <= 0) {
+      alert('Quantidade deve ser maior que zero. Para unidade em inteiros, use pelo menos 1.');
+      return;
+    }
     const submitData: CreateStockMovementDto = {
       type: StockMovementType.ENTRY, // Sempre entrada
       productId: data.productId,
-      quantity: data.quantity,
+      quantity,
       unitCost: product.unitPrice, // Usar o unitPrice do produto cadastrado
       documentNumber: data.documentNumber || undefined,
       notes: data.notes || undefined,
@@ -185,11 +191,14 @@ export default function NewStockMovementPage() {
           <div>
             <Label htmlFor="quantity" className="text-sm text-muted-foreground mb-2">
               Quantidade *
+              {selectedProduct?.unit && (
+                <span className="text-muted-foreground font-normal ml-1">({selectedProduct.unit})</span>
+              )}
             </Label>
             <Input
               id="quantity"
               type="number"
-              step="0.01"
+              step={getQuantityInputStep(selectedProduct?.unit)}
               min="0.01"
               {...register('quantity')}
               className={errors.quantity ? 'border-destructive rounded-xl' : 'rounded-xl'}

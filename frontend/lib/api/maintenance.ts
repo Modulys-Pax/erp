@@ -11,11 +11,18 @@ export interface MaintenanceWorker {
   createdBy?: string;
 }
 
+export interface MaintenanceServiceWorker {
+  id: string;
+  maintenanceServiceId: string;
+  employeeId: string;
+  employeeName?: string;
+}
+
 export interface MaintenanceService {
   id: string;
   maintenanceOrderId: string;
   description: string;
-  cost?: number;
+  serviceWorkers?: MaintenanceServiceWorker[];
   createdAt: Date;
   createdBy?: string;
 }
@@ -23,6 +30,7 @@ export interface MaintenanceService {
 export interface MaintenanceMaterial {
   id: string;
   maintenanceOrderId: string;
+  maintenanceServiceId?: string;
   productId: string;
   productName?: string;
   productUnit?: string;
@@ -85,14 +93,19 @@ export interface CreateMaintenanceWorkerDto {
 
 export interface CreateMaintenanceServiceDto {
   description: string;
-  cost?: number;
 }
 
 export interface CreateMaintenanceMaterialDto {
   productId: string;
+  maintenanceServiceId?: string;
   vehicleReplacementItemId?: string;
   quantity: number;
   unitCost?: number;
+}
+
+export interface UpdateMaintenanceServiceWorkerDto {
+  maintenanceServiceId: string;
+  employeeId: string;
 }
 
 export interface CreateMaintenanceOrderDto {
@@ -118,6 +131,8 @@ export interface UpdateMaintenanceOrderDto {
   workers?: CreateMaintenanceWorkerDto[];
   services?: CreateMaintenanceServiceDto[];
   materials?: CreateMaintenanceMaterialDto[];
+  /** Funcionários por serviço (quem executou cada serviço, informado antes de fechar) */
+  serviceWorkers?: UpdateMaintenanceServiceWorkerDto[];
 }
 
 export interface MaintenanceActionDto {

@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { productApi } from '@/lib/api/product';
 import { formatCurrency } from '@/lib/utils/currency';
+import { formatQuantity } from '@/lib/utils/quantity';
 import { branchApi } from '@/lib/api/branch';
 import { PageHeader } from '@/components/layout/page-header';
 import { SectionCard } from '@/components/ui/section-card';
@@ -58,14 +59,6 @@ export default function ProductSummaryPage() {
     setCurrentPage(1);
   }, [effectiveBranchId, startDate, endDate]);
 
-  const formatNumber = (value: number | undefined | null) => {
-    const n = typeof value === 'number' && !Number.isNaN(value) ? value : 0;
-    return new Intl.NumberFormat('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(n);
-  };
-
   const formatPeriod = (period: string) => {
     const [year, month] = period.split('-');
     const monthNames = [
@@ -112,7 +105,7 @@ export default function ProductSummaryPage() {
   const formatQuantityByUnit = (items: { unit: string; totalQuantity: number }[]) => {
     if (!items?.length) return '—';
     return items
-      .map(({ unit, totalQuantity }) => `${formatNumber(totalQuantity)} ${unitDisplayName(unit)}`)
+      .map(({ unit, totalQuantity }) => formatQuantity(totalQuantity, unit, { showUnit: true }))
       .join(' · ');
   };
 
@@ -296,7 +289,7 @@ export default function ProductSummaryPage() {
                   header: 'Nº de Usos',
                   render: (product) => (
                     <span className="text-foreground">
-                      {formatNumber(product.usageCount)}
+                      {formatQuantity(product.usageCount, 'UN')}
                     </span>
                   ),
                   className: 'text-right',
@@ -306,12 +299,7 @@ export default function ProductSummaryPage() {
                   header: 'Quantidade Total',
                   render: (product) => (
                     <span className="text-foreground">
-                      {formatNumber(product.totalQuantityUsed)}
-                      {product.unit && (
-                        <span className="text-xs text-muted-foreground ml-1">
-                          {product.unit}
-                        </span>
-                      )}
+                      {formatQuantity(product.totalQuantityUsed, product.unit, { showUnit: true })}
                     </span>
                   ),
                   className: 'text-right',

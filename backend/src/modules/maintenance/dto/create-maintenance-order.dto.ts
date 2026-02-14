@@ -35,20 +35,12 @@ export class CreateMaintenanceWorkerDto {
 
 export class CreateMaintenanceServiceDto {
   @ApiProperty({
-    description: 'Descrição do serviço realizado',
+    description: 'Descrição do serviço (apenas descritivo, sem valor)',
     example: 'Troca de óleo e filtro',
   })
   @IsString({ message: 'Descrição deve ser uma string' })
   @IsNotEmpty({ message: 'Descrição é obrigatória' })
   description: string;
-
-  @ApiProperty({
-    description: 'Custo do serviço',
-    example: 150.0,
-    required: false,
-  })
-  @IsOptional()
-  cost?: number;
 }
 
 export class CreateMaintenanceMaterialDto {
@@ -56,6 +48,15 @@ export class CreateMaintenanceMaterialDto {
   @IsUUID('4', { message: 'ID do produto deve ser um UUID válido' })
   @IsNotEmpty({ message: 'ID do produto é obrigatório' })
   productId: string;
+
+  @ApiProperty({
+    description: 'ID do serviço ao qual este material está vinculado (opcional)',
+    example: 'uuid',
+    required: false,
+  })
+  @IsUUID('4', { message: 'ID do serviço deve ser um UUID válido' })
+  @IsOptional()
+  maintenanceServiceId?: string;
 
   @ApiProperty({
     description: 'ID do item de troca por KM ao qual este material está vinculado (opcional)',

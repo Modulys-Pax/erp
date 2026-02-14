@@ -21,6 +21,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { toSelectOptions } from '@/lib/hooks/use-searchable-select';
 import { toastSuccess, toastErrorFromException } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
+import { getQuantityInputStep, normalizeQuantityByUnit } from '@/lib/utils/quantity';
 import { Plus, Trash2 } from 'lucide-react';
 import { Can } from '@/components/auth/permission-gate';
 
@@ -208,13 +209,13 @@ export default function NewSalesOrderPage() {
                         <Input
                           type="number"
                           min={0}
-                          step="0.01"
+                          step={getQuantityInputStep(products.find((p) => p.id === row.productId)?.unit)}
                           value={row.quantity || ''}
                           onChange={(e) =>
                             updateItem(
                               row.id,
                               'quantity',
-                              parseFloat(e.target.value) || 0,
+                              normalizeQuantityByUnit(e.target.value, products.find((p) => p.id === row.productId)?.unit),
                             )
                           }
                           className="text-right w-24 ml-auto"

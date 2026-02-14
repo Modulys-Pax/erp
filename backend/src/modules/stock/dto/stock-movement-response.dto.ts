@@ -11,6 +11,15 @@ export class StockMovementResponseDto {
   @ApiProperty({ description: 'ID do produto' })
   productId: string;
 
+  @ApiProperty({ description: 'Nome do produto', required: false })
+  productName?: string;
+
+  @ApiProperty({ description: 'Código do produto', required: false })
+  productCode?: string;
+
+  @ApiProperty({ description: 'Unidade de medida do produto', required: false })
+  productUnit?: string;
+
   @ApiProperty({ description: 'Quantidade movimentada' })
   quantity: number;
 

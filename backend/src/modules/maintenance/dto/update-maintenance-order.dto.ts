@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, IsArray, ValidateNested, IsUUID, IsNotEmpty } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import {
@@ -6,6 +6,19 @@ import {
   CreateMaintenanceServiceDto,
   CreateMaintenanceMaterialDto,
 } from './create-maintenance-order.dto';
+
+/** Funcionário que executou um serviço (informado antes de fechar a ordem). */
+export class UpdateMaintenanceServiceWorkerDto {
+  @ApiProperty({ description: 'ID do serviço da ordem', example: 'uuid' })
+  @IsUUID('4', { message: 'ID do serviço deve ser um UUID válido' })
+  @IsNotEmpty({ message: 'ID do serviço é obrigatório' })
+  maintenanceServiceId: string;
+
+  @ApiProperty({ description: 'ID do funcionário', example: 'uuid' })
+  @IsUUID('4', { message: 'ID do funcionário deve ser um UUID válido' })
+  @IsNotEmpty({ message: 'ID do funcionário é obrigatório' })
+  employeeId: string;
+}
 
 export class UpdateMaintenanceOrderDto {
   @ApiProperty({
@@ -58,4 +71,15 @@ export class UpdateMaintenanceOrderDto {
   @Type(() => CreateMaintenanceMaterialDto)
   @IsOptional()
   materials?: CreateMaintenanceMaterialDto[];
+
+  @ApiProperty({
+    description: 'Funcionários por serviço (quem executou cada serviço, informado antes de fechar)',
+    type: [UpdateMaintenanceServiceWorkerDto],
+    required: false,
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateMaintenanceServiceWorkerDto)
+  @IsOptional()
+  serviceWorkers?: UpdateMaintenanceServiceWorkerDto[];
 }

@@ -36,6 +36,9 @@ export interface StockMovement {
   id: string;
   type: StockMovementType;
   productId: string;
+  productName?: string;
+  productCode?: string;
+  productUnit?: string;
   quantity: number;
   unitCost?: number;
   totalCost?: number;

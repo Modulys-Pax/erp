@@ -23,6 +23,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { toastSuccess, toastErrorFromException } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
+import { formatQuantity } from '@/lib/utils/quantity';
 import { formatDate } from '@/lib/utils/date';
 import {
   SALES_ORDER_STATUS_LABELS,
@@ -177,8 +178,8 @@ export default function SalesOrderDetailPage() {
                       </span>
                     )}
                   </td>
-                  <td className="py-2 text-right">{item.quantity}</td>
-                  <td className="py-2 text-right">{item.quantityInvoiced}</td>
+                  <td className="py-2 text-right">{formatQuantity(item.quantity, item.productUnit, { showUnit: true })}</td>
+                  <td className="py-2 text-right">{formatQuantity(item.quantityInvoiced, item.productUnit, { showUnit: true })}</td>
                   <td className="py-2 text-right">
                     {item.unitPrice != null
                       ? formatCurrency(item.unitPrice)
