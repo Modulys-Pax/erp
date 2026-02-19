@@ -167,12 +167,14 @@ describe('status.constants', () => {
   describe('ACCOUNT_PAYABLE_STATUS', () => {
     it('deve ter status corretos', () => {
       expect(ACCOUNT_PAYABLE_STATUS.PENDING).toBe('PENDING');
+      expect(ACCOUNT_PAYABLE_STATUS.OVERDUE).toBe('OVERDUE');
       expect(ACCOUNT_PAYABLE_STATUS.PAID).toBe('PAID');
       expect(ACCOUNT_PAYABLE_STATUS.CANCELLED).toBe('CANCELLED');
     });
 
     it('deve ter labels corretos', () => {
       expect(ACCOUNT_PAYABLE_STATUS_LABELS.PENDING).toBe('Pendente');
+      expect(ACCOUNT_PAYABLE_STATUS_LABELS.OVERDUE).toBe('Vencido');
       expect(ACCOUNT_PAYABLE_STATUS_LABELS.PAID).toBe('Paga');
       expect(ACCOUNT_PAYABLE_STATUS_LABELS.CANCELLED).toBe('Cancelada');
     });

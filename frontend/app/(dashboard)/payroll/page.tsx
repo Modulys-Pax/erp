@@ -384,7 +384,13 @@ export default function PayrollPage() {
             rowClassName={(account: AccountPayable) =>
               account.status === 'PENDING'
                 ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border-l-2 border-l-yellow-500'
-                : undefined
+                : account.status === 'OVERDUE'
+                  ? 'bg-red-50/50 dark:bg-red-900/10 border-l-2 border-l-red-500'
+                  : account.status === 'PAID'
+                    ? 'bg-green-50/50 dark:bg-green-900/10 border-l-2 border-l-green-500'
+                    : account.status === 'CANCELLED'
+                      ? 'bg-red-50/50 dark:bg-red-900/10 border-l-2 border-l-red-500'
+                      : undefined
             }
             columns={[
               {

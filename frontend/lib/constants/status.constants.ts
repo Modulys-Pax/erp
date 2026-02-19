@@ -58,7 +58,7 @@ export const MAINTENANCE_STATUS_LABELS: Record<MaintenanceStatus, string> = {
 export const MAINTENANCE_STATUS_COLORS: Record<MaintenanceStatus, string> = {
   OPEN: 'bg-blue-100 !text-blue-800 dark:bg-blue-900 dark:!text-blue-200',
   IN_PROGRESS: 'bg-yellow-100 !text-yellow-800 dark:bg-yellow-900 dark:!text-yellow-200',
-  PAUSED: 'bg-muted text-muted-foreground',
+  PAUSED: 'bg-amber-100 !text-amber-800 dark:bg-amber-900 dark:!text-amber-200',
   COMPLETED: 'bg-green-100 !text-green-800 dark:bg-green-900 dark:!text-green-200',
   CANCELLED: 'bg-red-100 !text-red-800 dark:bg-red-900 dark:!text-red-200',
 };
@@ -66,7 +66,7 @@ export const MAINTENANCE_STATUS_COLORS: Record<MaintenanceStatus, string> = {
 export const MAINTENANCE_STATUS_ICON_COLORS: Record<MaintenanceStatus, string> = {
   OPEN: 'text-blue-600 dark:text-blue-400',
   IN_PROGRESS: 'text-yellow-600 dark:text-yellow-400',
-  PAUSED: 'text-muted-foreground',
+  PAUSED: 'text-amber-600 dark:text-amber-400',
   COMPLETED: 'text-green-600 dark:text-green-400',
   CANCELLED: 'text-red-600 dark:text-red-400',
 };
@@ -225,6 +225,7 @@ export const MAINTENANCE_EVENT_LABELS: Record<MaintenanceEvent, string> = {
 
 export const ACCOUNT_PAYABLE_STATUS = {
   PENDING: 'PENDING',
+  OVERDUE: 'OVERDUE',
   PAID: 'PAID',
   CANCELLED: 'CANCELLED',
 } as const;
@@ -233,14 +234,20 @@ export type AccountPayableStatus = (typeof ACCOUNT_PAYABLE_STATUS)[keyof typeof 
 
 export const ACCOUNT_PAYABLE_STATUS_LABELS: Record<AccountPayableStatus, string> = {
   PENDING: 'Pendente',
+  OVERDUE: 'Vencido',
   PAID: 'Paga',
   CANCELLED: 'Cancelada',
 };
 
 export const ACCOUNT_PAYABLE_STATUS_COLORS: Record<AccountPayableStatus, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:!text-yellow-200',
-  PAID: 'bg-green-100 text-green-800 dark:bg-green-900 dark:!text-green-200',
-  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:!text-red-200',
+  PENDING:
+    'bg-yellow-100 text-yellow-800 dark:bg-amber-900/90 dark:text-amber-100 border border-transparent',
+  OVERDUE:
+    'bg-red-100 text-red-800 dark:bg-red-900/90 dark:text-red-100 border border-transparent',
+  PAID:
+    'bg-green-100 text-green-800 dark:bg-emerald-900/90 dark:text-emerald-100 border border-transparent',
+  CANCELLED:
+    'bg-red-100 text-red-700 dark:bg-red-950/90 dark:text-red-200 border border-transparent',
 };
 
 // =============================================================================
@@ -290,11 +297,16 @@ export const VACATION_STATUS_LABELS: Record<VacationStatus, string> = {
 };
 
 export const VACATION_STATUS_COLORS: Record<VacationStatus, string> = {
-  PLANNED: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:!text-blue-200',
-  APPROVED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:!text-green-200',
-  IN_PROGRESS: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:!text-yellow-200',
-  COMPLETED: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:!text-gray-200',
-  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:!text-red-200',
+  PLANNED:
+    'bg-blue-100 text-blue-800 dark:bg-blue-900/90 dark:text-blue-100 border border-transparent',
+  APPROVED:
+    'bg-green-100 text-green-800 dark:bg-emerald-900/90 dark:text-emerald-100 border border-transparent',
+  IN_PROGRESS:
+    'bg-yellow-100 text-yellow-800 dark:bg-amber-900/90 dark:text-amber-100 border border-transparent',
+  COMPLETED:
+    'bg-gray-100 text-gray-800 dark:bg-gray-700/90 dark:text-gray-100 border border-transparent',
+  CANCELLED:
+    'bg-red-100 text-red-800 dark:bg-red-900/90 dark:text-red-100 border border-transparent',
 };
 
 // =============================================================================

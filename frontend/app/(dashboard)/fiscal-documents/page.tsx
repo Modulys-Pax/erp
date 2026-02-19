@@ -337,6 +337,11 @@ export default function FiscalDocumentsPage() {
             emptyMessage="Nenhum documento fiscal"
             pagination={pagination}
             onPageChange={setPage}
+            rowClassName={(row: FiscalDocument) =>
+              row.status === 'REGISTERED'
+                ? 'bg-green-50/50 dark:bg-green-900/10 border-l-2 border-l-green-500'
+                : 'bg-gray-50/50 dark:bg-gray-900/10 border-l-2 border-l-gray-500'
+            }
           />
         )}
       </SectionCard>

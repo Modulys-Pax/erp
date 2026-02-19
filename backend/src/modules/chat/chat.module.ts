@@ -17,7 +17,7 @@ import { FileProcessingService } from '../../shared/services/file-processing.ser
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+        secret: configService.get<string>('jwt.secret') || 'change-me-in-production',
       }),
       inject: [ConfigService],
     }),

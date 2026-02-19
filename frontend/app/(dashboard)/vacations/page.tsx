@@ -227,6 +227,19 @@ export default function VacationsPage() {
             data={vacations}
             isLoading={isLoading}
             emptyMessage="Nenhuma férias encontrada"
+            rowClassName={(vacation: { status: string }) =>
+              vacation.status === 'PLANNED'
+                ? 'bg-blue-50/50 dark:bg-blue-900/10 border-l-2 border-l-blue-500'
+                : vacation.status === 'APPROVED'
+                  ? 'bg-green-50/50 dark:bg-green-900/10 border-l-2 border-l-green-500'
+                  : vacation.status === 'IN_PROGRESS'
+                    ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border-l-2 border-l-yellow-500'
+                    : vacation.status === 'COMPLETED'
+                      ? 'bg-gray-50/50 dark:bg-gray-900/10 border-l-2 border-l-gray-500'
+                      : vacation.status === 'CANCELLED'
+                        ? 'bg-red-50/50 dark:bg-red-900/10 border-l-2 border-l-red-500'
+                        : undefined
+            }
             columns={[
               {
                 key: 'employee',
@@ -275,7 +288,7 @@ export default function VacationsPage() {
                 render: (vacation) => {
                   const StatusIcon = getStatusIcon(vacation.status);
                   return (
-                    <Badge className={VACATION_STATUS_COLORS[vacation.status as VacationStatusType]}>
+                    <Badge variant="outline" className={VACATION_STATUS_COLORS[vacation.status as VacationStatusType]}>
                       <StatusIcon className="h-3 w-3 mr-1" />
                       {VACATION_STATUS_LABELS[vacation.status as VacationStatusType]}
                     </Badge>

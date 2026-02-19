@@ -422,11 +422,17 @@ export default function MaintenancePage() {
             pagination={pagination}
             onPageChange={setPage}
             rowClassName={(order: MaintenanceOrder) =>
-              order.status === 'IN_PROGRESS'
-                ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border-l-2 border-l-yellow-500'
-                : order.status === 'OPEN'
-                  ? 'bg-blue-50/50 dark:bg-blue-900/10 border-l-2 border-l-blue-500'
-                  : undefined
+              order.status === 'OPEN'
+                ? 'bg-blue-50/50 dark:bg-blue-900/10 border-l-2 border-l-blue-500'
+                : order.status === 'IN_PROGRESS'
+                  ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border-l-2 border-l-yellow-500'
+                  : order.status === 'PAUSED'
+                    ? 'bg-amber-50/50 dark:bg-amber-900/10 border-l-2 border-l-amber-500'
+                    : order.status === 'COMPLETED'
+                      ? 'bg-green-50/50 dark:bg-green-900/10 border-l-2 border-l-green-500'
+                      : order.status === 'CANCELLED'
+                        ? 'bg-red-50/50 dark:bg-red-900/10 border-l-2 border-l-red-500'
+                        : undefined
             }
           />
         )}

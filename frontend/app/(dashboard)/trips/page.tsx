@@ -19,6 +19,7 @@ import { vehicleApi, getVehicleOptionLabel } from '@/lib/api/vehicle';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MapPin, Plus, Calendar, Truck, UserCircle, Edit } from 'lucide-react';
 import { Can } from '@/components/auth/permission-gate';
+import { useHasPermission } from '@/lib/contexts/permission-context';
 import { formatDate } from '@/lib/utils/date';
 
 const STATUS_OPTIONS = [
@@ -40,6 +41,7 @@ const STATUS_BADGE_CLASS: Record<string, string> = {
 
 export default function TripsPage() {
   const { branchId: effectiveBranchId } = useEffectiveBranch();
+  const canCreate = useHasPermission('trips.create');
   const [vehicleId, setVehicleId] = useState<string>('');
   const [customerId, setCustomerId] = useState<string>('');
   const [status, setStatus] = useState<string>('');
@@ -195,10 +197,26 @@ export default function TripsPage() {
             icon={MapPin}
             title="Nenhuma viagem encontrada"
             description="Cadastre uma viagem ou ajuste os filtros."
-            action={listAction}
+            action={canCreate ? { label: 'Nova viagem', href: '/trips/new' } : undefined}
           />
         ) : (
-          <DataTable columns={columns} data={trips} />
+          <DataTable
+            columns={columns}
+            data={trips}
+            rowClassName={(trip: Trip) =>
+              trip.status === 'DRAFT'
+                ? 'bg-gray-50/50 dark:bg-gray-900/10 border-l-2 border-l-gray-500'
+                : trip.status === 'SCHEDULED'
+                  ? 'bg-blue-50/50 dark:bg-blue-900/10 border-l-2 border-l-blue-500'
+                  : trip.status === 'IN_PROGRESS'
+                    ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border-l-2 border-l-yellow-500'
+                    : trip.status === 'COMPLETED'
+                      ? 'bg-green-50/50 dark:bg-green-900/10 border-l-2 border-l-green-500'
+                      : trip.status === 'CANCELLED'
+                        ? 'bg-red-50/50 dark:bg-red-900/10 border-l-2 border-l-red-500'
+                        : undefined
+            }
+          />
         )}
       </SectionCard>
     </div>

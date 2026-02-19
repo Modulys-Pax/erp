@@ -349,7 +349,7 @@ export default function EditVacationPage() {
             <AlertCircle className="h-12 w-12 text-yellow-500 mb-4" />
             <p className="text-muted-foreground mb-2">
               Não é possível editar férias com status{' '}
-              <Badge className={VACATION_STATUS_COLORS[vacation.status as VacationStatusType]}>
+              <Badge variant="outline" className={VACATION_STATUS_COLORS[vacation.status as VacationStatusType]}>
                 {VACATION_STATUS_LABELS[vacation.status as VacationStatusType]}
               </Badge>
             </p>
@@ -392,7 +392,7 @@ export default function EditVacationPage() {
               <div>
                 <Label>Status Atual</Label>
                 <div className="pt-2">
-                  <Badge className={VACATION_STATUS_COLORS[vacation.status as VacationStatusType]}>
+                  <Badge variant="outline" className={VACATION_STATUS_COLORS[vacation.status as VacationStatusType]}>
                     {VACATION_STATUS_LABELS[vacation.status as VacationStatusType]}
                   </Badge>
                 </div>

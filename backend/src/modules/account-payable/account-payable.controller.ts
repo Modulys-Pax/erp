@@ -80,7 +80,7 @@ export class AccountPayableController {
   @ApiQuery({
     name: 'status',
     required: false,
-    enum: ['PENDING', 'PAID', 'CANCELLED'],
+    enum: ['PENDING', 'OVERDUE', 'PAID', 'CANCELLED'],
     description: 'Filtrar por status',
   })
   @ApiQuery({
@@ -280,7 +280,7 @@ export class AccountPayableController {
   @ApiQuery({
     name: 'status',
     required: false,
-    enum: ['PENDING', 'PAID', 'CANCELLED'],
+    enum: ['PENDING', 'OVERDUE', 'PAID', 'CANCELLED'],
     description: 'Filtrar por status',
   })
   @ApiQuery({

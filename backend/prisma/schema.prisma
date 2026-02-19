@@ -976,6 +976,7 @@ enum TransactionOriginType {
 
 enum AccountPayableStatus {
   PENDING // Pendente
+  OVERDUE // Vencido (data de vencimento já passou)
   PAID // Paga
   CANCELLED // Cancelada
 }

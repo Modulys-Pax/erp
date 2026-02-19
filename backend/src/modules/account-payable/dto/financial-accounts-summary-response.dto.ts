@@ -17,7 +17,7 @@ export class AccountPayableDetailDto {
   @ApiProperty({ example: '2024-01-10', required: false })
   paymentDate?: Date;
 
-  @ApiProperty({ enum: ['PENDING', 'PAID', 'CANCELLED'] })
+  @ApiProperty({ enum: ['PENDING', 'OVERDUE', 'PAID', 'CANCELLED'] })
   status: string;
 
   @ApiProperty({ example: 'NF-001', required: false })

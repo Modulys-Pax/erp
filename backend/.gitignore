@@ -46,3 +46,6 @@ lerna-debug.log*
 # Uploads
 uploads/*
 !uploads/.gitkeep
+
+backend/src/shared/constants/company.constants.ts
+frontend/lib/constants/company.constants.ts

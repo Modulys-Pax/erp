@@ -77,8 +77,9 @@ export function FleetExpensesTab() {
 
   const getStatusBadge = (status: AccountPayableStatus) => {
     return (
-      <Badge className={ACCOUNT_PAYABLE_STATUS_COLORS[status]}>
+      <Badge variant="outline" className={ACCOUNT_PAYABLE_STATUS_COLORS[status]}>
         {status === 'PENDING' && <Clock className="mr-1 h-3 w-3" />}
+        {status === 'OVERDUE' && <Clock className="mr-1 h-3 w-3" />}
         {status === 'PAID' && <CheckCircle className="mr-1 h-3 w-3" />}
         {ACCOUNT_PAYABLE_STATUS_LABELS[status]}
       </Badge>
@@ -312,6 +313,17 @@ export function FleetExpensesTab() {
                 data={maintenancePayables.accountsPayable.data}
                 isLoading={isLoadingPayables}
                 emptyMessage="Nenhuma conta a pagar"
+                rowClassName={(account: { status: string }) =>
+                  account.status === 'PENDING'
+                    ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border-l-2 border-l-yellow-500'
+                    : account.status === 'OVERDUE'
+                      ? 'bg-red-50/50 dark:bg-red-900/10 border-l-2 border-l-red-500'
+                      : account.status === 'PAID'
+                        ? 'bg-green-50/50 dark:bg-green-900/10 border-l-2 border-l-green-500'
+                        : account.status === 'CANCELLED'
+                          ? 'bg-red-50/50 dark:bg-red-900/10 border-l-2 border-l-red-500'
+                          : undefined
+                }
                 columns={[
                   {
                     key: 'description',

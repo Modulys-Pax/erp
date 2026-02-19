@@ -598,20 +598,21 @@ export default function DashboardPage() {
               <p className="text-xs text-muted-foreground">Por categoria</p>
             </CardHeader>
             <CardContent>
-              <div className="h-[250px]">
+              <div className="h-[250px] w-full min-w-0 overflow-visible">
                 {pieChartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
+                    <PieChart margin={{ top: 16, right: 16, bottom: 16, left: 16 }}>
                       <Pie
                         data={pieChartData}
                         cx="50%"
                         cy="50%"
                         innerRadius={60}
-                        outerRadius={90}
+                        outerRadius={85}
                         paddingAngle={2}
                         dataKey="value"
                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                         labelLine={false}
+                        isAnimationActive={true}
                       >
                         {pieChartData.map((_, index) => (
                           <Cell 
@@ -950,15 +951,17 @@ export default function DashboardPage() {
                       <Badge
                         variant="outline"
                         className={cn(
-                          order.status === 'COMPLETED' && 'text-green-700 border-green-300',
-                          order.status === 'IN_PROGRESS' && 'text-blue-700 border-blue-300',
-                          order.status === 'OPEN' && 'text-yellow-700 border-yellow-300',
+                          order.status === 'COMPLETED' && 'text-green-700 border-green-300 bg-green-50 dark:bg-green-950 dark:border-green-800',
+                          order.status === 'IN_PROGRESS' && 'text-blue-700 border-blue-300 bg-blue-50 dark:bg-blue-950 dark:border-blue-800',
+                          order.status === 'OPEN' && 'text-yellow-700 border-yellow-300 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800',
+                          order.status === 'PAUSED' && 'text-amber-700 border-amber-300 bg-amber-50 dark:bg-amber-950 dark:border-amber-800',
                           order.status === 'CANCELLED' && 'text-muted-foreground',
                         )}
                       >
                         {order.status === 'COMPLETED' && 'Concluída'}
                         {order.status === 'IN_PROGRESS' && 'Em Andamento'}
                         {order.status === 'OPEN' && 'Aberta'}
+                        {order.status === 'PAUSED' && 'Pausada'}
                         {order.status === 'CANCELLED' && 'Cancelada'}
                       </Badge>
                     </div>

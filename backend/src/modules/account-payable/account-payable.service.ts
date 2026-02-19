@@ -112,6 +112,21 @@ export class AccountPayableService {
     startDate?: string,
     endDate?: string,
   ): Promise<AccountPayableResponseDto[]> {
+    // Marcar como OVERDUE as contas PENDING com data de vencimento já passada
+    const startOfToday = new Date();
+    startOfToday.setUTCHours(0, 0, 0, 0);
+    const overdueWhere: Prisma.AccountPayableWhereInput = {
+      deletedAt: null,
+      status: 'PENDING',
+      dueDate: { lt: startOfToday },
+      ...(companyId ? { companyId } : {}),
+      ...(branchId ? { branchId } : {}),
+    };
+    await this.prisma.accountPayable.updateMany({
+      where: overdueWhere,
+      data: { status: 'OVERDUE' },
+    });
+
     const where: Prisma.AccountPayableWhereInput = {
       deletedAt: null,
     };
@@ -489,6 +504,18 @@ export class AccountPayableService {
       ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
     };
 
+    // Marcar como OVERDUE as contas PENDING com data de vencimento já passada
+    const startOfToday = new Date();
+    startOfToday.setUTCHours(0, 0, 0, 0);
+    await this.prisma.accountPayable.updateMany({
+      where: {
+        ...payableWhere,
+        status: 'PENDING',
+        dueDate: { lt: startOfToday },
+      },
+      data: { status: 'OVERDUE' },
+    });
+
     // Filtro base para contas a receber
     const receivableWhere: Prisma.AccountReceivableWhereInput = {
       companyId,
@@ -512,10 +539,10 @@ export class AccountPayableService {
       receivableWhere[dateField] = dateFilter;
     }
 
-    // Calcular totais de contas a pagar por status
+    // Calcular totais de contas a pagar por status ("pendentes" = PENDING + OVERDUE)
     const [payablePending, payablePaid, payableCancelled] = await Promise.all([
       this.prisma.accountPayable.aggregate({
-        where: { ...payableWhere, status: 'PENDING' },
+        where: { ...payableWhere, status: { in: ['PENDING', 'OVERDUE'] } },
         _sum: { amount: true },
         _count: true,
       }),
@@ -709,6 +736,19 @@ export class AccountPayableService {
       ...(originType ? { originType: originType as any } : {}),
     };
 
+    // Marcar como OVERDUE as contas PENDING com data de vencimento já passada (antes de consultar)
+    const startOfToday = new Date();
+    startOfToday.setUTCHours(0, 0, 0, 0);
+    const overdueUpdateWhere: Prisma.AccountPayableWhereInput = {
+      ...basePayableWhere,
+      status: 'PENDING',
+      dueDate: { lt: startOfToday },
+    };
+    await this.prisma.accountPayable.updateMany({
+      where: overdueUpdateWhere,
+      data: { status: 'OVERDUE' },
+    });
+
     // Aplicar filtro de data se fornecido
     if (startDate || endDate) {
       const dateFilter: any = {};
@@ -729,10 +769,10 @@ export class AccountPayableService {
       ...(status ? { status: status as any } : {}),
     };
 
-    // Calcular totais de contas a pagar por status (sem filtro de status)
+    // Calcular totais: "pendentes" = PENDING + OVERDUE (não pagas nem canceladas)
     const [payablePending, payablePaid, payableCancelled] = await Promise.all([
       this.prisma.accountPayable.aggregate({
-        where: { ...basePayableWhere, status: 'PENDING' },
+        where: { ...basePayableWhere, status: { in: ['PENDING', 'OVERDUE'] } },
         _sum: { amount: true },
         _count: true,
       }),

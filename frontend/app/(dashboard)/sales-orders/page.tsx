@@ -30,6 +30,8 @@ import {
 import { Plus, MoreHorizontal, Eye, Pencil, Trash2, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import { Can } from '@/components/auth/permission-gate';
+import { useHasPermission } from '@/lib/contexts/permission-context';
+import { cn } from '@/lib/utils';
 
 const DEBOUNCE_MS = 400;
 const LIMIT = 10;
@@ -37,6 +39,7 @@ const LIMIT = 10;
 export default function SalesOrdersPage() {
   const queryClient = useQueryClient();
   const { branchId: effectiveBranchId } = useEffectiveBranch();
+  const canCreate = useHasPermission('sales-orders.create');
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [customerFilter, setCustomerFilter] = useState<string>('');
@@ -175,13 +178,7 @@ export default function SalesOrdersPage() {
             icon={ShoppingBag}
             title="Nenhum pedido de venda"
             description="Crie um pedido para começar."
-            action={
-              <Can permission="sales-orders.create">
-                <Button asChild>
-                  <Link href="/sales-orders/new">Novo pedido</Link>
-                </Button>
-              </Can>
-            }
+            action={canCreate ? { label: 'Novo pedido', href: '/sales-orders/new' } : undefined}
           />
         ) : (
           <>
@@ -199,7 +196,17 @@ export default function SalesOrdersPage() {
                 </thead>
                 <tbody>
                   {orders.map((row: SalesOrder) => (
-                    <tr key={row.id} className="border-b hover:bg-muted/50">
+                    <tr
+                      key={row.id}
+                      className={cn(
+                        'border-b hover:bg-muted/50',
+                        row.status === 'DRAFT' && 'bg-gray-50/50 dark:bg-gray-900/10 border-l-2 border-l-gray-500',
+                        row.status === 'CONFIRMED' && 'bg-blue-50/50 dark:bg-blue-900/10 border-l-2 border-l-blue-500',
+                        row.status === 'PARTIALLY_DELIVERED' && 'bg-yellow-50/50 dark:bg-yellow-900/10 border-l-2 border-l-yellow-500',
+                        row.status === 'DELIVERED' && 'bg-green-50/50 dark:bg-green-900/10 border-l-2 border-l-green-500',
+                        row.status === 'CANCELLED' && 'bg-red-50/50 dark:bg-red-900/10 border-l-2 border-l-red-500'
+                      )}
+                    >
                       <td className="py-2 font-medium">
                         <Link
                           href={`/sales-orders/${row.id}`}

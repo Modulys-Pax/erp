@@ -188,7 +188,7 @@ export default function ProductSummaryPage() {
                           {unitDisplayName(unit)}
                         </p>
                         <p className="text-lg font-semibold text-foreground">
-                          {formatNumber(totalQuantity)} {unit}
+                          {formatQuantity(totalQuantity, unit, { showUnit: true })}
                         </p>
                       </div>
                     </div>

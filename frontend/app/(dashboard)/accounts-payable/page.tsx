@@ -187,6 +187,7 @@ export default function AccountsPayablePage() {
               options={[
                 { value: '', label: 'Todos os status' },
                 { value: 'PENDING', label: 'Pendente' },
+                { value: 'OVERDUE', label: 'Vencido' },
                 { value: 'PAID', label: 'Paga' },
                 { value: 'CANCELLED', label: 'Cancelada' },
               ]}
@@ -261,11 +262,13 @@ export default function AccountsPayablePage() {
             rowClassName={(account: { status: string }) =>
               account.status === 'PENDING'
                 ? 'bg-yellow-50/50 dark:bg-yellow-900/10'
-                : account.status === 'PAID'
-                  ? 'bg-green-50/50 dark:bg-green-900/10'
-                  : account.status === 'CANCELLED'
-                    ? 'bg-red-50/50 dark:bg-red-900/10'
-                    : undefined
+                : account.status === 'OVERDUE'
+                  ? 'bg-red-50/50 dark:bg-red-900/10'
+                  : account.status === 'PAID'
+                    ? 'bg-green-50/50 dark:bg-green-900/10'
+                    : account.status === 'CANCELLED'
+                      ? 'bg-red-50/50 dark:bg-red-900/10'
+                      : undefined
             }
             columns={[
               {
@@ -319,7 +322,7 @@ export default function AccountsPayablePage() {
                 key: 'status',
                 header: 'Status',
                 render: (account) => (
-                  <Badge className={ACCOUNT_PAYABLE_STATUS_COLORS[account.status as AccountPayableStatus]}>
+                  <Badge variant="outline" className={ACCOUNT_PAYABLE_STATUS_COLORS[account.status as AccountPayableStatus]}>
                     {ACCOUNT_PAYABLE_STATUS_LABELS[account.status as AccountPayableStatus]}
                   </Badge>
                 ),
@@ -345,7 +348,7 @@ export default function AccountsPayablePage() {
                             </Link>
                           </DropdownMenuItem>
                         </Can>
-                        {account.status === 'PENDING' && (
+                        {(account.status === 'PENDING' || account.status === 'OVERDUE') && (
                           <>
                             <Can permission="accounts-payable.pay">
                               <DropdownMenuItem onClick={() => handlePay(account.id)} className="flex items-center">

@@ -13,6 +13,7 @@ import { TransactionOriginType } from '../../financial-transaction/dto/create-fi
 
 export enum AccountPayableStatus {
   PENDING = 'PENDING',
+  OVERDUE = 'OVERDUE',
   PAID = 'PAID',
   CANCELLED = 'CANCELLED',
 }

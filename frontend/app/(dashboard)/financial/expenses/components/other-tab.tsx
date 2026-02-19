@@ -83,7 +83,7 @@ export function OtherExpensesTab() {
   const metrics = useMemo(() => {
     const total = manualAccounts.length;
     const totalAmount = manualAccounts.reduce((acc, ap) => acc + Number(ap.amount), 0);
-    const pending = manualAccounts.filter((ap) => ap.status === 'PENDING');
+    const pending = manualAccounts.filter((ap) => ap.status === 'PENDING' || ap.status === 'OVERDUE');
     const paid = manualAccounts.filter((ap) => ap.status === 'PAID');
     return {
       total,
@@ -98,8 +98,9 @@ export function OtherExpensesTab() {
 
   const getStatusBadge = (status: AccountPayableStatus) => {
     return (
-      <Badge className={ACCOUNT_PAYABLE_STATUS_COLORS[status]}>
+      <Badge variant="outline" className={ACCOUNT_PAYABLE_STATUS_COLORS[status]}>
         {status === 'PENDING' && <Clock className="mr-1 h-3 w-3" />}
+        {status === 'OVERDUE' && <Clock className="mr-1 h-3 w-3" />}
         {status === 'PAID' && <CheckCircle className="mr-1 h-3 w-3" />}
         {ACCOUNT_PAYABLE_STATUS_LABELS[status]}
       </Badge>
@@ -155,6 +156,7 @@ export function OtherExpensesTab() {
               options={[
                 { value: '', label: 'Todos' },
                 { value: 'PENDING', label: 'Pendente' },
+                { value: 'OVERDUE', label: 'Vencido' },
                 { value: 'PAID', label: 'Pago' },
                 { value: 'CANCELLED', label: 'Cancelado' },
               ]}
@@ -196,6 +198,17 @@ export function OtherExpensesTab() {
             data={manualAccounts}
             isLoading={isLoading}
             emptyMessage="Nenhuma despesa encontrada"
+            rowClassName={(account: { status: string }) =>
+              account.status === 'PENDING'
+                ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border-l-2 border-l-yellow-500'
+                : account.status === 'OVERDUE'
+                  ? 'bg-red-50/50 dark:bg-red-900/10 border-l-2 border-l-red-500'
+                  : account.status === 'PAID'
+                    ? 'bg-green-50/50 dark:bg-green-900/10 border-l-2 border-l-green-500'
+                    : account.status === 'CANCELLED'
+                      ? 'bg-red-50/50 dark:bg-red-900/10 border-l-2 border-l-red-500'
+                      : undefined
+            }
             columns={[
               {
                 key: 'description',

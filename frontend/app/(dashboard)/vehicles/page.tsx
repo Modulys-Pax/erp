@@ -364,9 +364,13 @@ export default function VehiclesPage() {
             pagination={pagination}
             onPageChange={setPage}
             rowClassName={(vehicle: Vehicle) =>
-              vehicle.status === 'MAINTENANCE'
-                ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border-l-2 border-l-yellow-500'
-                : undefined
+              vehicle.status === 'ACTIVE'
+                ? 'bg-blue-50/50 dark:bg-blue-900/10 border-l-2 border-l-blue-500'
+                : vehicle.status === 'MAINTENANCE'
+                  ? 'bg-yellow-50/50 dark:bg-yellow-900/10 border-l-2 border-l-yellow-500'
+                  : vehicle.status === 'STOPPED'
+                    ? 'bg-muted/50 dark:bg-muted/30 border-l-2 border-l-muted-foreground/50'
+                    : undefined
             }
           />
         )}
