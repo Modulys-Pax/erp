@@ -8,6 +8,7 @@ import { PermissionProvider } from '@/lib/contexts/permission-context';
 import { SocketProvider } from '@/lib/contexts/socket-context';
 import { Sidebar, MobileSidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
+import { ChatBalloon } from '@/components/chat/chat-balloon';
 import { cn } from '@/lib/utils';
 
 const SIDEBAR_STORAGE_KEY = 'sidebar-desktop-open';
@@ -88,6 +89,9 @@ export default function DashboardLayout({
               </div>
             )}
           </main>
+
+          {/* Chat balão: visível apenas fora da tela /chat */}
+          <ChatBalloon />
         </div>
       </div>
       </SocketProvider>
