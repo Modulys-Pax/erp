@@ -1234,6 +1234,7 @@ export class MaintenanceService {
             dueDate: new Date(), // Vencimento imediato
             originType: TransactionOriginType.MAINTENANCE,
             originId: order.id,
+            vehicleId: primaryVehicleId ?? undefined,
             companyId: order.companyId,
             branchId: order.branchId,
             status: 'PENDING',

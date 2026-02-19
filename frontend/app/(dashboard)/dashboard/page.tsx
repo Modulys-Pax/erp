@@ -11,6 +11,7 @@ import { maintenanceApi } from '@/lib/api/maintenance';
 import { stockApi } from '@/lib/api/stock';
 import { walletApi } from '@/lib/api/wallet';
 import { employeeApi } from '@/lib/api/employee';
+import { reportsApi } from '@/lib/api/reports';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,9 @@ import {
   Receipt,
   CheckCircle,
   XCircle,
+  Award,
+  TrendingDown as TrendDownIcon,
+  Percent,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -111,6 +115,7 @@ export default function DashboardPage() {
   const canViewProducts = isAdmin || hasPermission('products.view');
   const canViewAccountsPayable = isAdmin || hasPermission('accounts-payable.view');
   const canViewAccountsReceivable = isAdmin || hasPermission('accounts-receivable.view');
+  const canViewDashboardRentability = isAdmin || hasPermission('dashboard.view');
 
   // Buscar dados para métricas (apenas se tiver permissão)
   const { data: vehiclesData, isLoading: loadingVehicles } = useQuery({
@@ -141,6 +146,12 @@ export default function DashboardPage() {
     queryKey: ['dashboard-employees', effectiveBranchId],
     queryFn: () => employeeApi.getAll(effectiveBranchId || undefined, undefined, 1, 1000),
     enabled: canViewEmployees,
+  });
+
+  const { data: rentabilityData, isLoading: loadingRentability } = useQuery({
+    queryKey: ['dashboard-rentability', effectiveBranchId],
+    queryFn: () => reportsApi.getDashboardRentability(effectiveBranchId ?? undefined),
+    enabled: canViewDashboardRentability,
   });
 
   // Calcular métricas
@@ -259,9 +270,13 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Card Principal - Saldo e Resumo Financeiro */}
+      {/* Bloco Financeiro */}
       {canViewWallet && (
-        <div className="grid gap-4 lg:grid-cols-3">
+        <section className="space-y-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
+            Financeiro
+          </h2>
+          <div className="grid gap-4 lg:grid-cols-3">
           {/* Saldo em Carteira */}
           <Card className="lg:col-span-2">
             <CardContent className="p-6">
@@ -394,12 +409,17 @@ export default function DashboardPage() {
               )}
             </CardContent>
           </Card>
-        </div>
+          </div>
+        </section>
       )}
 
-      {/* Métricas Rápidas */}
+      {/* Bloco Operacional */}
       {(canViewVehicles || canViewMaintenance || canViewStock || canViewEmployees || canViewProducts) && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <section className="space-y-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
+            Operacional
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {isLoading ? (
             [...Array(5)].map((_, i) => (
               <Skeleton key={i} className="h-24 w-full rounded-xl" />
@@ -507,12 +527,14 @@ export default function DashboardPage() {
               )}
             </>
           )}
-        </div>
+          </div>
+        </section>
       )}
 
-      {/* Gráficos Financeiros */}
+      {/* Gráficos Financeiros (continuação do bloco Financeiro) */}
       {canViewWallet && !loadingWallet && (totalIncome > 0 || totalExpense > 0) && (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <section className="space-y-4">
+          <div className="grid gap-6 lg:grid-cols-2">
           {/* Gráfico de Barras - Entradas vs Saídas */}
           <Card>
             <CardHeader className="pb-2">
@@ -622,7 +644,82 @@ export default function DashboardPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
+          </div>
+        </section>
+      )}
+
+      {/* Bloco Rentabilidade */}
+      {canViewDashboardRentability && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between border-b border-border pb-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Rentabilidade
+            </h2>
+            <Link href="/reports/vehicle-profitability">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                Ver relatórios
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3 mt-4">
+            {loadingRentability ? (
+              [...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-24 w-full rounded-xl" />
+              ))
+            ) : (
+              <>
+                <Link href="/reports/vehicle-profitability">
+                  <Card className="hover:shadow-sm transition-all hover:border-foreground/20 cursor-pointer h-full">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Award className="h-4 w-4 text-green-600" />
+                        <span className="text-xs font-medium text-muted-foreground">Mais rentável</span>
+                      </div>
+                      <p className="text-lg font-bold text-foreground truncate">
+                        {rentabilityData?.mostProfitableVehicle?.vehiclePlate ?? '—'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {rentabilityData?.mostProfitableVehicle != null
+                          ? formatCurrency(rentabilityData.mostProfitableVehicle.profit)
+                          : 'Sem dados'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
+                <Link href="/reports/vehicle-profitability">
+                  <Card className="hover:shadow-sm transition-all hover:border-foreground/20 cursor-pointer h-full">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <TrendDownIcon className="h-4 w-4 text-amber-600" />
+                        <span className="text-xs font-medium text-muted-foreground">Menos rentável</span>
+                      </div>
+                      <p className="text-lg font-bold text-foreground truncate">
+                        {rentabilityData?.leastProfitableVehicle?.vehiclePlate ?? '—'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {rentabilityData?.leastProfitableVehicle != null
+                          ? formatCurrency(rentabilityData.leastProfitableVehicle.profit)
+                          : 'Sem dados'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
+                <Card className="h-full">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Percent className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground">Margem média frota</span>
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">
+                      {rentabilityData != null ? `${rentabilityData.fleetAverageMarginPercent.toFixed(1)}%` : '—'}
+                    </p>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
+        </section>
       )}
 
       {/* Ações Rápidas e Próximos Vencimentos */}

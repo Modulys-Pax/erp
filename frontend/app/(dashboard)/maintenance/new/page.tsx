@@ -222,7 +222,7 @@ export default function NewMaintenancePage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <Label className="text-sm text-muted-foreground mb-2">
-                  Placas do combo (1 a 4) *
+                  Placas (1 a 4) *
                 </Label>
                 <p className="text-xs text-muted-foreground mb-2">
                   Selecione as placas que compõem o veículo nesta manutenção (cavalo, carretas, dolly)

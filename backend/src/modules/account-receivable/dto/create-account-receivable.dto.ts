@@ -113,4 +113,13 @@ export class CreateAccountReceivableDto {
   @IsUUID('4', { message: 'ID do centro de custo deve ser um UUID válido' })
   @IsOptional()
   costCenterId?: string;
+
+  @ApiProperty({
+    description: 'Status da conta (PLANNED = Prevista, PENDING = Pendente). Padrão: PENDING',
+    enum: ['PLANNED', 'PENDING'],
+    required: false,
+  })
+  @IsEnum(['PLANNED', 'PENDING'], { message: 'Status inválido' })
+  @IsOptional()
+  status?: 'PLANNED' | 'PENDING';
 }

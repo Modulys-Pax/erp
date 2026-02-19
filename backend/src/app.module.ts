@@ -36,6 +36,8 @@ import { FinancialModule } from './modules/financial/financial.module';
 import { BankReconciliationModule } from './modules/bank-reconciliation/bank-reconciliation.module';
 import { PurchaseOrderModule } from './modules/purchase-order/purchase-order.module';
 import { SalesOrderModule } from './modules/sales-order/sales-order.module';
+import { TripModule } from './modules/trip/trip.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { ConfigService } from './shared/config/config.service';
 import { BranchFilterInterceptor } from './shared/interceptors/branch-filter.interceptor';
@@ -81,6 +83,8 @@ import { BranchFilterInterceptor } from './shared/interceptors/branch-filter.int
     BankReconciliationModule,
     PurchaseOrderModule,
     SalesOrderModule,
+    TripModule,
+    ReportsModule,
     ChatModule,
   ],
   providers: [

@@ -321,12 +321,20 @@ export default function MaintenanceDetailPage() {
         </div>
 
         <div className="rounded-xl border border-border p-4 flex items-center gap-4">
-          <div className={`p-3 rounded-lg ${MAINTENANCE_TYPE_COLORS[order.type]}`}>
+          <div
+            data-badge-type={order.type}
+            className={`p-3 rounded-lg ${MAINTENANCE_TYPE_COLORS[order.type]}`}
+            style={{ color: order.type === 'CORRECTIVE' ? '#111111' : '#065f46' }}
+          >
             {order.type === 'PREVENTIVE' ? <Shield className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Tipo</p>
-            <p className={`font-semibold ${MAINTENANCE_TYPE_TEXT_COLORS[order.type]}`}>
+            <p
+              data-badge-type={order.type}
+              className={`font-semibold ${MAINTENANCE_TYPE_TEXT_COLORS[order.type]}`}
+              style={{ color: order.type === 'CORRECTIVE' ? '#111111' : '#065f46' }}
+            >
               {MAINTENANCE_TYPE_LABELS[order.type]}
             </p>
           </div>

@@ -14,7 +14,10 @@ export interface SearchableSelectOption {
 export interface SearchableSelectProps {
   options: SearchableSelectOption[];
   value?: string;
+  /** Chamado ao selecionar uma opção */
   onChange?: (value: string) => void;
+  /** Alias de onChange (ex.: react-hook-form Controller usa onValueChange) */
+  onValueChange?: (value: string) => void;
   placeholder?: string;
   searchPlaceholder?: string;
   emptyMessage?: string;
@@ -34,6 +37,7 @@ export const SearchableSelect = React.forwardRef<
       options,
       value,
       onChange,
+      onValueChange,
       placeholder = 'Selecione...',
       searchPlaceholder = 'Buscar...',
       emptyMessage = 'Nenhuma opção encontrada',
@@ -45,6 +49,10 @@ export const SearchableSelect = React.forwardRef<
     },
     ref,
   ) => {
+    const handleChange = (optionValue: string) => {
+      onChange?.(optionValue);
+      onValueChange?.(optionValue);
+    };
     const [open, setOpen] = React.useState(false);
     const [searchTerm, setSearchTerm] = React.useState('');
     const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -75,9 +83,7 @@ export const SearchableSelect = React.forwardRef<
     }, [open]);
 
     const handleSelect = (optionValue: string) => {
-      if (onChange) {
-        onChange(optionValue);
-      }
+      handleChange(optionValue);
       setOpen(false);
       setSearchTerm('');
     };

@@ -99,6 +99,7 @@ const navigationGroups: NavigationGroup[] = [
     icon: Truck,
     items: [
       { name: 'Veículos', href: '/vehicles', icon: Truck, permission: 'vehicles.view' },
+      { name: 'Viagens', href: '/trips', icon: MapPinIcon, permission: 'trips.view' },
       { name: 'Manutenção', href: '/maintenance', icon: Wrench, permission: 'maintenance.view' },
       { name: 'Marcações', href: '/markings', icon: Gauge, permission: 'vehicle-markings.view' },
       { name: 'Registros na Estrada', href: '/product-changes', icon: MapPinnedIcon, permission: 'vehicle-markings.register-change' },
@@ -107,6 +108,17 @@ const navigationGroups: NavigationGroup[] = [
       { name: 'Estoque', href: '/stock', icon: Warehouse, permission: 'stock.view' },
       { name: 'Movimentações', href: '/stock/movements', icon: ClipboardList, permission: 'stock.view' },
       { name: 'Resumo de Produtos', href: '/products/summary', icon: BarChart3, permission: 'products.view' },
+    ],
+  },
+  {
+    title: 'Relatórios',
+    icon: BarChart3,
+    items: [
+      { name: 'Rentabilidade por Veículo', href: '/reports/vehicle-profitability', icon: BarChart3, permission: 'reports.view' },
+      { name: 'Receita por Cliente', href: '/reports/revenue-by-customer', icon: BarChart3, permission: 'reports.view' },
+      { name: 'Custo Operacional', href: '/reports/operational-cost', icon: BarChart3, permission: 'reports.view' },
+      { name: 'Margem da Frota', href: '/reports/fleet-margin', icon: BarChart3, permission: 'reports.view' },
+      { name: 'Por Centro de Custo', href: '/reports/by-cost-center', icon: BarChart3, permission: 'reports.view' },
     ],
   },
   {

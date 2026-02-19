@@ -239,11 +239,8 @@ export default function MarkingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <Label className="text-sm text-muted-foreground mb-2 block">
-                Placas do combo (1 a 4) *
+                Placas (1 a 4) *
               </Label>
-              <p className="text-xs text-muted-foreground mb-2">
-                Selecione as placas que chegaram na filial
-              </p>
               <div className="flex flex-wrap gap-2">
                 {selectedVehicleIds.map((vid) => {
                   const v = vehicles.find((x) => x.id === vid);

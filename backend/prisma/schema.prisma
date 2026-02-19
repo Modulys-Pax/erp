@@ -161,6 +161,9 @@ model Company {
   fiscalDocuments       FiscalDocument[]
   purchaseOrders        PurchaseOrder[]
   salesOrders           SalesOrder[]
+  trips                 Trip[]
+  tripExpenseTypes      TripExpenseType[]
+  tripExpenses          TripExpense[]
 
   @@map("companies")
 }
@@ -210,6 +213,9 @@ model Branch {
   bankStatements        BankStatement[]
   purchaseOrders        PurchaseOrder[]
   salesOrders           SalesOrder[]
+  trips                 Trip[]
+  tripExpenseTypes      TripExpenseType[]
+  tripExpenses          TripExpense[]
 
   @@unique([companyId, code])
   @@map("branches")
@@ -373,8 +379,111 @@ model Customer {
   accountsReceivable AccountReceivable[]
   fiscalDocuments    FiscalDocument[]
   salesOrders        SalesOrder[]
+  trips              Trip[]
 
   @@map("customers")
+}
+
+// ============================================
+// MÓDULO DE VIAGENS
+// ============================================
+
+enum TripStatus {
+  DRAFT // Rascunho
+  SCHEDULED // Agendada
+  IN_PROGRESS // Em andamento
+  COMPLETED // Concluída
+  CANCELLED // Cancelada
+}
+
+model TripVehicle {
+  id        String  @id @default(uuid())
+  tripId    String
+  trip      Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  vehicleId String
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, vehicleId])
+  @@map("trip_vehicles")
+}
+
+model Trip {
+  id                      String    @id @default(uuid())
+  customerId              String
+  customer                Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  vehicleId               String // Veículo principal (primeira placa do combo, para CR e despesas)
+  vehicle                 Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  driverId                String // Motorista (Employee)
+  driver                  Employee  @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  origin                  String // Origem (texto livre)
+  destination             String // Destino (texto livre)
+  freightValue             Decimal // Valor do frete (receita)
+  status                  TripStatus @default(DRAFT)
+  scheduledDepartureAt    DateTime? // Data/hora prevista saída
+  scheduledArrivalAt      DateTime? // Data/hora prevista chegada
+  actualDepartureAt       DateTime? // Data/hora real saída
+  actualArrivalAt         DateTime? // Data/hora real chegada
+  accountReceivableId     String?   @unique // CR gerada no cadastro (Prevista) → Realizada ao concluir
+  accountReceivable       AccountReceivable? @relation(fields: [accountReceivableId], references: [id], onDelete: SetNull)
+  companyId               String
+  branchId                String
+  company                 Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch                  Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  notes                   String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  createdBy               String?
+  deletedAt               DateTime?
+
+  vehicles                TripVehicle[] // 1 a 4 placas do combo (cavalo, carretas, dolly)
+  expenses                TripExpense[]
+
+  @@map("trips")
+}
+
+model TripExpenseType {
+  id        String   @id @default(uuid())
+  name      String // Nome (ex: Combustível, Pedágio, Alimentação)
+  code      String?  // Código opcional
+  companyId String
+  branchId  String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+  deletedAt DateTime?
+
+  tripExpenses TripExpense[]
+
+  @@map("trip_expense_types")
+}
+
+model TripExpense {
+  id                  String          @id @default(uuid())
+  tripId              String
+  trip                Trip            @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  tripExpenseTypeId   String
+  tripExpenseType     TripExpenseType  @relation(fields: [tripExpenseTypeId], references: [id], onDelete: Restrict)
+  amount              Decimal
+  description         String?
+  expenseDate         DateTime
+  vehicleId           String // Veículo (espelho da viagem, para relatórios)
+  vehicle             Vehicle         @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  accountPayableId    String?          @unique // CP gerada ao lançar despesa
+  accountPayable      AccountPayable?  @relation(fields: [accountPayableId], references: [id], onDelete: SetNull)
+  costCenterId        String?
+  costCenter          CostCenter?     @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+  companyId           String
+  branchId            String
+  company             Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branch              Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  createdBy           String?
+
+  @@map("trip_expenses")
 }
 
 model CostCenter {
@@ -395,6 +504,7 @@ model CostCenter {
   accountsPayable       AccountPayable[]
   accountsReceivable    AccountReceivable[]
   expenses              Expense[]
+  tripExpenses          TripExpense[]
 
   @@unique([companyId, branchId, code])
   @@map("cost_centers")
@@ -462,6 +572,7 @@ model Employee {
   vacations          Vacation[]
   expenses           Expense[]
   benefits           EmployeeBenefit[]
+  tripsAsDriver     Trip[]
 
   @@map("employees")
 }
@@ -551,6 +662,11 @@ model Vehicle {
   documents             VehicleDocument[]
   vehicleMarkingVehicles VehicleMarkingVehicle[]
   maintenanceLabelVehicles MaintenanceLabelVehicle[]
+  tripVehicles            TripVehicle[]
+  trips                   Trip[]
+  tripExpenses            TripExpense[]
+  accountsPayable          AccountPayable[]
+  expenses                 Expense[]
 
   @@map("vehicles")
 }
@@ -855,6 +971,7 @@ enum TransactionOriginType {
   MANUAL // Manual
   PURCHASE_ORDER // Pedido de compra
   SALE_ORDER // Pedido de venda
+  TRIP // Viagem
 }
 
 enum AccountPayableStatus {
@@ -864,8 +981,9 @@ enum AccountPayableStatus {
 }
 
 enum AccountReceivableStatus {
+  PLANNED // Prevista (ex.: frete da viagem ainda não concluída)
   PENDING // Pendente
-  RECEIVED // Recebida
+  RECEIVED // Recebida / Realizada
   CANCELLED // Cancelada
 }
 
@@ -913,6 +1031,8 @@ model AccountPayable {
   notes                  String? // Observações
   supplierId             String? // Fornecedor (opcional)
   supplier               Supplier?             @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  vehicleId              String? // Veículo (ex.: despesa de viagem, manutenção)
+  vehicle                Vehicle?              @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
   costCenterId           String? // Centro de custo (opcional)
   costCenter             CostCenter?            @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
   companyId              String
@@ -922,6 +1042,7 @@ model AccountPayable {
   financialTransactionId String?                @unique // Transação financeira gerada quando paga
   financialTransaction   FinancialTransaction?  @relation(fields: [financialTransactionId], references: [id])
   fiscalDocuments        FiscalDocument[]
+  tripExpense            TripExpense?
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
   createdBy              String?
@@ -952,6 +1073,7 @@ model AccountReceivable {
   financialTransactionId String?                 @unique // Transação financeira gerada quando recebida
   financialTransaction   FinancialTransaction?   @relation(fields: [financialTransactionId], references: [id])
   fiscalDocuments        FiscalDocument[]
+  trip                   Trip?
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
   createdBy              String?
@@ -1185,6 +1307,8 @@ model Expense {
   branch                 Branch                 @relation(fields: [branchId], references: [id], onDelete: Cascade)
   financialTransactionId String?               @unique // Transação financeira gerada
   financialTransaction   FinancialTransaction? @relation(fields: [financialTransactionId], references: [id])
+  vehicleId              String? // Veículo (ex.: despesa de viagem)
+  vehicle                Vehicle?              @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
   createdAt              DateTime              @default(now())
   updatedAt              DateTime              @updatedAt
   createdBy              String?

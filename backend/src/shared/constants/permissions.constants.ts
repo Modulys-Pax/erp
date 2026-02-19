@@ -26,6 +26,9 @@
  * - users: Usuários
  * - units: Unidades de medida
  * - audit: Auditoria
+ * - trips: Viagens (cadastro, despesas de viagem)
+ * - reports: Relatórios (rentabilidade, receita por cliente, custo operacional, margem frota, por centro de custo)
+ * - dashboard: Dashboard e indicadores de rentabilidade
  */
 
 export interface PermissionDefinition {
@@ -1091,6 +1094,56 @@ export const PERMISSIONS: PermissionModule[] = [
         name: 'audit.view',
         description: 'Visualizar logs de auditoria',
         module: 'audit',
+        action: 'view',
+      },
+    ],
+  },
+
+  // ============================================
+  // VIAGENS
+  // ============================================
+  {
+    module: 'trips',
+    moduleName: 'Viagens',
+    permissions: [
+      {
+        name: 'trips.view',
+        description: 'Visualizar viagens e tipos de despesa',
+        module: 'trips',
+        action: 'view',
+      },
+      {
+        name: 'trips.create',
+        description: 'Cadastrar viagens e despesas de viagem',
+        module: 'trips',
+        action: 'create',
+      },
+      {
+        name: 'trips.update',
+        description: 'Editar viagens',
+        module: 'trips',
+        action: 'update',
+      },
+      {
+        name: 'trips.delete',
+        description: 'Excluir viagens',
+        module: 'trips',
+        action: 'delete',
+      },
+    ],
+  },
+
+  // ============================================
+  // RELATÓRIOS
+  // ============================================
+  {
+    module: 'reports',
+    moduleName: 'Relatórios',
+    permissions: [
+      {
+        name: 'reports.view',
+        description: 'Visualizar relatórios (rentabilidade, receita por cliente, custo, margem)',
+        module: 'reports',
         action: 'view',
       },
     ],

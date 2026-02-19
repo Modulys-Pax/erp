@@ -84,7 +84,7 @@ export class AccountReceivableService {
         costCenterId: createDto.costCenterId ?? undefined,
         companyId: companyId,
         branchId: createDto.branchId,
-        status: 'PENDING',
+        status: (createDto as any).status ?? 'PENDING',
         createdBy: userId,
       },
     });

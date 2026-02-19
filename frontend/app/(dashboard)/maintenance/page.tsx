@@ -21,6 +21,7 @@ import {
   MAINTENANCE_STATUS_COLORS,
   MAINTENANCE_TYPE_LABELS,
   MAINTENANCE_TYPE_COLORS,
+  MAINTENANCE_TYPE_TEXT_COLORS,
 } from '@/lib/constants/status.constants';
 import Link from 'next/link';
 import {
@@ -154,12 +155,21 @@ export default function MaintenancePage() {
           variant="outline"
           className={`${MAINTENANCE_TYPE_COLORS[order.type]} flex items-center gap-1 w-fit border-0`}
         >
-          {order.type === 'PREVENTIVE' ? (
-            <Shield className="h-3 w-3" />
-          ) : (
-            <AlertTriangle className="h-3 w-3" />
-          )}
-          {MAINTENANCE_TYPE_LABELS[order.type]}
+          <span
+            data-badge-type={order.type}
+            className={MAINTENANCE_TYPE_TEXT_COLORS[order.type]}
+            style={{
+              color: order.type === 'CORRECTIVE' ? '#111111' : '#065f46',
+            }}
+          >
+            {order.type === 'PREVENTIVE' ? (
+              <Shield className="h-3 w-3 inline" />
+            ) : (
+              <AlertTriangle className="h-3 w-3 inline" />
+            )}
+            {' '}
+            {MAINTENANCE_TYPE_LABELS[order.type]}
+          </span>
         </Badge>
       ),
     },

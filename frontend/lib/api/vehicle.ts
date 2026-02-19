@@ -14,6 +14,24 @@ export interface VehiclePlateItem {
   plate: string;
 }
 
+const PLATE_TYPE_LABELS: Record<string, string> = {
+  CAVALO: 'Cavalo',
+  PRIMEIRA_CARRETA: '1ª Carreta',
+  DOLLY: 'Dolly',
+  SEGUNDA_CARRETA: '2ª Carreta',
+};
+
+/** Retorna label para select: todas as placas do veículo (ex.: "ABC-1234 (Cavalo) • XYZ-5678 (1ª Carreta)") */
+export function getVehicleOptionLabel(v: Vehicle): string {
+  if (v.plates?.length) {
+    return v.plates
+      .map((p) => `${p.plate} (${PLATE_TYPE_LABELS[p.type] ?? p.type})`)
+      .join(' • ');
+  }
+  if (v.plate) return v.plate;
+  return v.id;
+}
+
 export interface Vehicle {
   id: string;
   /** Placa principal (cavalo ou primeira da lista) - compatibilidade */

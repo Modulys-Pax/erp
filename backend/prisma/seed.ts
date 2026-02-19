@@ -2,8 +2,23 @@ import { PrismaClient, Prisma, Company, Branch, Role, Permission, User, Product,
 import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ALL_PERMISSIONS } from '../src/shared/constants/permissions.constants';
 
 const prisma = new PrismaClient();
+
+/** Módulos para o perfil Financeiro (cargo financeiro) */
+const FINANCEIRO_MODULES = new Set([
+  'wallet', 'expenses', 'accounts-payable', 'accounts-receivable', 'purchase-orders',
+  'sales-orders', 'fiscal-documents', 'bank-reconciliation', 'reports', 'dashboard',
+  'cost-centers', 'suppliers', 'customers',
+]);
+
+/** Módulos para o perfil Operacional (cargo operacao) */
+const OPERACIONAL_MODULES = new Set([
+  'trips', 'vehicles', 'vehicle-brands', 'vehicle-models', 'vehicle-documents',
+  'vehicle-markings', 'maintenance', 'maintenance-labels', 'products', 'stock',
+  'dashboard', 'reports',
+]);
 
 // ID da empresa padrão (será preenchido após criação)
 let DEFAULT_COMPANY_ID = 'a4771684-cd63-4ecd-8771-545ddb937278';
@@ -36,6 +51,9 @@ async function main() {
   await prisma.vacation.deleteMany();
   await prisma.salary.deleteMany();
   await prisma.fiscalDocument.deleteMany();
+  await prisma.tripExpense.deleteMany();
+  await prisma.trip.deleteMany();
+  await prisma.tripExpenseType.deleteMany();
   await prisma.accountReceivable.deleteMany();
   await prisma.accountPayable.deleteMany();
   await prisma.financialTransaction.deleteMany();
@@ -93,6 +111,56 @@ async function main() {
   }
   console.log(`✅ ${createdRoles.length} roles criadas`);
 
+  // Sincronizar permissões do sistema (permissions.constants) e associar aos cargos
+  console.log('🔐 Sincronizando permissões e associando aos cargos...');
+  for (const p of ALL_PERMISSIONS) {
+    await prisma.permission.upsert({
+      where: { name: p.name },
+      update: { description: p.description, module: p.module, action: p.action },
+      create: {
+        name: p.name,
+        description: p.description,
+        module: p.module,
+        action: p.action,
+      },
+    });
+  }
+  const allPermissions: Permission[] = await prisma.permission.findMany();
+  console.log(`✅ ${allPermissions.length} permissões sincronizadas`);
+
+  const adminRole = createdRoles.find((r) => r.name === 'admin');
+  const financeiroRole = createdRoles.find((r) => r.name === 'financeiro');
+  const operacaoRole = createdRoles.find((r) => r.name === 'operacao');
+
+  if (adminRole) {
+    await prisma.rolePermission.createMany({
+      data: allPermissions.map((perm) => ({
+        roleId: adminRole.id,
+        permissionId: perm.id,
+      })),
+    });
+    console.log(`   Admin: ${allPermissions.length} permissões`);
+  }
+  if (financeiroRole) {
+    const permIds = allPermissions
+      .filter((perm) => FINANCEIRO_MODULES.has(perm.module))
+      .map((perm) => ({ roleId: financeiroRole.id, permissionId: perm.id }));
+    if (permIds.length > 0) {
+      await prisma.rolePermission.createMany({ data: permIds });
+    }
+    console.log(`   Financeiro: ${permIds.length} permissões`);
+  }
+  if (operacaoRole) {
+    const permIds = allPermissions
+      .filter((perm) => OPERACIONAL_MODULES.has(perm.module))
+      .map((perm) => ({ roleId: operacaoRole.id, permissionId: perm.id }));
+    if (permIds.length > 0) {
+      await prisma.rolePermission.createMany({ data: permIds });
+    }
+    console.log(`   Operação: ${permIds.length} permissões`);
+  }
+  console.log('');
+
   // ============================================
   // UNIDADES DE MEDIDA
   // ============================================
@@ -112,28 +180,6 @@ async function main() {
     createdUnitsOfMeasurement.push(unit);
   }
   console.log(`✅ ${createdUnitsOfMeasurement.length} unidades de medida criadas\n`);
-
-  // Criar algumas permissões básicas
-  const permissions = [
-    { name: 'users.create', description: 'Criar usuários', module: 'users', action: 'create' },
-    { name: 'users.read', description: 'Ler usuários', module: 'users', action: 'read' },
-    { name: 'users.update', description: 'Atualizar usuários', module: 'users', action: 'update' },
-    { name: 'users.delete', description: 'Excluir usuários', module: 'users', action: 'delete' },
-    { name: 'vehicles.create', description: 'Criar veículos', module: 'vehicles', action: 'create' },
-    { name: 'vehicles.read', description: 'Ler veículos', module: 'vehicles', action: 'read' },
-    { name: 'maintenance.create', description: 'Criar ordens de manutenção', module: 'maintenance', action: 'create' },
-    { name: 'financial.read', description: 'Ler dados financeiros', module: 'financial', action: 'read' },
-    { name: 'financial.create', description: 'Criar transações financeiras', module: 'financial', action: 'create' },
-  ];
-
-  const createdPermissions: Permission[] = [];
-  for (const permData of permissions) {
-    const perm = await prisma.permission.create({
-      data: permData,
-    });
-    createdPermissions.push(perm);
-  }
-  console.log(`✅ ${createdPermissions.length} permissões criadas\n`);
 
   // ============================================
   // EMPRESA PADRÃO (SINGLE-TENANT)
@@ -239,6 +285,31 @@ export function validateDefaultCompanyId(): void {
 
   fs.writeFileSync(constantsPath, constantsContent, 'utf-8');
   console.log(`✅ Constante DEFAULT_COMPANY_ID salva: ${DEFAULT_COMPANY_ID}\n`);
+
+  // ============================================
+  // TIPOS DE DESPESA DE VIAGEM
+  // ============================================
+  console.log('🚛 Criando tipos de despesa de viagem...');
+  const tripExpenseTypeNames = [
+    'Combustível',
+    'Pedágio',
+    'Alimentação',
+    'Hospedagem',
+    'Manutenção emergencial',
+    'Outros',
+  ];
+  for (const branch of createdBranches) {
+    for (const name of tripExpenseTypeNames) {
+      await prisma.tripExpenseType.create({
+        data: {
+          name,
+          companyId: DEFAULT_COMPANY_ID,
+          branchId: branch.id,
+        },
+      });
+    }
+  }
+  console.log(`✅ Tipos de despesa de viagem criados por filial\n`);
 
   // ============================================
   // USUÁRIOS
@@ -1140,7 +1211,7 @@ export function validateDefaultCompanyId(): void {
   console.log('═══════════════════════════════════════════════════════\n');
   console.log('📊 RESUMO DOS DADOS CRIADOS:\n');
   console.log(`   👥 Roles: ${createdRoles.length}`);
-  console.log(`   🔐 Permissões: ${createdPermissions.length}`);
+  console.log(`   🔐 Permissões: ${allPermissions.length}`);
   console.log(`   👤 Usuários: ${createdUsers.length}`);
   console.log(`   🏢 Empresa Padrão: Empresa X (ID: ${DEFAULT_COMPANY_ID})`);
   console.log(`   🏪 Filiais: ${createdBranches.length}`);

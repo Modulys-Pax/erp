@@ -200,11 +200,8 @@ export default function NewProductChangePage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <Label className="text-sm text-muted-foreground mb-2 block">
-              Placas do combo (1 a 4) *
+              Placas (1 a 4) *
             </Label>
-            <p className="text-xs text-muted-foreground mb-2">
-              Selecione as placas que compõem o veículo nesta troca na estrada
-            </p>
             <div className="flex flex-wrap gap-2">
               {selectedVehicleIds.map((vid) => {
                 const v = vehicles.find((x) => x.id === vid);

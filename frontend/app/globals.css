@@ -144,3 +144,21 @@
     @apply p-6;
   }
 }
+
+/* Badge Tipo manutenção: forçar cor do texto (evitar branco herdado em fundo claro) */
+[data-badge-type="PREVENTIVE"],
+[data-badge-type="PREVENTIVE"] * {
+  color: #065f46 !important;
+}
+[data-badge-type="CORRECTIVE"],
+[data-badge-type="CORRECTIVE"] * {
+  color: #111111 !important;
+}
+.dark [data-badge-type="PREVENTIVE"],
+.dark [data-badge-type="PREVENTIVE"] * {
+  color: #a7f3d0 !important;
+}
+.dark [data-badge-type="CORRECTIVE"],
+.dark [data-badge-type="CORRECTIVE"] * {
+  color: #111111 !important;
+}

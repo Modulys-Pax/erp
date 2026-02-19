@@ -22,8 +22,8 @@ export const VEHICLE_STATUS_LABELS: Record<VehicleStatus, string> = {
 };
 
 export const VEHICLE_STATUS_COLORS: Record<VehicleStatus, string> = {
-  ACTIVE: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  MAINTENANCE: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  ACTIVE: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:!text-blue-200',
+  MAINTENANCE: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:!text-yellow-200',
   STOPPED: 'bg-muted text-muted-foreground',
 };
 
@@ -56,11 +56,11 @@ export const MAINTENANCE_STATUS_LABELS: Record<MaintenanceStatus, string> = {
 };
 
 export const MAINTENANCE_STATUS_COLORS: Record<MaintenanceStatus, string> = {
-  OPEN: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  IN_PROGRESS: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  OPEN: 'bg-blue-100 !text-blue-800 dark:bg-blue-900 dark:!text-blue-200',
+  IN_PROGRESS: 'bg-yellow-100 !text-yellow-800 dark:bg-yellow-900 dark:!text-yellow-200',
   PAUSED: 'bg-muted text-muted-foreground',
-  COMPLETED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  COMPLETED: 'bg-green-100 !text-green-800 dark:bg-green-900 dark:!text-green-200',
+  CANCELLED: 'bg-red-100 !text-red-800 dark:bg-red-900 dark:!text-red-200',
 };
 
 export const MAINTENANCE_STATUS_ICON_COLORS: Record<MaintenanceStatus, string> = {
@@ -88,16 +88,14 @@ export const MAINTENANCE_TYPE_LABELS: Record<MaintenanceType, string> = {
 };
 
 export const MAINTENANCE_TYPE_COLORS: Record<MaintenanceType, string> = {
-  PREVENTIVE:
-    'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/90 dark:text-emerald-100',
-  CORRECTIVE:
-    'bg-amber-100 text-amber-900 dark:bg-amber-900/90 dark:text-amber-100',
+  PREVENTIVE: 'bg-emerald-100 dark:bg-emerald-900/90',
+  CORRECTIVE: 'bg-amber-100 dark:bg-amber-900/90',
 };
 
-/** Apenas cor de texto (para uso fora de badge, ex.: página de detalhe) */
+/** Cor do texto em hex + !important para nunca ser sobrescrita por tema/pai */
 export const MAINTENANCE_TYPE_TEXT_COLORS: Record<MaintenanceType, string> = {
-  PREVENTIVE: 'text-emerald-800 dark:text-emerald-100',
-  CORRECTIVE: 'text-amber-800 dark:text-amber-100',
+  PREVENTIVE: '!text-[#065f46] dark:!text-[#a7f3d0]',
+  CORRECTIVE: '!text-[#111111] dark:!text-[#fde68a]',
 };
 
 // =============================================================================
@@ -119,9 +117,9 @@ export const MAINTENANCE_DUE_STATUS_LABELS: Record<MaintenanceDueStatus, string>
 };
 
 export const MAINTENANCE_DUE_STATUS_COLORS: Record<MaintenanceDueStatus, string> = {
-  ok: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  due: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  ok: 'bg-green-100 text-green-800 dark:bg-green-900 dark:!text-green-200',
+  warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:!text-yellow-200',
+  due: 'bg-red-100 text-red-800 dark:bg-red-900 dark:!text-red-200',
 };
 
 // =============================================================================
@@ -129,8 +127,8 @@ export const MAINTENANCE_DUE_STATUS_COLORS: Record<MaintenanceDueStatus, string>
 // =============================================================================
 
 export const ACTIVE_STATUS_COLORS = {
-  active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  inactive: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:!text-green-200',
+  inactive: 'bg-red-100 text-red-800 dark:bg-red-900 dark:!text-red-200',
 };
 
 // =============================================================================
@@ -195,8 +193,8 @@ export const STOCK_MOVEMENT_TYPE_COLORS: Record<StockMovementType, string> = {
 };
 
 export const STOCK_MOVEMENT_TYPE_BG_COLORS: Record<StockMovementType, string> = {
-  ENTRY: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  EXIT: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  ENTRY: 'bg-green-100 text-green-800 dark:bg-green-900 dark:!text-green-200',
+  EXIT: 'bg-red-100 text-red-800 dark:bg-red-900 dark:!text-red-200',
 };
 
 // =============================================================================
@@ -240,9 +238,9 @@ export const ACCOUNT_PAYABLE_STATUS_LABELS: Record<AccountPayableStatus, string>
 };
 
 export const ACCOUNT_PAYABLE_STATUS_COLORS: Record<AccountPayableStatus, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  PAID: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:!text-yellow-200',
+  PAID: 'bg-green-100 text-green-800 dark:bg-green-900 dark:!text-green-200',
+  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:!text-red-200',
 };
 
 // =============================================================================
@@ -264,9 +262,9 @@ export const ACCOUNT_RECEIVABLE_STATUS_LABELS: Record<AccountReceivableStatus, s
 };
 
 export const ACCOUNT_RECEIVABLE_STATUS_COLORS: Record<AccountReceivableStatus, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  RECEIVED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:!text-yellow-200',
+  RECEIVED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:!text-green-200',
+  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:!text-red-200',
 };
 
 // =============================================================================
@@ -292,11 +290,11 @@ export const VACATION_STATUS_LABELS: Record<VacationStatus, string> = {
 };
 
 export const VACATION_STATUS_COLORS: Record<VacationStatus, string> = {
-  PLANNED: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  APPROVED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  IN_PROGRESS: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  COMPLETED: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
-  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  PLANNED: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:!text-blue-200',
+  APPROVED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:!text-green-200',
+  IN_PROGRESS: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:!text-yellow-200',
+  COMPLETED: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:!text-gray-200',
+  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:!text-red-200',
 };
 
 // =============================================================================
@@ -349,11 +347,11 @@ export const PURCHASE_ORDER_STATUS_LABELS: Record<PurchaseOrderStatus, string> =
 };
 
 export const PURCHASE_ORDER_STATUS_COLORS: Record<PurchaseOrderStatus, string> = {
-  DRAFT: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
-  SENT: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  PARTIALLY_RECEIVED: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  RECEIVED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  DRAFT: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:!text-gray-200',
+  SENT: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:!text-blue-200',
+  PARTIALLY_RECEIVED: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:!text-yellow-200',
+  RECEIVED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:!text-green-200',
+  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:!text-red-200',
 };
 
 // =============================================================================
@@ -379,10 +377,10 @@ export const SALES_ORDER_STATUS_LABELS: Record<SalesOrderStatus, string> = {
 };
 
 export const SALES_ORDER_STATUS_COLORS: Record<SalesOrderStatus, string> = {
-  DRAFT: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
-  CONFIRMED: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  PARTIALLY_DELIVERED: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  DELIVERED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  DRAFT: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:!text-gray-200',
+  CONFIRMED: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:!text-blue-200',
+  PARTIALLY_DELIVERED: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:!text-yellow-200',
+  DELIVERED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:!text-green-200',
+  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:!text-red-200',
 };
 
