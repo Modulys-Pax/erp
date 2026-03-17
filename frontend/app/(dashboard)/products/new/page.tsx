@@ -24,12 +24,12 @@ import { getQuantityInputStep } from '@/lib/utils/quantity';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
-  code: z.string().optional(),
+  code: z.string().min(1, 'Código é obrigatório'),
   description: z.string().optional(),
-  unitOfMeasurementId: z.string().uuid().optional().or(z.literal('')),
-  unit: z.string().optional(),
-  unitPrice: z.coerce.number().min(0, 'Preço unitário não pode ser negativo').optional().or(z.nan()),
-  minQuantity: z.coerce.number().min(0, 'Quantidade mínima não pode ser negativa').optional().or(z.nan()),
+  unitOfMeasurementId: z.string().uuid('Selecione uma unidade de medida'),
+  unit: z.string().min(1, 'Unidade é obrigatória'),
+  unitPrice: z.coerce.number().min(0, 'Preço unitário não pode ser negativo'),
+  minQuantity: z.coerce.number().min(0, 'Quantidade mínima não pode ser negativa'),
   branchId: z.string().uuid('Selecione uma filial'),
   active: z.boolean().default(true),
 });
@@ -51,6 +51,12 @@ export default function NewProductPage() {
     defaultValues: {
       active: true,
       branchId: effectiveBranchId || '',
+      code: '',
+      description: '',
+      unitOfMeasurementId: '',
+      unit: '',
+      unitPrice: undefined,
+      minQuantity: undefined,
     },
   });
 
@@ -101,12 +107,12 @@ export default function NewProductPage() {
 
     const submitData: CreateProductDto = {
       name: data.name,
-      code: data.code || undefined,
+      code: data.code,
       description: data.description || undefined,
-      unitOfMeasurementId: data.unitOfMeasurementId && data.unitOfMeasurementId.trim() !== '' ? data.unitOfMeasurementId : undefined,
-      unit: data.unit || undefined,
+      unitOfMeasurementId: data.unitOfMeasurementId,
+      unit: data.unit,
       unitPrice,
-      minQuantity: data.minQuantity !== undefined && !isNaN(data.minQuantity) ? data.minQuantity : undefined,
+      minQuantity: data.minQuantity,
       companyId: DEFAULT_COMPANY_ID,
       branchId: effectiveBranchId,
       active: data.active,
@@ -140,13 +146,20 @@ export default function NewProductPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="code" className="text-sm text-muted-foreground mb-2">
-                Código
+                Código *
               </Label>
-              <Input id="code" {...register('code')} className="rounded-xl" />
+              <Input
+                id="code"
+                {...register('code')}
+                className={errors.code ? 'border-destructive' : 'rounded-xl'}
+              />
+              {errors.code && (
+                <p className="text-sm text-destructive mt-1">{errors.code.message}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="unitOfMeasurementId" className="text-sm text-muted-foreground mb-2">
-                Unidade de Medida
+                Unidade de Medida *
               </Label>
               <SearchableSelect
                 id="unitOfMeasurementId"
@@ -170,7 +183,7 @@ export default function NewProductPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="unitPrice" className="text-sm text-muted-foreground mb-2">
-                Preço Unitário
+                Preço Unitário *
               </Label>
               <CurrencyInput
                 id="unitPrice"
@@ -178,7 +191,7 @@ export default function NewProductPage() {
                 error={!!errors.unitPrice}
                 value={watch('unitPrice')}
                 onChange={(value) => {
-                  setValue('unitPrice', value || undefined, { shouldValidate: true });
+                  setValue('unitPrice', value ?? 0, { shouldValidate: true });
                 }}
               />
               <p className="text-xs text-muted-foreground mt-1">
@@ -193,7 +206,7 @@ export default function NewProductPage() {
 
             <div>
               <Label htmlFor="minQuantity" className="text-sm text-muted-foreground mb-2">
-                Quantidade Mínima em Estoque
+                Quantidade Mínima em Estoque *
                 {(watch('unitOfMeasurementId') && unitsOfMeasurement.find((u) => u.id === watch('unitOfMeasurementId'))?.code) && (
                   <span className="text-muted-foreground font-normal ml-1">
                     ({unitsOfMeasurement.find((u) => u.id === watch('unitOfMeasurementId'))?.code})

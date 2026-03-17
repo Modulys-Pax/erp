@@ -21,6 +21,7 @@ import { roundCurrency, roundQuantity } from '../../shared/utils/decimal.util';
 import { validateBranchAccess } from '../../shared/utils/branch-access.util';
 import { PaginatedResponseDto } from '../../shared/dto/paginated-response.dto';
 import { AccountPayableService } from '../account-payable/account-payable.service';
+import { validateNonDecreasingKmForVehicles } from '../../shared/utils/validation.util';
 
 @Injectable()
 export class MaintenanceService {
@@ -29,6 +30,35 @@ export class MaintenanceService {
     @Inject(forwardRef(() => AccountPayableService))
     private accountPayableService: AccountPayableService,
   ) {}
+
+  private validateVehicleComposition(vehicles: Array<{ plate?: any }>): void {
+    let cavalo = 0;
+    let dolly = 0;
+    let carretas = 0;
+
+    for (const vehicle of vehicles) {
+      const plateData = Array.isArray(vehicle.plate) ? vehicle.plate[0] : vehicle.plate;
+      const plateType = plateData?.type;
+
+      if (plateType === 'CAVALO') {
+        cavalo += 1;
+      } else if (plateType === 'DOLLY') {
+        dolly += 1;
+      } else if (plateType === 'PRIMEIRA_CARRETA' || plateType === 'SEGUNDA_CARRETA') {
+        carretas += 1;
+      }
+    }
+
+    if (cavalo > 1) {
+      throw new BadRequestException('Composição inválida: permitido no máximo 1 cavalo.');
+    }
+    if (dolly > 1) {
+      throw new BadRequestException('Composição inválida: permitido no máximo 1 dolly.');
+    }
+    if (carretas > 2) {
+      throw new BadRequestException('Composição inválida: permitido no máximo 2 carretas.');
+    }
+  }
 
   /**
    * Busca o custo unitário de um produto
@@ -249,6 +279,9 @@ export class MaintenanceService {
         branchId: createDto.branchId,
         deletedAt: null,
       },
+      include: {
+        plate: true,
+      },
     });
 
     if (vehicles.length !== createDto.vehicleIds.length) {
@@ -256,6 +289,14 @@ export class MaintenanceService {
         'Um ou mais veículos não foram encontrados ou não pertencem a esta filial.',
       );
     }
+
+    this.validateVehicleComposition(vehicles);
+
+    validateNonDecreasingKmForVehicles(
+      createDto.kmAtEntry,
+      vehicles.map((vehicle) => vehicle.currentKm),
+      'na abertura da ordem de manutenção',
+    );
 
     if (!createDto.services || createDto.services.length === 0) {
       throw new BadRequestException('Informe ao menos um serviço a ser realizado na ordem.');
@@ -404,10 +445,12 @@ export class MaintenanceService {
       // Criar materials (opcional na abertura; quando enviado, pode vincular a serviço)
       if (createDto.materials && createDto.materials.length > 0) {
         const orderServiceIds = new Set(
-          (await tx.maintenanceService.findMany({
-            where: { maintenanceOrderId: newOrder.id },
-            select: { id: true },
-          })).map((s) => s.id),
+          (
+            await tx.maintenanceService.findMany({
+              where: { maintenanceOrderId: newOrder.id },
+              select: { id: true },
+            })
+          ).map((s) => s.id),
         );
         const materialsData = await Promise.all(
           createDto.materials.map(async (m) => {
@@ -440,7 +483,9 @@ export class MaintenanceService {
           await tx.maintenanceMaterial.create({
             data: {
               maintenanceOrderId: data.maintenanceOrderId,
-              ...(data.maintenanceServiceId ? { maintenanceServiceId: data.maintenanceServiceId } : {}),
+              ...(data.maintenanceServiceId
+                ? { maintenanceServiceId: data.maintenanceServiceId }
+                : {}),
               productId: data.productId,
               ...(data.vehicleReplacementItemId
                 ? { vehicleReplacementItemId: data.vehicleReplacementItemId }
@@ -581,8 +626,7 @@ export class MaintenanceService {
       });
 
       // Criar histórico de status para cada veículo
-      const kmForHistory =
-        createDto.kmAtEntry ?? vehicles[0]?.currentKm ?? null;
+      const kmForHistory = createDto.kmAtEntry ?? vehicles[0]?.currentKm ?? null;
       for (const vehicleId of createDto.vehicleIds) {
         const v = vehicles.find((x) => x.id === vehicleId);
         await tx.vehicleStatusHistory.create({
@@ -982,19 +1026,24 @@ export class MaintenanceService {
 
         // Criar novos materials com custos calculados automaticamente
         if (updateDto.materials.length > 0) {
-          const orderServiceIds =
-            updateDto.materials.some((m) => m.maintenanceServiceId) ?
-              new Set(
-                (await tx.maintenanceService.findMany({
-                  where: { maintenanceOrderId: id },
-                  select: { id: true },
-                })).map((s) => s.id),
+          const orderServiceIds = updateDto.materials.some((m) => m.maintenanceServiceId)
+            ? new Set(
+                (
+                  await tx.maintenanceService.findMany({
+                    where: { maintenanceOrderId: id },
+                    select: { id: true },
+                  })
+                ).map((s) => s.id),
               )
             : null;
 
           const materialsData = await Promise.all(
             updateDto.materials.map(async (m) => {
-              if (m.maintenanceServiceId && orderServiceIds && !orderServiceIds.has(m.maintenanceServiceId)) {
+              if (
+                m.maintenanceServiceId &&
+                orderServiceIds &&
+                !orderServiceIds.has(m.maintenanceServiceId)
+              ) {
                 throw new BadRequestException(
                   `Serviço ${m.maintenanceServiceId} não pertence a esta ordem de manutenção`,
                 );
@@ -1023,7 +1072,9 @@ export class MaintenanceService {
             await tx.maintenanceMaterial.create({
               data: {
                 maintenanceOrderId: data.maintenanceOrderId,
-                ...(data.maintenanceServiceId ? { maintenanceServiceId: data.maintenanceServiceId } : {}),
+                ...(data.maintenanceServiceId
+                  ? { maintenanceServiceId: data.maintenanceServiceId }
+                  : {}),
                 productId: data.productId,
                 ...(data.vehicleReplacementItemId
                   ? { vehicleReplacementItemId: data.vehicleReplacementItemId }

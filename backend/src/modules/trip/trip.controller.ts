@@ -9,13 +9,7 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiQuery,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { TripService } from './trip.service';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
@@ -42,10 +36,7 @@ export class TripController {
   @ApiOperation({ summary: 'Cadastrar nova viagem (gera CR Prevista)' })
   @ApiResponse({ status: 201, description: 'Viagem criada', type: TripResponseDto })
   @ApiResponse({ status: 404, description: 'Cliente, veículo ou motorista não encontrado' })
-  create(
-    @Body() createDto: CreateTripDto,
-    @CurrentUser() user: any,
-  ): Promise<TripResponseDto> {
+  create(@Body() createDto: CreateTripDto, @CurrentUser() user: any): Promise<TripResponseDto> {
     return this.tripService.create(createDto, user?.sub, user);
   }
 
@@ -109,7 +100,9 @@ export class TripController {
 
   @Get('vehicle-profit')
   @RequirePermission('trips.view')
-  @ApiOperation({ summary: 'Lucro acumulado por veículo (viagens concluídas - despesas - manutenção)' })
+  @ApiOperation({
+    summary: 'Lucro acumulado por veículo (viagens concluídas - despesas - manutenção)',
+  })
   @ApiQuery({ name: 'vehicleId', required: true, description: 'ID do veículo' })
   @ApiQuery({ name: 'startDate', required: false, description: 'Início do período (ISO)' })
   @ApiQuery({ name: 'endDate', required: false, description: 'Fim do período (ISO)' })
@@ -125,7 +118,9 @@ export class TripController {
 
   @Get(':id')
   @RequirePermission('trips.view')
-  @ApiOperation({ summary: 'Buscar viagem por ID (com despesas, total de despesas, lucro e margem)' })
+  @ApiOperation({
+    summary: 'Buscar viagem por ID (com despesas, total de despesas, lucro e margem)',
+  })
   @ApiResponse({ status: 200, type: TripDetailResponseDto })
   @ApiResponse({ status: 404, description: 'Viagem não encontrada' })
   findOne(@Param('id') id: string, @CurrentUser() user?: any): Promise<TripDetailResponseDto> {

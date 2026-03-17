@@ -89,9 +89,7 @@ export class PurchaseOrderService {
         supplierId: dto.supplierId,
         companyId,
         branchId: dto.branchId,
-        expectedDeliveryDate: dto.expectedDeliveryDate
-          ? new Date(dto.expectedDeliveryDate)
-          : null,
+        expectedDeliveryDate: dto.expectedDeliveryDate ? new Date(dto.expectedDeliveryDate) : null,
         status: PurchaseOrderStatus.DRAFT,
         notes: dto.notes ?? null,
         createdBy: userId,
@@ -153,7 +151,10 @@ export class PurchaseOrderService {
         where,
         skip,
         take: limit,
-        include: { supplier: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
+        include: {
+          supplier: true,
+          items: { include: { product: { include: { unitOfMeasurement: true } } } },
+        },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.purchaseOrder.count({ where }),
@@ -171,7 +172,10 @@ export class PurchaseOrderService {
   async findOne(id: string, user?: any): Promise<PurchaseOrderResponseDto> {
     const po = await this.prisma.purchaseOrder.findFirst({
       where: { id, deletedAt: null },
-      include: { supplier: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
+      include: {
+        supplier: true,
+        items: { include: { product: { include: { unitOfMeasurement: true } } } },
+      },
     });
     if (!po) throw new NotFoundException('Pedido de compra não encontrado');
     if (user) {
@@ -195,9 +199,7 @@ export class PurchaseOrderService {
       validateBranchAccess(user.branchId, user.role, undefined, existing.branchId);
     }
     if (existing.status !== PurchaseOrderStatus.DRAFT) {
-      throw new BadRequestException(
-        'Só é possível editar pedidos em status Rascunho',
-      );
+      throw new BadRequestException('Só é possível editar pedidos em status Rascunho');
     }
 
     const updateData: Prisma.PurchaseOrderUpdateInput = {};
@@ -219,8 +221,7 @@ export class PurchaseOrderService {
       updateData.items = {
         create: dto.items.map((item) => {
           const qty = roundQuantity(item.quantity);
-          const unitPrice =
-            item.unitPrice !== undefined ? roundCurrency(item.unitPrice) : null;
+          const unitPrice = item.unitPrice !== undefined ? roundCurrency(item.unitPrice) : null;
           const total = unitPrice !== null ? roundCurrency(qty * unitPrice) : null;
           return {
             productId: item.productId,
@@ -235,7 +236,10 @@ export class PurchaseOrderService {
     const updated = await this.prisma.purchaseOrder.update({
       where: { id },
       data: updateData,
-      include: { supplier: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
+      include: {
+        supplier: true,
+        items: { include: { product: { include: { unitOfMeasurement: true } } } },
+      },
     });
     return this.mapToResponse(updated);
   }
@@ -249,9 +253,7 @@ export class PurchaseOrderService {
       validateBranchAccess(user.branchId, user.role, undefined, existing.branchId);
     }
     if (existing.status !== PurchaseOrderStatus.DRAFT) {
-      throw new BadRequestException(
-        'Só é possível excluir pedidos em status Rascunho',
-      );
+      throw new BadRequestException('Só é possível excluir pedidos em status Rascunho');
     }
     await this.prisma.purchaseOrder.update({
       where: { id },
@@ -267,7 +269,10 @@ export class PurchaseOrderService {
   ): Promise<PurchaseOrderResponseDto> {
     const po = await this.prisma.purchaseOrder.findFirst({
       where: { id, deletedAt: null },
-      include: { supplier: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
+      include: {
+        supplier: true,
+        items: { include: { product: { include: { unitOfMeasurement: true } } } },
+      },
     });
     if (!po) throw new NotFoundException('Pedido de compra não encontrado');
     if (user) {
@@ -328,9 +333,10 @@ export class PurchaseOrderService {
       newStatus = PurchaseOrderStatus.PARTIALLY_RECEIVED;
     }
     if (po.status === PurchaseOrderStatus.DRAFT) {
-      newStatus = newStatus === PurchaseOrderStatus.RECEIVED
-        ? PurchaseOrderStatus.RECEIVED
-        : PurchaseOrderStatus.SENT;
+      newStatus =
+        newStatus === PurchaseOrderStatus.RECEIVED
+          ? PurchaseOrderStatus.RECEIVED
+          : PurchaseOrderStatus.SENT;
     }
 
     await this.prisma.purchaseOrder.update({
@@ -351,6 +357,7 @@ export class PurchaseOrderService {
           supplierId: po.supplierId,
           companyId: po.companyId,
           branchId: po.branchId,
+          costCenterId: undefined,
         },
         userId,
         user,
@@ -361,26 +368,21 @@ export class PurchaseOrderService {
   }
 
   private mapToResponse(po: any): PurchaseOrderResponseDto {
-    const items: PurchaseOrderItemResponseDto[] = (po.items || []).map(
-      (i: any) => ({
-        id: i.id,
-        purchaseOrderId: i.purchaseOrderId,
-        productId: i.productId,
-        productName: i.product?.name,
-        productCode: i.product?.code,
-        productUnit: i.product?.unitOfMeasurement?.code ?? i.product?.unit ?? undefined,
-        quantity: Number(i.quantity),
-        quantityReceived: Number(i.quantityReceived),
-        unitPrice: i.unitPrice != null ? Number(i.unitPrice) : undefined,
-        total: i.total != null ? Number(i.total) : undefined,
-        createdAt: i.createdAt,
-        updatedAt: i.updatedAt,
-      }),
-    );
-    const totalAmount = items.reduce(
-      (s, i) => s + (i.total ?? 0),
-      0,
-    );
+    const items: PurchaseOrderItemResponseDto[] = (po.items || []).map((i: any) => ({
+      id: i.id,
+      purchaseOrderId: i.purchaseOrderId,
+      productId: i.productId,
+      productName: i.product?.name,
+      productCode: i.product?.code,
+      productUnit: i.product?.unitOfMeasurement?.code ?? i.product?.unit ?? undefined,
+      quantity: Number(i.quantity),
+      quantityReceived: Number(i.quantityReceived),
+      unitPrice: i.unitPrice != null ? Number(i.unitPrice) : undefined,
+      total: i.total != null ? Number(i.total) : undefined,
+      createdAt: i.createdAt,
+      updatedAt: i.updatedAt,
+    }));
+    const totalAmount = items.reduce((s, i) => s + (i.total ?? 0), 0);
     return {
       id: po.id,
       number: po.number,

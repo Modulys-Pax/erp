@@ -129,12 +129,7 @@ export class AccountReceivableController {
     @Query('endDate') endDate?: string,
     @CurrentUser() user?: any,
   ): Promise<ReportByCustomerResponseDto> {
-    return this.accountReceivableService.getReportByCustomer(
-      branchId,
-      startDate,
-      endDate,
-      user,
-    );
+    return this.accountReceivableService.getReportByCustomer(branchId, startDate, endDate, user);
   }
 
   @Get()

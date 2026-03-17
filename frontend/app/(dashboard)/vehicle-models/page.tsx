@@ -269,7 +269,7 @@ export default function VehicleModelsPage() {
                 key: 'brand',
                 header: 'Marca',
                 render: (model) => (
-                  <Badge variant="outline" className="bg-gray-50">
+                  <Badge variant="outline" className="bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700">
                     {model.brand?.name || '-'}
                   </Badge>
                 ),

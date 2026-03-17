@@ -23,6 +23,7 @@ import { toSelectOptions } from '@/lib/hooks/use-searchable-select';
 import { toastSuccess, toastErrorFromException } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
 import { getQuantityInputStep, normalizeQuantityByUnit } from '@/lib/utils/quantity';
+import { generateUUID } from '@/lib/utils/uuid';
 import { Plus, Trash2 } from 'lucide-react';
 import { Can } from '@/components/auth/permission-gate';
 
@@ -35,7 +36,7 @@ interface ItemRow {
 
 function newItemRow(poItem?: { productId: string; quantity: number; unitPrice?: number }): ItemRow {
   return {
-    id: crypto.randomUUID(),
+    id: generateUUID(),
     productId: poItem?.productId ?? '',
     quantity: poItem?.quantity ?? 0,
     unitPrice: poItem?.unitPrice,

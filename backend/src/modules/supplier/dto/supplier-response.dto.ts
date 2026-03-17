@@ -31,8 +31,12 @@ export class SupplierResponseDto {
   @ApiProperty({ example: 'uuid' })
   companyId: string;
 
-  @ApiProperty({ example: 'uuid' })
-  branchId: string;
+  @ApiProperty({
+    example: 'uuid',
+    required: false,
+    description: 'null = disponível para todas as filiais',
+  })
+  branchId?: string | null;
 
   @ApiProperty({ example: true })
   active: boolean;

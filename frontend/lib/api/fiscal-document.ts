@@ -13,6 +13,7 @@ export interface FiscalDocument {
   status: FiscalDocumentStatus;
   companyId: string;
   branchId: string;
+  remetente?: string;
   supplierId?: string;
   supplierName?: string;
   customerId?: string;
@@ -38,6 +39,7 @@ export interface CreateFiscalDocumentDto {
   status?: FiscalDocumentStatus;
   companyId: string;
   branchId: string;
+  remetente?: string;
   supplierId?: string;
   customerId?: string;
   accountPayableId?: string;

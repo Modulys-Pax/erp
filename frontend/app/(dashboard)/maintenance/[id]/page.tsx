@@ -1,8 +1,8 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { formatCurrency } from '@/lib/utils/currency';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   maintenanceApi,
@@ -60,6 +60,7 @@ import {
 
 export default function MaintenanceDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const id = params.id as string;
   const queryClient = useQueryClient();
   const [actionNotes, setActionNotes] = useState('');
@@ -70,6 +71,7 @@ export default function MaintenanceDetailPage() {
   const [newMaterialQuantity, setNewMaterialQuantity] = useState<number | undefined>(undefined);
   const [newMaterialServiceId, setNewMaterialServiceId] = useState<string>('');
   const [printMode, setPrintMode] = useState<'summary' | 'full'>('summary');
+  const hasAutoPrintedRef = useRef(false);
 
   const { data: order, isLoading } = useQuery({
     queryKey: ['maintenance', id],
@@ -269,6 +271,18 @@ export default function MaintenanceDetailPage() {
   const canComplete = order.status === 'OPEN' || order.status === 'IN_PROGRESS' || order.status === 'PAUSED';
   const canCancel = order.status === 'OPEN' || order.status === 'IN_PROGRESS' || order.status === 'PAUSED';
   const isRoadsideChange = order.description === 'Troca na estrada';
+
+  useEffect(() => {
+    if (!order || hasAutoPrintedRef.current) return;
+
+    const printParam = searchParams.get('print');
+    if (!printParam) return;
+
+    const mode: 'summary' | 'full' = printParam === 'full' ? 'full' : 'summary';
+    setPrintMode(mode);
+    hasAutoPrintedRef.current = true;
+    setTimeout(() => window.print(), 150);
+  }, [order, searchParams]);
 
   return (
     <div className="space-y-6">

@@ -1,11 +1,4 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsBoolean,
-  IsEmail,
-  IsUUID,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsEmail, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateSupplierDto {
@@ -86,12 +79,13 @@ export class CreateSupplierDto {
   companyId: string;
 
   @ApiProperty({
-    description: 'ID da filial',
+    description: 'ID da filial (opcional; omitir ou null = disponível para todas as filiais)',
     example: 'uuid',
+    required: false,
   })
   @IsUUID('4', { message: 'ID da filial deve ser um UUID válido' })
-  @IsNotEmpty({ message: 'ID da filial é obrigatório' })
-  branchId: string;
+  @IsOptional()
+  branchId?: string | null;
 
   @ApiProperty({
     description: 'Fornecedor ativo',

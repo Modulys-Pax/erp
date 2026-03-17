@@ -156,7 +156,13 @@ export class ProductController {
     const roleName = typeof user?.role === 'string' ? user.role : user?.role?.name;
     const isAdmin = roleName?.toLowerCase() === 'admin';
     const effectiveBranchId = isAdmin ? branchId : (user?.branchId ?? branchId);
-    return this.productService.getProductSummary(effectiveBranchId, startDate, endDate, pageNum, limitNum);
+    return this.productService.getProductSummary(
+      effectiveBranchId,
+      startDate,
+      endDate,
+      pageNum,
+      limitNum,
+    );
   }
 
   @Get(':id')

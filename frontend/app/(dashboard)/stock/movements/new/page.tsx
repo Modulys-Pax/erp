@@ -29,7 +29,7 @@ import { getQuantityInputStep, normalizeQuantityByUnit } from '@/lib/utils/quant
 const movementSchema = z.object({
   productId: z.string().uuid('Selecione um produto'),
   quantity: z.coerce.number().min(0.01, 'Quantidade deve ser maior que 0'),
-  documentNumber: z.string().optional(),
+  documentNumber: z.string().min(1, 'Número do documento é obrigatório'),
   notes: z.string().optional(),
   companyId: z.string().uuid('Selecione uma empresa'),
   branchId: z.string().uuid('Selecione uma filial'),
@@ -132,7 +132,7 @@ export default function NewStockMovementPage() {
       productId: data.productId,
       quantity,
       unitCost: product.unitPrice, // Usar o unitPrice do produto cadastrado
-      documentNumber: data.documentNumber || undefined,
+      documentNumber: data.documentNumber.trim(),
       notes: data.notes || undefined,
       companyId: DEFAULT_COMPANY_ID,
       branchId: data.branchId,
@@ -238,13 +238,18 @@ export default function NewStockMovementPage() {
 
           <div>
             <Label htmlFor="documentNumber" className="text-sm text-muted-foreground mb-2">
-              Número do Documento
+              Número do Documento *
             </Label>
             <Input
               id="documentNumber"
               {...register('documentNumber')}
-              className="rounded-xl"
+              className={errors.documentNumber ? 'border-destructive rounded-xl' : 'rounded-xl'}
             />
+            {errors.documentNumber && (
+              <p className="text-sm text-destructive mt-1">
+                {errors.documentNumber.message}
+              </p>
+            )}
           </div>
 
           <div>

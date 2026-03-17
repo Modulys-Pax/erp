@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -22,7 +18,7 @@ export class CustomerService {
     userId?: string,
     user?: any,
   ): Promise<CustomerResponseDto> {
-    if (user) {
+    if (user && createCustomerDto.branchId != null) {
       validateBranchAccess(user.branchId, user.role, createCustomerDto.branchId, undefined);
     }
 
@@ -33,21 +29,24 @@ export class CustomerService {
       throw new NotFoundException('Empresa não encontrada');
     }
 
-    const branch = await this.prisma.branch.findFirst({
-      where: {
-        id: createCustomerDto.branchId,
-        companyId: createCustomerDto.companyId,
-        deletedAt: null,
-      },
-    });
-    if (!branch) {
-      throw new NotFoundException('Filial não encontrada');
+    if (createCustomerDto.branchId != null) {
+      const branch = await this.prisma.branch.findFirst({
+        where: {
+          id: createCustomerDto.branchId,
+          companyId: createCustomerDto.companyId,
+          deletedAt: null,
+        },
+      });
+      if (!branch) {
+        throw new NotFoundException('Filial não encontrada');
+      }
     }
 
     try {
       const customer = await this.prisma.customer.create({
         data: {
           ...createCustomerDto,
+          branchId: createCustomerDto.branchId ?? null,
           createdBy: userId,
         },
       });
@@ -71,7 +70,7 @@ export class CustomerService {
 
     const where: Prisma.CustomerWhereInput = {
       companyId,
-      ...(branchId ? { branchId } : {}),
+      ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}),
       ...(includeDeleted ? {} : { deletedAt: null }),
     };
 
@@ -115,7 +114,7 @@ export class CustomerService {
     if (!existing) {
       throw new NotFoundException('Cliente não encontrado');
     }
-    if (user) {
+    if (user && existing.branchId != null) {
       validateBranchAccess(user.branchId, user.role, existing.branchId, undefined);
     }
 
@@ -140,7 +139,7 @@ export class CustomerService {
     if (!customer) {
       throw new NotFoundException('Cliente não encontrado');
     }
-    if (user) {
+    if (user && customer.branchId != null) {
       validateBranchAccess(user.branchId, user.role, customer.branchId, undefined);
     }
     await this.prisma.customer.update({

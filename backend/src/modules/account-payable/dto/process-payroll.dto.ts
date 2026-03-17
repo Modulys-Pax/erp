@@ -72,7 +72,8 @@ export class PayrollEmployeeDetail {
   riskAdditionAmount?: number;
 
   @ApiProperty({
-    description: 'Nome do adicional para exibição: "Periculosidade" ou "Insalubridade (Mínimo/Médio/Máximo)"',
+    description:
+      'Nome do adicional para exibição: "Periculosidade" ou "Insalubridade (Mínimo/Médio/Máximo)"',
     required: false,
   })
   riskAdditionLabel?: string;

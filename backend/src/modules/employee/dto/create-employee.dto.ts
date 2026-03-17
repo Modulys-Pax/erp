@@ -13,7 +13,10 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { RISK_ADDITION_TYPES, INSALUBRITY_DEGREES } from '../../../shared/constants/risk-addition.constants';
+import {
+  RISK_ADDITION_TYPES,
+  INSALUBRITY_DEGREES,
+} from '../../../shared/constants/risk-addition.constants';
 
 export class CreateEmployeeDto {
   @ApiProperty({ description: 'Nome do funcionário', example: 'João Silva' })
@@ -114,11 +117,14 @@ export class CreateEmployeeDto {
   active?: boolean;
 
   @ApiProperty({
-    description: 'Tipo de adicional de risco (apenas um: insalubridade OU periculosidade, não acumulam)',
+    description:
+      'Tipo de adicional de risco (apenas um: insalubridade OU periculosidade, não acumulam)',
     enum: RISK_ADDITION_TYPES,
     required: false,
   })
-  @IsIn(RISK_ADDITION_TYPES, { message: 'Tipo de adicional deve ser INSALUBRIDADE ou PERICULOSIDADE' })
+  @IsIn(RISK_ADDITION_TYPES, {
+    message: 'Tipo de adicional deve ser INSALUBRIDADE ou PERICULOSIDADE',
+  })
   @IsOptional()
   riskAdditionType?: 'INSALUBRIDADE' | 'PERICULOSIDADE';
 

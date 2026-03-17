@@ -142,6 +142,14 @@ export default function NewProductChangePage() {
       return;
     }
 
+    if (!data.serviceDate?.trim()) {
+      toastErrorFromException(
+        new Error('Informe a data em que o serviço foi realizado'),
+        'Data do serviço obrigatória',
+      );
+      return;
+    }
+
     const payload: RegisterProductChangeDto = {
       vehicleIds: data.vehicleIds,
       changeKm: Math.round(changeKmNum),
@@ -161,9 +169,7 @@ export default function NewProductChangePage() {
               : undefined,
         };
       }),
-      serviceDate: data.serviceDate?.trim()
-        ? data.serviceDate.trim()
-        : undefined,
+      serviceDate: data.serviceDate.trim(),
       companyId: DEFAULT_COMPANY_ID,
       branchId: effectiveBranchId,
     };
@@ -279,17 +285,18 @@ export default function NewProductChangePage() {
 
           <div>
             <Label htmlFor="serviceDate" className="text-sm text-muted-foreground mb-2 block">
-              Data de realização do serviço
+              Data de realização do serviço *
             </Label>
             <Input
               id="serviceDate"
               type="date"
               className="rounded-xl"
               disabled={registerMutation.isPending}
-              {...register('serviceDate')}
+              required
+              {...register('serviceDate', { required: true })}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Data em que o serviço foi realizado na rua (opcional)
+              Data em que o serviço foi realizado na rua
             </p>
           </div>
 
@@ -437,7 +444,8 @@ export default function NewProductChangePage() {
                 !effectiveBranchId ||
                 selectedVehicleIds.length === 0 ||
                 !watch('changeKm')?.trim() ||
-                validItemsLength(watch('items')) === 0
+                validItemsLength(watch('items')) === 0 ||
+                !watch('serviceDate')?.trim()
               }
             >
               {registerMutation.isPending ? 'Registrando...' : 'Registrar Troca'}

@@ -128,8 +128,7 @@ export class ReportsService {
       tripRevenueByVehicle[t.vehicleId] =
         (tripRevenueByVehicle[t.vehicleId] ?? 0) + Number(t.freightValue);
       const expSum = t.expenses.reduce((s, e) => s + Number(e.amount), 0);
-      tripExpensesByVehicle[t.vehicleId] =
-        (tripExpensesByVehicle[t.vehicleId] ?? 0) + expSum;
+      tripExpensesByVehicle[t.vehicleId] = (tripExpensesByVehicle[t.vehicleId] ?? 0) + expSum;
     }
 
     const maintenanceCp = await this.prisma.accountPayable.findMany({
@@ -212,12 +211,14 @@ export class ReportsService {
       byCustomer[id].count += 1;
     }
 
-    return Object.entries(byCustomer).map(([customerId, v]) => ({
-      customerId,
-      customerName: v.name,
-      revenue: v.revenue,
-      tripCount: v.count,
-    })).sort((a, b) => b.revenue - a.revenue);
+    return Object.entries(byCustomer)
+      .map(([customerId, v]) => ({
+        customerId,
+        customerName: v.name,
+        revenue: v.revenue,
+        tripCount: v.count,
+      }))
+      .sort((a, b) => b.revenue - a.revenue);
   }
 
   async getOperationalCostReport(
@@ -260,8 +261,7 @@ export class ReportsService {
     const tripExpensesByVehicle: Record<string, number> = {};
     for (const t of trips) {
       const sum = t.expenses.reduce((s, e) => s + Number(e.amount), 0);
-      tripExpensesByVehicle[t.vehicleId] =
-        (tripExpensesByVehicle[t.vehicleId] ?? 0) + sum;
+      tripExpensesByVehicle[t.vehicleId] = (tripExpensesByVehicle[t.vehicleId] ?? 0) + sum;
     }
 
     const maintenanceCp = await this.prisma.accountPayable.findMany({
@@ -280,17 +280,19 @@ export class ReportsService {
       }
     }
 
-    return vehicles.map((v) => {
-      const tripExp = tripExpensesByVehicle[v.id] ?? 0;
-      const maint = maintenanceByVehicle[v.id] ?? 0;
-      return {
-        vehicleId: v.id,
-        vehiclePlate: v.plate?.plate ?? null,
-        tripExpenses: tripExp,
-        maintenanceCosts: maint,
-        totalCost: tripExp + maint,
-      };
-    }).sort((a, b) => b.totalCost - a.totalCost);
+    return vehicles
+      .map((v) => {
+        const tripExp = tripExpensesByVehicle[v.id] ?? 0;
+        const maint = maintenanceByVehicle[v.id] ?? 0;
+        return {
+          vehicleId: v.id,
+          vehiclePlate: v.plate?.plate ?? null,
+          tripExpenses: tripExp,
+          maintenanceCosts: maint,
+          totalCost: tripExp + maint,
+        };
+      })
+      .sort((a, b) => b.totalCost - a.totalCost);
   }
 
   async getFleetMarginReport(
@@ -299,19 +301,13 @@ export class ReportsService {
     endDate?: string,
     user?: any,
   ): Promise<FleetMarginSummary> {
-    const rows = await this.getVehicleProfitabilityReport(
-      branchId,
-      startDate,
-      endDate,
-      user,
-    );
+    const rows = await this.getVehicleProfitabilityReport(branchId, startDate, endDate, user);
     const totalRevenue = rows.reduce((s, r) => s + r.revenue, 0);
     const totalTripExpenses = rows.reduce((s, r) => s + r.tripExpenses, 0);
     const totalMaintenanceCosts = rows.reduce((s, r) => s + r.maintenanceCosts, 0);
     const totalCost = totalTripExpenses + totalMaintenanceCosts;
     const profit = totalRevenue - totalCost;
-    const fleetAverageMarginPercent =
-      totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
+    const fleetAverageMarginPercent = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
     return {
       totalRevenue,
       totalTripExpenses,
@@ -323,22 +319,14 @@ export class ReportsService {
     };
   }
 
-  async getDashboardRentability(
-    branchId?: string,
-    user?: any,
-  ): Promise<DashboardRentabilityDto> {
+  async getDashboardRentability(branchId?: string, user?: any): Promise<DashboardRentabilityDto> {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
     const startStr = start.toISOString().slice(0, 10);
     const endStr = end.toISOString().slice(0, 10);
 
-    const rows = await this.getVehicleProfitabilityReport(
-      branchId,
-      startStr,
-      endStr,
-      user,
-    );
+    const rows = await this.getVehicleProfitabilityReport(branchId, startStr, endStr, user);
 
     const withProfit = rows.filter((r) => r.revenue > 0 || r.totalCost > 0);
     if (withProfit.length === 0) {
@@ -355,8 +343,7 @@ export class ReportsService {
     const totalRevenue = rows.reduce((s, r) => s + r.revenue, 0);
     const totalCost = rows.reduce((s, r) => s + r.totalCost, 0);
     const profit = totalRevenue - totalCost;
-    const fleetAverageMarginPercent =
-      totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
+    const fleetAverageMarginPercent = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
 
     return {
       mostProfitableVehicle: most
@@ -459,7 +446,11 @@ export class ReportsService {
     }
 
     return rows.sort((a, b) =>
-      a.costCenterId == null ? 1 : b.costCenterId == null ? -1 : a.costCenterCode.localeCompare(b.costCenterCode),
+      a.costCenterId == null
+        ? 1
+        : b.costCenterId == null
+          ? -1
+          : a.costCenterCode.localeCompare(b.costCenterCode),
     );
   }
 }

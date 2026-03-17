@@ -23,6 +23,7 @@ import { DEFAULT_COMPANY_ID } from '../../shared/constants/company.constants';
 import { getPrimaryPlate } from '../../shared/utils/vehicle-plate.util';
 import { roundCurrency } from '../../shared/utils/decimal.util';
 import { validateBranchAccess } from '../../shared/utils/branch-access.util';
+import { validateNonDecreasingKmForVehicles } from '../../shared/utils/validation.util';
 import { AccountPayableService } from '../account-payable/account-payable.service';
 
 @Injectable()
@@ -124,7 +125,9 @@ export class MaintenanceLabelService {
           const lastChange = await tx.maintenanceLabelReplacementItem.findFirst({
             where: {
               vehicleReplacementItemId,
-              maintenanceLabel: { vehicles: { some: { vehicleId: createMaintenanceLabelDto.vehicleId } } },
+              maintenanceLabel: {
+                vehicles: { some: { vehicleId: createMaintenanceLabelDto.vehicleId } },
+              },
             },
             orderBy: { createdAt: 'desc' },
           });
@@ -353,6 +356,12 @@ export class MaintenanceLabelService {
       throw new NotFoundException('Um ou mais veículos não foram encontrados.');
     }
 
+    validateNonDecreasingKmForVehicles(
+      registerProductChangeDto.changeKm,
+      vehicles.map((vehicle) => vehicle.currentKm),
+      'na troca na estrada',
+    );
+
     // Validar cada item: deve ser vehicleReplacementItemId de um dos veículos
     const replacementItems = await this.prisma.vehicleReplacementItem.findMany({
       where: {
@@ -466,7 +475,7 @@ export class MaintenanceLabelService {
             vehicleId,
             status: v?.status ?? 'ACTIVE',
             km: registerProductChangeDto.changeKm,
-          notes: observations,
+            notes: observations,
             maintenanceOrderId: newOrder.id,
             createdBy: userId,
           },

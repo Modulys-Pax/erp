@@ -29,20 +29,39 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CurrencyInput } from '@/components/ui/currency-input';
 
-const schema = z.object({
-  type: z.enum(['ENTRY', 'EXIT']),
-  number: z.string().min(1, 'Número é obrigatório'),
-  series: z.string().optional(),
-  issueDate: z.string().min(1, 'Data de emissão é obrigatória'),
-  totalAmount: z.number().min(0, 'Valor deve ser maior ou igual a zero'),
-  status: z.enum(['REGISTERED', 'CANCELLED']),
-  supplierId: z.string().uuid().optional().or(z.literal('')),
-  customerId: z.string().uuid().optional().or(z.literal('')),
-  accountPayableId: z.string().uuid().optional().or(z.literal('')),
-  accountReceivableId: z.string().uuid().optional().or(z.literal('')),
-  financialTransactionId: z.string().uuid().optional().or(z.literal('')),
-  notes: z.string().optional(),
-});
+const schema = z
+  .object({
+    type: z.enum(['ENTRY', 'EXIT']),
+    number: z.string().min(1, 'Número é obrigatório'),
+    series: z.string().optional(),
+    issueDate: z.string().min(1, 'Data de emissão é obrigatória'),
+    totalAmount: z.number().min(0, 'Valor deve ser maior ou igual a zero'),
+    status: z.enum(['REGISTERED', 'CANCELLED']),
+    remetente: z.string().optional(),
+    supplierId: z.string().uuid().optional().or(z.literal('')),
+    customerId: z.string().uuid().optional().or(z.literal('')),
+    accountPayableId: z.string().uuid().optional().or(z.literal('')),
+    accountReceivableId: z.string().uuid().optional().or(z.literal('')),
+    financialTransactionId: z.string().uuid().optional().or(z.literal('')),
+    notes: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type !== 'ENTRY') return;
+    const hasSupplier = !!data.supplierId?.trim();
+    const hasRemetente = !!data.remetente?.trim();
+    if (!hasSupplier && !hasRemetente) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Informe o fornecedor ou o remetente. A nota deve vir de algum lugar.',
+        path: ['supplierId'],
+      });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Informe o fornecedor ou o remetente. A nota deve vir de algum lugar.',
+        path: ['remetente'],
+      });
+    }
+  });
 
 type FormData = z.infer<typeof schema>;
 
@@ -110,6 +129,7 @@ export default function EditFiscalDocumentPage() {
       issueDate: new Date(doc.issueDate).toISOString().split('T')[0],
       totalAmount: Number(doc.totalAmount),
       status: doc.status as 'REGISTERED' | 'CANCELLED',
+      remetente: doc.remetente ?? '',
       supplierId: doc.supplierId ?? '',
       customerId: doc.customerId ?? '',
       accountPayableId: doc.accountPayableId ?? '',
@@ -136,7 +156,8 @@ export default function EditFiscalDocumentPage() {
       issueDate: data.issueDate,
       totalAmount: data.totalAmount,
       status: data.status as FiscalDocumentStatus,
-      supplierId: data.supplierId || undefined,
+      remetente: data.remetente?.trim() || undefined,
+      supplierId: data.supplierId?.trim() || undefined,
       customerId: data.customerId || undefined,
       accountPayableId: data.accountPayableId || undefined,
       accountReceivableId: data.accountReceivableId || undefined,
@@ -254,22 +275,43 @@ export default function EditFiscalDocumentPage() {
             </div>
           </div>
           {type === 'ENTRY' && (
-            <div>
-              <Label className="text-sm text-muted-foreground mb-2">Fornecedor</Label>
-              <SearchableSelect
-                id="supplierId"
-                options={[
-                  { value: '', label: 'Nenhum' },
-                  ...toSelectOptions(
-                    suppliers.filter((s) => s.active && !s.deletedAt),
-                    (s) => s.id,
-                    (s) => s.name,
-                  ),
-                ]}
-                value={watch('supplierId') || ''}
-                onChange={(value) => setValue('supplierId', value || '', { shouldValidate: true })}
-                placeholder="Selecione o fornecedor"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm text-muted-foreground mb-2">
+                  Fornecedor <span className="text-muted-foreground"></span>
+                </Label>
+                <SearchableSelect
+                  id="supplierId"
+                  options={[
+                    { value: '', label: 'Nenhum' },
+                    ...toSelectOptions(
+                      suppliers.filter((s) => s.active && !s.deletedAt),
+                      (s) => s.id,
+                      (s) => s.name,
+                    ),
+                  ]}
+                  value={watch('supplierId') || ''}
+                  onChange={(value) => setValue('supplierId', value || '', { shouldValidate: true })}
+                  placeholder="Selecione o fornecedor"
+                />
+                {errors.supplierId && (
+                  <p className="text-sm text-destructive mt-1">{errors.supplierId.message}</p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="remetente" className="text-sm text-muted-foreground mb-2">
+                  Remetente <span className="text-muted-foreground"></span>
+                </Label>
+                <Input
+                  id="remetente"
+                  {...register('remetente')}
+                  placeholder="Nome do remetente da nota"
+                  className={errors.remetente ? 'border-destructive rounded-xl' : 'rounded-xl'}
+                />
+                {errors.remetente && (
+                  <p className="text-sm text-destructive mt-1">{errors.remetente.message}</p>
+                )}
+              </div>
             </div>
           )}
           {type === 'EXIT' && (

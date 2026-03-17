@@ -64,6 +64,13 @@ export class CreateFiscalDocumentDto {
   @IsNotEmpty()
   branchId: string;
 
+  @ApiPropertyOptional({
+    description: 'Remetente da nota (obrigatório se tipo ENTRY e não informar fornecedor)',
+  })
+  @IsString()
+  @IsOptional()
+  remetente?: string;
+
   @ApiPropertyOptional({ description: 'ID do fornecedor (entrada)' })
   @IsUUID('4')
   @IsOptional()

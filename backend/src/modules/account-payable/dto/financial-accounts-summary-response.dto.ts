@@ -23,7 +23,11 @@ export class AccountPayableDetailDto {
   @ApiProperty({ example: 'NF-001', required: false })
   documentNumber?: string;
 
-  @ApiProperty({ example: '2024-01-01T10:00:00Z', description: 'Data de cadastro da conta', required: false })
+  @ApiProperty({
+    example: '2024-01-01T10:00:00Z',
+    description: 'Data de cadastro da conta',
+    required: false,
+  })
   createdAt?: Date;
 }
 
@@ -49,7 +53,11 @@ export class AccountReceivableDetailDto {
   @ApiProperty({ example: 'NF-002', required: false })
   documentNumber?: string;
 
-  @ApiProperty({ example: '2024-01-01T10:00:00Z', description: 'Data de cadastro da conta', required: false })
+  @ApiProperty({
+    example: '2024-01-01T10:00:00Z',
+    description: 'Data de cadastro da conta',
+    required: false,
+  })
   createdAt?: Date;
 }
 

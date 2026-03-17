@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toastErrorFromException, toastSuccess } from '@/lib/utils';
 import Link from 'next/link';
+import { ACTIVE_STATUS_COLORS } from '@/lib/constants/status.constants';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -88,9 +89,6 @@ export default function BranchesPage() {
           </div>
           <div>
             <p className="font-medium text-foreground">{branch.name}</p>
-            {branch.code && (
-              <p className="text-xs text-muted-foreground">Código: {branch.code}</p>
-            )}
           </div>
         </div>
       ),
@@ -139,11 +137,7 @@ export default function BranchesPage() {
       header: 'Status',
       render: (branch: Branch) => (
         <Badge
-          className={
-            branch.active
-              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-          }
+          className={branch.active ? ACTIVE_STATUS_COLORS.active : ACTIVE_STATUS_COLORS.inactive}
         >
           {branch.active ? 'Ativa' : 'Inativa'}
         </Badge>

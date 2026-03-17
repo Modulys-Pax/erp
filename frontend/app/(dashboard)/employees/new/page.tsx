@@ -25,21 +25,20 @@ import {
   RISK_ADDITION_LABELS,
   type InsalubrityDegree,
 } from '@/lib/constants/risk-addition.constants';
+import { useEffect } from 'react';
 
 const employeeSchema = z
   .object({
     name: z.string().min(1, 'Nome é obrigatório'),
-    cpf: z.string().optional(),
+    cpf: z.string().min(1, 'CPF é obrigatório'),
     email: z.string().email('Email inválido').optional().or(z.literal('')),
-    phone: z.string().optional(),
-    position: z.string().optional(),
-    department: z.string().optional(),
-    hireDate: z.string().optional(),
+    phone: z.string().min(1, 'Telefone é obrigatório'),
+    position: z.string().min(1, 'Cargo é obrigatório'),
+    department: z.string().min(1, 'Departamento é obrigatório'),
+    hireDate: z.string().min(1, 'Data de admissão é obrigatória'),
     monthlySalary: z
       .coerce.number()
-      .min(0, 'Salário mensal não pode ser negativo')
-      .optional()
-      .or(z.nan()),
+      .refine((n) => !Number.isNaN(n) && n >= 0, 'Salário mensal é obrigatório'),
     branchId: z.string().uuid('Selecione uma filial'),
     active: z.boolean().default(true),
     riskAdditionType: z.enum(['INSALUBRIDADE', 'PERICULOSIDADE']).optional().or(z.literal('')),
@@ -71,7 +70,7 @@ const employeeSchema = z
       if (!data.roleId || data.roleId === '') {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Cargo é obrigatório para acesso ao sistema',
+          message: 'Permissão é obrigatória para acesso ao sistema',
           path: ['roleId'],
         });
       }
@@ -95,8 +94,11 @@ export default function NewEmployeePage() {
     register,
     handleSubmit,
     watch,
+    getValues,
     formState: { errors },
     setValue,
+    setError,
+    trigger,
   } = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
@@ -124,6 +126,14 @@ export default function NewEmployeePage() {
     queryKey: ['roles'],
     queryFn: () => roleApi.getAll(),
   });
+
+  // Quando "acesso ao sistema" estiver marcado, validar campos de acesso para exibir mensagens de erro
+  const hasSystemAccessValue = watch('hasSystemAccess');
+  useEffect(() => {
+    if (hasSystemAccessValue) {
+      trigger(['systemEmail', 'password', 'roleId']);
+    }
+  }, [hasSystemAccessValue, trigger]);
 
   const createMutation = useMutation({
     mutationFn: async (data: EmployeeFormData) => {
@@ -200,6 +210,11 @@ export default function NewEmployeePage() {
     createMutation.mutate(submitData);
   };
 
+  const hasSystemAccess = watch('hasSystemAccess');
+  const roleId = watch('roleId');
+  const selectedRoleForCargo =
+    hasSystemAccess && roleId ? roles.find((r) => r.id === roleId) : null;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -208,7 +223,39 @@ export default function NewEmployeePage() {
       />
 
       <SectionCard title="Dados do Funcionário">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit, (errs) => {
+            Object.entries(errs).forEach(([field, err]) => {
+              setError(field as keyof EmployeeFormData, {
+                type: 'manual',
+                message: (err?.message as string) ?? 'Erro de validação',
+              });
+            });
+            const values = getValues();
+            if (values.hasSystemAccess) {
+              const emailToUse = (values.systemEmail || values.email || '').trim();
+              if (!emailToUse) {
+                setError('systemEmail', {
+                  type: 'manual',
+                  message: 'Email é obrigatório para acesso ao sistema',
+                });
+              }
+              if (!values.password || values.password.length < 6) {
+                setError('password', {
+                  type: 'manual',
+                  message: 'Senha é obrigatória e deve ter no mínimo 6 caracteres',
+                });
+              }
+              if (!values.roleId || values.roleId === '') {
+                setError('roleId', {
+                  type: 'manual',
+                  message: 'Permissão é obrigatória para acesso ao sistema',
+                });
+              }
+            }
+          })}
+          className="space-y-4"
+        >
           <div>
             <Label htmlFor="name" className="text-sm text-muted-foreground mb-2">
               Nome *
@@ -226,15 +273,30 @@ export default function NewEmployeePage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="cpf" className="text-sm text-muted-foreground mb-2">
-                CPF
+                CPF *
               </Label>
-              <Input id="cpf" {...register('cpf')} className="rounded-xl" />
+              <Input
+                id="cpf"
+                {...register('cpf')}
+                className={errors.cpf ? 'border-destructive rounded-xl' : 'rounded-xl'}
+              />
+              {errors.cpf && (
+                <p className="text-sm text-destructive mt-1">{errors.cpf.message}</p>
+              )}
             </div>
             <div>
               <Label htmlFor="hireDate" className="text-sm text-muted-foreground mb-2">
-                Data de Admissão
+                Data de Admissão *
               </Label>
-              <Input id="hireDate" type="date" {...register('hireDate')} className="rounded-xl" />
+              <Input
+                id="hireDate"
+                type="date"
+                {...register('hireDate')}
+                className={errors.hireDate ? 'border-destructive rounded-xl' : 'rounded-xl'}
+              />
+              {errors.hireDate && (
+                <p className="text-sm text-destructive mt-1">{errors.hireDate.message}</p>
+              )}
             </div>
           </div>
 
@@ -257,30 +319,56 @@ export default function NewEmployeePage() {
             </div>
             <div>
               <Label htmlFor="phone" className="text-sm text-muted-foreground mb-2">
-                Telefone
+                Telefone *
               </Label>
-              <Input id="phone" {...register('phone')} className="rounded-xl" />
+              <Input
+                id="phone"
+                {...register('phone')}
+                className={errors.phone ? 'border-destructive rounded-xl' : 'rounded-xl'}
+              />
+              {errors.phone && (
+                <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="position" className="text-sm text-muted-foreground mb-2">
-                Cargo
+                Cargo *
               </Label>
-              <Input id="position" {...register('position')} className="rounded-xl" />
+              <Input
+                id="position"
+                {...register('position')}
+                className={errors.position ? 'border-destructive rounded-xl' : 'rounded-xl'}
+              />
+              {errors.position && (
+                <p className="text-sm text-destructive mt-1">{errors.position.message}</p>
+              )}
+              {selectedRoleForCargo && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Permissão: {selectedRoleForCargo.name}
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="department" className="text-sm text-muted-foreground mb-2">
-                Departamento
+                Departamento *
               </Label>
-              <Input id="department" {...register('department')} className="rounded-xl" />
+              <Input
+                id="department"
+                {...register('department')}
+                className={errors.department ? 'border-destructive rounded-xl' : 'rounded-xl'}
+              />
+              {errors.department && (
+                <p className="text-sm text-destructive mt-1">{errors.department.message}</p>
+              )}
             </div>
           </div>
 
           <div>
             <Label htmlFor="monthlySalary" className="text-sm text-muted-foreground mb-2">
-              Salário Mensal
+              Salário Mensal *
             </Label>
             <CurrencyInput
               id="monthlySalary"
@@ -422,11 +510,11 @@ export default function NewEmployeePage() {
               </Label>
             </div>
 
-            {watch('hasSystemAccess') && (
+            {hasSystemAccessValue && (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Para funcionários com acesso ao sistema, o cargo é obrigatório e define as
-                  permissões.
+                  Para funcionários com acesso ao sistema, a permissão é obrigatória e define as
+                  permissões de acesso.
                 </p>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -442,7 +530,7 @@ export default function NewEmployeePage() {
                       type="email"
                       placeholder="Se vazio, será usado o email do funcionário"
                       {...register('systemEmail')}
-                      className={errors.systemEmail ? 'border-destructive' : 'rounded-xl'}
+                      className={errors.systemEmail ? 'border-destructive rounded-xl' : 'rounded-xl'}
                     />
                     {errors.systemEmail && (
                       <p className="text-sm text-destructive mt-1">
@@ -461,7 +549,7 @@ export default function NewEmployeePage() {
                       id="password"
                       type="password"
                       {...register('password')}
-                      className={errors.password ? 'border-destructive' : 'rounded-xl'}
+                      className={errors.password ? 'border-destructive rounded-xl' : 'rounded-xl'}
                     />
                     {errors.password && (
                       <p className="text-sm text-destructive mt-1">
@@ -473,7 +561,7 @@ export default function NewEmployeePage() {
 
                 <div>
                   <Label htmlFor="roleId" className="text-sm text-muted-foreground mb-2">
-                    Cargo (permissão) *
+                    Permissão *
                   </Label>
                   <SearchableSelect
                     id="roleId"

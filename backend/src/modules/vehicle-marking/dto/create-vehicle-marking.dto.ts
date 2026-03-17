@@ -1,4 +1,13 @@
-import { IsString, IsNotEmpty, IsUUID, IsInt, Min, IsArray, ArrayMinSize, ArrayMaxSize } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsUUID,
+  IsInt,
+  Min,
+  IsArray,
+  ArrayMinSize,
+  ArrayMaxSize,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateVehicleMarkingDto {

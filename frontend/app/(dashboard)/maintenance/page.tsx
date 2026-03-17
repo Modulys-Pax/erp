@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { maintenanceApi, MaintenanceOrder } from '@/lib/api/maintenance';
-import { formatCurrency } from '@/lib/utils/currency';
 import { useEffectiveBranch } from '@/lib/hooks/use-effective-branch';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { PageHeader } from '@/components/layout/page-header';
@@ -34,18 +33,20 @@ import {
   MoreHorizontal,
   Edit,
   Eye,
+  Download,
   ClipboardList,
   Clock,
   PlayCircle,
   CheckCircle,
-  DollarSign,
   Wrench,
   Shield,
   AlertTriangle,
+  XCircle,
 } from 'lucide-react';
 import { Can } from '@/components/auth/permission-gate';
 import { ExportButton } from '@/components/ui/export-button';
 import { formatDate } from '@/lib/utils/date';
+import { formatCurrency } from '@/lib/utils';
 
 const DEBOUNCE_MS = 500;
 
@@ -94,20 +95,14 @@ export default function MaintenancePage() {
     
     const openOrders = orders.filter(o => o.status === 'OPEN').length;
     const inProgressOrders = orders.filter(o => o.status === 'IN_PROGRESS').length;
-    const completedOrders = orders.filter(o => o.status === 'COMPLETED');
-    
-    const totalCost = completedOrders.reduce((sum, o) => sum + (o.totalCost || 0), 0);
-    
-    const ordersWithTime = completedOrders.filter(o => o.totalTimeMinutes && o.totalTimeMinutes > 0);
-    const averageTime = ordersWithTime.length > 0
-      ? Math.round(ordersWithTime.reduce((sum, o) => sum + (o.totalTimeMinutes || 0), 0) / ordersWithTime.length)
-      : 0;
+    const pausedOrders = orders.filter(o => o.status === 'PAUSED').length;
+    const cancelledOrders = orders.filter(o => o.status === 'CANCELLED').length;
 
     return {
       openOrders,
       inProgressOrders,
-      totalCost,
-      averageTime,
+      pausedOrders,
+      cancelledOrders,
     };
   }, [allOrdersResponse]);
 
@@ -195,16 +190,24 @@ export default function MaintenancePage() {
     {
       key: 'status',
       header: 'Status',
-      render: (order: MaintenanceOrder) => (
-        <Badge variant="outline" className={`${MAINTENANCE_STATUS_COLORS[order.status]} flex items-center gap-1 w-fit`}>
-          {order.status === 'OPEN' && <Clock className="h-3 w-3" />}
-          {order.status === 'IN_PROGRESS' && <PlayCircle className="h-3 w-3" />}
-          {order.status === 'PAUSED' && <Clock className="h-3 w-3" />}
-          {order.status === 'COMPLETED' && <CheckCircle className="h-3 w-3" />}
-          {order.status === 'CANCELLED' && <AlertTriangle className="h-3 w-3" />}
-          {MAINTENANCE_STATUS_LABELS[order.status]}
-        </Badge>
-      ),
+      render: (order: MaintenanceOrder) => {
+        const isInProgress = order.status === 'IN_PROGRESS';
+        return (
+          <Badge
+            variant="outline"
+            className={`${MAINTENANCE_STATUS_COLORS[order.status]} flex items-center gap-1 w-fit ${
+              isInProgress ? '!bg-yellow-200 !text-yellow-950 dark:!bg-yellow-800 dark:!text-yellow-50' : ''
+            }`}
+          >
+            {order.status === 'OPEN' && <Clock className="h-3 w-3" />}
+            {order.status === 'IN_PROGRESS' && <PlayCircle className="h-3 w-3" />}
+            {order.status === 'PAUSED' && <Clock className="h-3 w-3" />}
+            {order.status === 'COMPLETED' && <CheckCircle className="h-3 w-3" />}
+            {order.status === 'CANCELLED' && <AlertTriangle className="h-3 w-3" />}
+            {MAINTENANCE_STATUS_LABELS[order.status]}
+          </Badge>
+        );
+      },
     },
     {
       key: 'cost',
@@ -248,6 +251,19 @@ export default function MaintenancePage() {
                     </Link>
                   </DropdownMenuItem>
                 )}
+              </Can>
+              <Can permission="maintenance.view">
+                <DropdownMenuItem asChild>
+                  <Link
+                    href={`/maintenance/${order.id}?print=summary`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Imprimir Ordem
+                  </Link>
+                </DropdownMenuItem>
               </Can>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -301,16 +317,16 @@ export default function MaintenancePage() {
             className="border-l-4 border-l-yellow-500"
           />
           <StatCard
-            title="Custo Total (Concluídas)"
-            value={formatCurrency(metrics.totalCost)}
-            icon={DollarSign}
-            className="border-l-4 border-l-green-500"
+            title="Ordens Pausadas"
+            value={metrics.pausedOrders}
+            icon={Clock}
+            className="border-l-4 border-l-amber-500"
           />
           <StatCard
-            title="Tempo Médio"
-            value={formatTime(metrics.averageTime)}
-            icon={Wrench}
-            className="border-l-4 border-l-primary"
+            title="Ordens Canceladas"
+            value={metrics.cancelledOrders}
+            icon={XCircle}
+            className="border-l-4 border-l-red-500"
           />
         </div>
       )}

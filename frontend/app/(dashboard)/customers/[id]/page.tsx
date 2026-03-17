@@ -18,13 +18,13 @@ import { MaskedInput } from '@/components/ui/masked-input';
 
 const schema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
-  document: z.string().optional(),
-  email: z.string().email('Email inválido').optional().or(z.literal('')),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zipCode: z.string().optional(),
+  document: z.string().min(1, 'CPF/CNPJ é obrigatório'),
+  email: z.string().min(1, 'Email é obrigatório').email('Email inválido'),
+  phone: z.string().min(1, 'Telefone é obrigatório'),
+  address: z.string().min(1, 'Endereço é obrigatório'),
+  city: z.string().min(1, 'Cidade é obrigatória'),
+  state: z.string().min(1, 'Estado é obrigatório'),
+  zipCode: z.string().min(1, 'CEP é obrigatório'),
   active: z.boolean(),
 });
 
@@ -71,10 +71,16 @@ export default function EditCustomerPage() {
 
   const onSubmit = (data: FormData) => {
     updateMutation.mutate({
-      ...data,
+      name: data.name,
+      document: data.document,
+      email: data.email,
+      phone: data.phone,
+      address: data.address,
+      city: data.city,
+      state: data.state,
+      zipCode: data.zipCode,
       companyId: DEFAULT_COMPANY_ID,
-      branchId: customer!.branchId,
-      email: data.email || undefined,
+      active: data.active,
     });
   };
 
@@ -101,13 +107,13 @@ export default function EditCustomerPage() {
       <SectionCard title="Dados do Cliente">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <Label htmlFor="name">Nome *</Label>
-            <Input id="name" {...register('name')} className={errors.name ? 'border-destructive' : 'rounded-xl'} />
+            <Label htmlFor="name" className="text-sm text-muted-foreground mb-2">Nome *</Label>
+            <Input id="name" {...register('name')} className={errors.name ? 'border-destructive rounded-xl' : 'rounded-xl'} />
             {errors.name && <p className="text-sm text-destructive mt-1">{errors.name.message}</p>}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="document">CNPJ/CPF</Label>
+              <Label htmlFor="document" className="text-sm text-muted-foreground mb-2">CPF/CNPJ *</Label>
               <Controller
                 name="document"
                 control={control}
@@ -117,20 +123,21 @@ export default function EditCustomerPage() {
                     mask="cnpj-cpf"
                     value={field.value ?? ''}
                     onChange={field.onChange}
-                    className="rounded-xl"
+                    className={errors.document ? 'border-destructive rounded-xl' : 'rounded-xl'}
                   />
                 )}
               />
+              {errors.document && <p className="text-sm text-destructive mt-1">{errors.document.message}</p>}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...register('email')} className={errors.email ? 'border-destructive' : 'rounded-xl'} />
+              <Label htmlFor="email" className="text-sm text-muted-foreground mb-2">Email *</Label>
+              <Input id="email" type="email" {...register('email')} className={errors.email ? 'border-destructive rounded-xl' : 'rounded-xl'} />
               {errors.email && <p className="text-sm text-destructive mt-1">{errors.email.message}</p>}
             </div>
             <div>
-              <Label htmlFor="phone">Telefone</Label>
+              <Label htmlFor="phone" className="text-sm text-muted-foreground mb-2">Telefone *</Label>
               <Controller
                 name="phone"
                 control={control}
@@ -140,28 +147,33 @@ export default function EditCustomerPage() {
                     mask="phone"
                     value={field.value ?? ''}
                     onChange={field.onChange}
-                    className="rounded-xl"
+                    className={errors.phone ? 'border-destructive rounded-xl' : 'rounded-xl'}
                   />
                 )}
               />
+              {errors.phone && <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>}
             </div>
           </div>
           <div>
-            <Label htmlFor="address">Endereço</Label>
-            <Input id="address" {...register('address')} className="rounded-xl" />
+            <Label htmlFor="address" className="text-sm text-muted-foreground mb-2">Endereço *</Label>
+            <Input id="address" {...register('address')} className={errors.address ? 'border-destructive rounded-xl' : 'rounded-xl'} />
+            {errors.address && <p className="text-sm text-destructive mt-1">{errors.address.message}</p>}
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="city">Cidade</Label>
-              <Input id="city" {...register('city')} className="rounded-xl" />
+              <Label htmlFor="city" className="text-sm text-muted-foreground mb-2">Cidade *</Label>
+              <Input id="city" {...register('city')} className={errors.city ? 'border-destructive rounded-xl' : 'rounded-xl'} />
+              {errors.city && <p className="text-sm text-destructive mt-1">{errors.city.message}</p>}
             </div>
             <div>
-              <Label htmlFor="state">Estado (UF)</Label>
-              <Input id="state" maxLength={2} {...register('state')} className="rounded-xl" />
+              <Label htmlFor="state" className="text-sm text-muted-foreground mb-2">Estado (UF) *</Label>
+              <Input id="state" maxLength={2} {...register('state')} className={errors.state ? 'border-destructive rounded-xl' : 'rounded-xl'} />
+              {errors.state && <p className="text-sm text-destructive mt-1">{errors.state.message}</p>}
             </div>
             <div>
-              <Label htmlFor="zipCode">CEP</Label>
-              <Input id="zipCode" {...register('zipCode')} className="rounded-xl" />
+              <Label htmlFor="zipCode" className="text-sm text-muted-foreground mb-2">CEP *</Label>
+              <Input id="zipCode" {...register('zipCode')} className={errors.zipCode ? 'border-destructive rounded-xl' : 'rounded-xl'} />
+              {errors.zipCode && <p className="text-sm text-destructive mt-1">{errors.zipCode.message}</p>}
             </div>
           </div>
           <div className="flex items-center gap-2">

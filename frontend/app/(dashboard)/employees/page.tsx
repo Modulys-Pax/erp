@@ -37,6 +37,7 @@ import { formatDate } from '@/lib/utils/date';
 import { Can } from '@/components/auth/permission-gate';
 import { ExportButton } from '@/components/ui/export-button';
 import { formatCurrency } from '@/lib/utils/currency';
+import { ACTIVE_STATUS_COLORS } from '@/lib/constants/status.constants';
 
 export default function EmployeesPage() {
   const queryClient = useQueryClient();
@@ -157,11 +158,7 @@ export default function EmployeesPage() {
       header: 'Status',
       render: (employee: Employee) => (
         <Badge
-          className={
-            employee.active
-              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-          }
+          className={employee.active ? ACTIVE_STATUS_COLORS.active : ACTIVE_STATUS_COLORS.inactive}
         >
           {employee.active ? 'Ativo' : 'Inativo'}
         </Badge>

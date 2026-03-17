@@ -23,6 +23,14 @@ import { toastSuccess, toastError } from '@/lib/utils/toast';
 import { Plus, Pencil, Trash2, ArrowLeft, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { formatDate } from '@/lib/utils/date';
+import { ACTIVE_STATUS_COLORS } from '@/lib/constants/status.constants';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { MoreHorizontal } from 'lucide-react';
 
 const benefitSchema = z.object({
   employeeId: z.string().uuid(),
@@ -362,11 +370,7 @@ export default function EmployeeBenefitsPage() {
               header: 'Status',
               render: (benefit) => (
                 <span
-                  className={`px-2 py-1 rounded-full text-xs ${
-                    benefit.active
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                      : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-                  }`}
+                  className={`px-2 py-1 rounded-full text-xs ${benefit.active ? ACTIVE_STATUS_COLORS.active : ACTIVE_STATUS_COLORS.inactive}`}
                 >
                   {benefit.active ? 'Ativo' : 'Inativo'}
                 </span>
@@ -376,21 +380,27 @@ export default function EmployeeBenefitsPage() {
               key: 'actions',
               header: 'Ações',
               render: (benefit) => (
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEdit(benefit)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => handleDelete(benefit.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div className="flex justify-end">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(benefit)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(benefit.id)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               ),
             },

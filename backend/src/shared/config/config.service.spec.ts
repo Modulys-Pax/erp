@@ -44,9 +44,18 @@ describe('ConfigService', () => {
 
     it('deve ter expiração JWT padrão de 7d', () => {
       delete process.env.JWT_EXPIRES_IN;
+      delete process.env.JWT_EXPIRATION;
       const config = ConfigService.load();
 
       expect(config.jwt.expiresIn).toBe('7d');
+    });
+
+    it('deve aceitar JWT_EXPIRATION como alias quando JWT_EXPIRES_IN ausente', () => {
+      delete process.env.JWT_EXPIRES_IN;
+      process.env.JWT_EXPIRATION = '1h';
+      const config = ConfigService.load();
+
+      expect(config.jwt.expiresIn).toBe('1h');
     });
 
     it('deve ter porta padrão 3001', () => {

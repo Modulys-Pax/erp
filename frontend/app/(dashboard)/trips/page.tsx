@@ -21,6 +21,7 @@ import { MapPin, Plus, Calendar, Truck, UserCircle, Edit } from 'lucide-react';
 import { Can } from '@/components/auth/permission-gate';
 import { useHasPermission } from '@/lib/contexts/permission-context';
 import { formatDate } from '@/lib/utils/date';
+import { TRIP_STATUS_COLORS } from '@/lib/constants/status.constants';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'Todos' },
@@ -30,14 +31,6 @@ const STATUS_OPTIONS = [
   { value: 'COMPLETED', label: 'Concluída' },
   { value: 'CANCELLED', label: 'Cancelada' },
 ];
-
-const STATUS_BADGE_CLASS: Record<string, string> = {
-  DRAFT: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200',
-  SCHEDULED: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  IN_PROGRESS: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-  COMPLETED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-};
 
 export default function TripsPage() {
   const { branchId: effectiveBranchId } = useEffectiveBranch();
@@ -93,7 +86,13 @@ export default function TripsPage() {
     { key: 'customer', header: 'Cliente', render: (row: Trip) => row.customerName ?? row.customerId },
     { key: 'vehicle', header: 'Veículo', render: (row: Trip) => (row.vehiclePlates?.length ? row.vehiclePlates.join(' • ') : (row.vehiclePlate ?? row.vehicleId)) },
     { key: 'freightValue', header: 'Frete', render: (row: Trip) => formatCurrency(row.freightValue) },
-    { key: 'status', header: 'Status', render: (row: Trip) => getTripStatusLabel(row.status) },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (row: Trip) => (
+        <Badge className={TRIP_STATUS_COLORS[row.status] ?? ''}>{getTripStatusLabel(row.status)}</Badge>
+      ),
+    },
     {
       key: 'dates',
       header: 'Período',

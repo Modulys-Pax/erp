@@ -314,5 +314,16 @@ describe('MaintenanceLabelService', () => {
 
       await expect(service.registerProductChange(registerDto)).rejects.toThrow(NotFoundException);
     });
+
+    it('deve lançar BadRequestException quando km da troca na estrada retrocede', async () => {
+      prisma.vehicle.findMany.mockResolvedValue([mockVehicle]);
+
+      await expect(
+        service.registerProductChange({ ...registerDto, changeKm: 49000 }),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.registerProductChange({ ...registerDto, changeKm: 49000 }),
+      ).rejects.toThrow(/não pode ser menor que a maior quilometragem atual dos veículos/);
+    });
   });
 });

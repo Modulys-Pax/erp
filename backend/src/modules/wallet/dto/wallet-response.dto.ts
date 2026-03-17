@@ -99,10 +99,14 @@ export class CashFlowProjectionMonthDto {
   @ApiProperty({ description: 'Saldo inicial do mês' })
   initialBalance: number;
 
-  @ApiProperty({ description: 'Total de recebimentos previstos (CR pendentes com vencimento no mês)' })
+  @ApiProperty({
+    description: 'Total de recebimentos previstos (CR pendentes com vencimento no mês)',
+  })
   totalExpectedReceipts: number;
 
-  @ApiProperty({ description: 'Total de pagamentos previstos (CP pendentes com vencimento no mês)' })
+  @ApiProperty({
+    description: 'Total de pagamentos previstos (CP pendentes com vencimento no mês)',
+  })
   totalExpectedPayments: number;
 
   @ApiProperty({ description: 'Saldo projetado no fim do mês' })

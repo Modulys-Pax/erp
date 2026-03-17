@@ -116,7 +116,16 @@ export class MaintenanceController {
     const include = includeDeleted === 'true';
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 50;
-    return this.maintenanceService.findAll(branchId, vehicleId, status, startDate, endDate, include, pageNum, limitNum);
+    return this.maintenanceService.findAll(
+      branchId,
+      vehicleId,
+      status,
+      startDate,
+      endDate,
+      include,
+      pageNum,
+      limitNum,
+    );
   }
 
   @Get('vehicle/:vehicleId')
@@ -128,7 +137,16 @@ export class MaintenanceController {
     type: [MaintenanceOrderResponseDto],
   })
   getByVehicle(@Param('vehicleId') vehicleId: string) {
-    return this.maintenanceService.findAll(undefined, vehicleId, undefined, undefined, undefined, false, 1, 50);
+    return this.maintenanceService.findAll(
+      undefined,
+      vehicleId,
+      undefined,
+      undefined,
+      undefined,
+      false,
+      1,
+      50,
+    );
   }
 
   @Get(':id')

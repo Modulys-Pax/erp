@@ -401,6 +401,11 @@ export class StockService {
       totalCost > 0 &&
       !createDto.purchaseOrderId
     ) {
+      if (!createDto.documentNumber?.trim()) {
+        throw new BadRequestException(
+          'Número do documento é obrigatório para gerar a conta a pagar da entrada de estoque',
+        );
+      }
       try {
         await this.accountPayableService.create(
           {

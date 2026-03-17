@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './shared/prisma/prisma.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -48,6 +49,13 @@ import { BranchFilterInterceptor } from './shared/interceptors/branch-filter.int
       isGlobal: true,
       load: [ConfigService.load],
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: Number(process.env.THROTTLE_GLOBAL_LIMIT || 180),
+        skipIf: () => (process.env.NODE_ENV || '').toLowerCase() === 'test',
+      },
+    ]),
     PrismaModule,
     HealthModule,
     AuthModule,
@@ -88,6 +96,7 @@ import { BranchFilterInterceptor } from './shared/interceptors/branch-filter.int
     ChatModule,
   ],
   providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     {
       provide: APP_INTERCEPTOR,
       useClass: BranchFilterInterceptor,

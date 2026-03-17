@@ -35,6 +35,9 @@ export class AccountPayableResponseDto {
   @ApiProperty({ required: false })
   riskAdditionLabel?: string;
 
+  @ApiProperty({ example: 'Empresa XYZ Ltda', required: false })
+  remetente?: string;
+
   @ApiProperty({ example: 'uuid', required: false })
   supplierId?: string;
 

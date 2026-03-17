@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateFiscalDocumentDto } from './dto/create-fiscal-document.dto';
 import { UpdateFiscalDocumentDto } from './dto/update-fiscal-document.dto';
@@ -40,6 +40,16 @@ export class FiscalDocumentService {
       throw new NotFoundException('Filial não encontrada');
     }
 
+    if (createDto.type === 'ENTRY') {
+      const hasSupplier = !!createDto.supplierId?.trim();
+      const hasRemetente = !!createDto.remetente?.trim();
+      if (!hasSupplier && !hasRemetente) {
+        throw new BadRequestException(
+          'Para documento de entrada, informe o fornecedor ou o remetente. A nota deve vir de algum lugar.',
+        );
+      }
+    }
+
     const fiscalDocument = await this.prisma.fiscalDocument.create({
       data: {
         type: createDto.type as FiscalDocumentType,
@@ -50,7 +60,8 @@ export class FiscalDocumentService {
         status: (createDto.status as FiscalDocumentStatus) ?? FiscalDocumentStatus.REGISTERED,
         companyId: createDto.companyId ?? DEFAULT_COMPANY_ID,
         branchId: createDto.branchId,
-        supplierId: createDto.supplierId || null,
+        remetente: createDto.remetente?.trim() || null,
+        supplierId: createDto.supplierId?.trim() || null,
         customerId: createDto.customerId || null,
         accountPayableId: createDto.accountPayableId || null,
         accountReceivableId: createDto.accountReceivableId || null,
@@ -151,6 +162,21 @@ export class FiscalDocumentService {
       validateBranchAccess(user.branchId, user.role, existing.branchId, undefined);
     }
 
+    const finalType = updateDto.type !== undefined ? updateDto.type : existing.type;
+    const finalSupplierId =
+      updateDto.supplierId !== undefined ? updateDto.supplierId : existing.supplierId;
+    const finalRemetente =
+      updateDto.remetente !== undefined ? updateDto.remetente : existing.remetente;
+    if (finalType === 'ENTRY') {
+      const hasSupplier = !!finalSupplierId?.trim();
+      const hasRemetente = !!finalRemetente?.trim();
+      if (!hasSupplier && !hasRemetente) {
+        throw new BadRequestException(
+          'Para documento de entrada, informe o fornecedor ou o remetente. A nota deve vir de algum lugar.',
+        );
+      }
+    }
+
     const fiscalDocument = await this.prisma.fiscalDocument.update({
       where: { id },
       data: {
@@ -160,6 +186,9 @@ export class FiscalDocumentService {
         ...(updateDto.issueDate !== undefined && { issueDate: new Date(updateDto.issueDate) }),
         ...(updateDto.totalAmount !== undefined && { totalAmount: updateDto.totalAmount }),
         ...(updateDto.status !== undefined && { status: updateDto.status as FiscalDocumentStatus }),
+        ...(updateDto.remetente !== undefined && {
+          remetente: updateDto.remetente?.trim() || null,
+        }),
         ...(updateDto.supplierId !== undefined && { supplierId: updateDto.supplierId || null }),
         ...(updateDto.customerId !== undefined && { customerId: updateDto.customerId || null }),
         ...(updateDto.accountPayableId !== undefined && {
@@ -209,6 +238,7 @@ export class FiscalDocumentService {
       status: d.status,
       companyId: d.companyId,
       branchId: d.branchId,
+      remetente: d.remetente ?? undefined,
       supplierId: d.supplierId ?? undefined,
       supplierName: d.supplier?.name ?? undefined,
       customerId: d.customerId ?? undefined,

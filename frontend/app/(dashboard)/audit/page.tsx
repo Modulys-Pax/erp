@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { toSelectOptions } from '@/lib/hooks/use-searchable-select';
+import { AUDIT_ACTION_COLORS } from '@/lib/constants/status.constants';
 import {
   ShieldCheck,
   PlusCircle,
@@ -97,21 +98,7 @@ export default function AuditPage() {
   }, [auditLogs]);
 
   const getActionColor = (action: AuditAction) => {
-    switch (action) {
-      case AuditAction.CREATE:
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case AuditAction.UPDATE:
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case AuditAction.DELETE:
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case AuditAction.RESTORE:
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-      case AuditAction.LOGIN:
-      case AuditAction.LOGOUT:
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      default:
-        return 'bg-muted text-muted-foreground';
-    }
+    return AUDIT_ACTION_COLORS[action] ?? 'bg-muted text-muted-foreground';
   };
 
   const getActionLabel = (action: AuditAction) => {

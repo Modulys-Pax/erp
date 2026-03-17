@@ -27,16 +27,37 @@ import { CurrencyInput } from '@/components/ui/currency-input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toastSuccess } from '@/lib/utils';
 
-const accountPayableSchema = z.object({
-  description: z.string().min(1, 'Descrição é obrigatória'),
-  amount: z.number().min(0.01, 'Valor deve ser maior que zero'),
-  dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
-  documentNumber: z.string().optional(),
-  notes: z.string().optional(),
-  supplierId: z.string().uuid().optional().or(z.literal('')),
-  costCenterId: z.string().uuid().optional().or(z.literal('')),
-  branchId: z.string().uuid('Selecione uma filial'),
-});
+const accountPayableSchema = z
+  .object({
+    description: z.string().min(1, 'Descrição é obrigatória'),
+    amount: z.number().min(0.01, 'Valor deve ser maior que zero'),
+    dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
+    documentNumber: z.string().min(1, 'Número do documento é obrigatório'),
+    notes: z.string().min(1, 'Observações são obrigatórias'),
+    remetente: z.string().optional(),
+    supplierId: z.string().uuid().optional().or(z.literal('')),
+    costCenterId: z
+      .string()
+      .min(1, 'Centro de custo é obrigatório')
+      .uuid('Selecione um centro de custo válido'),
+    branchId: z.string().uuid('Selecione uma filial'),
+  })
+  .superRefine((data, ctx) => {
+    const hasSupplier = !!data.supplierId?.trim();
+    const hasRemetente = !!data.remetente?.trim();
+    if (!hasSupplier && !hasRemetente) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Informe o fornecedor ou o remetente. A nota deve vir de algum lugar.',
+        path: ['supplierId'],
+      });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Informe o fornecedor ou o remetente. A nota deve vir de algum lugar.',
+        path: ['remetente'],
+      });
+    }
+  });
 
 type AccountPayableFormData = z.infer<typeof accountPayableSchema>;
 
@@ -55,6 +76,9 @@ export default function NewAccountPayablePage() {
     defaultValues: {
       amount: undefined,
       branchId: effectiveBranchId || '',
+      documentNumber: '',
+      notes: '',
+      remetente: '',
       supplierId: '',
       costCenterId: '',
     },
@@ -110,8 +134,11 @@ export default function NewAccountPayablePage() {
       amount,
       companyId: DEFAULT_COMPANY_ID,
       branchId: data.branchId,
-      supplierId: data.supplierId || undefined,
-      costCenterId: data.costCenterId || undefined,
+      documentNumber: data.documentNumber,
+      notes: data.notes,
+      remetente: data.remetente?.trim() || undefined,
+      supplierId: data.supplierId?.trim() || undefined,
+      costCenterId: data.costCenterId,
     });
   };
 
@@ -179,7 +206,9 @@ export default function NewAccountPayablePage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-sm text-muted-foreground mb-2">Fornecedor</Label>
+              <Label className="text-sm text-muted-foreground mb-2">
+                Fornecedor <span className="text-muted-foreground"></span>
+              </Label>
               <SearchableSelect
                 id="supplierId"
                 options={[
@@ -194,13 +223,33 @@ export default function NewAccountPayablePage() {
                 onChange={(value) => setValue('supplierId', value || '', { shouldValidate: true })}
                 placeholder="Selecione o fornecedor"
               />
+              {errors.supplierId && (
+                <p className="text-sm text-destructive mt-1">{errors.supplierId.message}</p>
+              )}
             </div>
             <div>
-              <Label className="text-sm text-muted-foreground mb-2">Centro de custo</Label>
+              <Label htmlFor="remetente" className="text-sm text-muted-foreground mb-2">
+                Remetente <span className="text-muted-foreground"></span>
+              </Label>
+              <Input
+                id="remetente"
+                {...register('remetente')}
+                placeholder="Nome do remetente da nota"
+                className={errors.remetente ? 'border-destructive rounded-xl' : 'rounded-xl'}
+              />
+              {errors.remetente && (
+                <p className="text-sm text-destructive mt-1">{errors.remetente.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm text-muted-foreground mb-2">Centro de custo *</Label>
               <SearchableSelect
                 id="costCenterId"
                 options={[
-                  { value: '', label: 'Nenhum' },
+                  { value: '', label: 'Selecione' },
                   ...toSelectOptions(
                     costCenters.filter((c) => c.active),
                     (c) => c.id,
@@ -211,25 +260,37 @@ export default function NewAccountPayablePage() {
                 onChange={(value) => setValue('costCenterId', value || '', { shouldValidate: true })}
                 placeholder="Selecione o centro de custo"
               />
+              {errors.costCenterId && (
+                <p className="text-sm text-destructive mt-1">{errors.costCenterId.message}</p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="documentNumber" className="text-sm text-muted-foreground mb-2">
+                Número do Documento *
+              </Label>
+              <Input
+                id="documentNumber"
+                {...register('documentNumber')}
+                className={errors.documentNumber ? 'border-destructive rounded-xl' : 'rounded-xl'}
+              />
+              {errors.documentNumber && (
+                <p className="text-sm text-destructive mt-1">{errors.documentNumber.message}</p>
+              )}
             </div>
           </div>
 
           <div>
-            <Label htmlFor="documentNumber" className="text-sm text-muted-foreground mb-2">
-              Número do Documento
-            </Label>
-            <Input
-              id="documentNumber"
-              {...register('documentNumber')}
-              className="rounded-xl"
-            />
-          </div>
-
-          <div>
             <Label htmlFor="notes" className="text-sm text-muted-foreground mb-2">
-              Observações
+              Observações *
             </Label>
-            <Textarea id="notes" {...register('notes')} className="rounded-xl" />
+            <Textarea
+              id="notes"
+              {...register('notes')}
+              className={errors.notes ? 'border-destructive rounded-xl' : 'rounded-xl'}
+            />
+            {errors.notes && (
+              <p className="text-sm text-destructive mt-1">{errors.notes.message}</p>
+            )}
           </div>
 
           <div className="flex gap-2">

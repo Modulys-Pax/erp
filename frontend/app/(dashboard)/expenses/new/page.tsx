@@ -23,12 +23,12 @@ import { DEFAULT_COMPANY_ID } from '@/lib/constants/company.constants';
 import { Loader2 } from 'lucide-react';
 
 const schema = z.object({
-  employeeId: z.string().optional(),
+  employeeId: z.string().min(1, 'Funcionário é obrigatório'),
   type: z.nativeEnum(ExpenseType),
   amount: z.coerce.number().min(0.01, 'Valor deve ser maior que 0'),
   description: z.string().min(1, 'Descrição é obrigatória'),
   expenseDate: z.string().min(1, 'Data é obrigatória'),
-  documentNumber: z.string().optional(),
+  documentNumber: z.string().min(1, 'Número do documento é obrigatório'),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -89,16 +89,17 @@ export default function NewExpensePage() {
         <SectionCard title="Dados da Despesa">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <Label>Funcionário (opcional)</Label>
+              <Label>Funcionário *</Label>
               <SearchableSelect
-                options={[
-                  { value: '', label: 'Nenhum' },
-                  ...toSelectOptions(employees?.data || [], (e) => e.id, (e) => e.name),
-                ]}
+                options={toSelectOptions(employees?.data || [], (e) => e.id, (e) => e.name)}
                 value={employeeId || ''}
-                onChange={(v) => setValue('employeeId', v || undefined)}
+                onChange={(v) => setValue('employeeId', v || '', { shouldValidate: true })}
                 placeholder="Selecione o funcionário"
+                error={!!errors.employeeId}
               />
+              {errors.employeeId && (
+                <p className="text-sm text-destructive mt-1">{errors.employeeId.message}</p>
+              )}
             </div>
 
             <div>
@@ -137,8 +138,15 @@ export default function NewExpensePage() {
             </div>
 
             <div>
-              <Label>Número do Documento</Label>
-              <Input {...register('documentNumber')} placeholder="Ex: REC-001234" />
+              <Label>Número do Documento *</Label>
+              <Input
+                {...register('documentNumber')}
+                placeholder="Ex: REC-001234"
+                className={errors.documentNumber ? 'border-destructive' : ''}
+              />
+              {errors.documentNumber && (
+                <p className="text-sm text-destructive mt-1">{errors.documentNumber.message}</p>
+              )}
             </div>
 
             <div className="md:col-span-2">

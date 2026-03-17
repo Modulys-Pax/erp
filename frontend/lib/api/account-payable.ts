@@ -19,6 +19,7 @@ export interface AccountPayable {
   originId?: string;
   documentNumber?: string;
   notes?: string;
+  remetente?: string;
   /** Para contas de folha (HR): "Periculosidade" ou "Insalubridade (Mínimo/Médio/Máximo)" para exibir no lugar de "Adicional" */
   riskAdditionLabel?: string;
   supplierId?: string;
@@ -40,10 +41,11 @@ export interface CreateAccountPayableDto {
   dueDate: string;
   originType?: TransactionOriginType;
   originId?: string;
-  documentNumber?: string;
-  notes?: string;
+  documentNumber: string;
+  notes: string;
+  remetente?: string;
   supplierId?: string;
-  costCenterId?: string;
+  costCenterId: string;
   companyId: string;
   branchId: string;
 }

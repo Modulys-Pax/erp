@@ -68,7 +68,11 @@ export class CostCenterController {
   @Get(':id')
   @RequirePermission('cost-centers.view')
   @ApiOperation({ summary: 'Obter centro de custo por ID' })
-  @ApiResponse({ status: 200, description: 'Dados do centro de custo', type: CostCenterResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Dados do centro de custo',
+    type: CostCenterResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Centro de custo não encontrado' })
   findOne(@Param('id') id: string): Promise<CostCenterResponseDto> {
     return this.costCenterService.findOne(id);
@@ -77,7 +81,11 @@ export class CostCenterController {
   @Patch(':id')
   @RequirePermission('cost-centers.update')
   @ApiOperation({ summary: 'Atualizar centro de custo' })
-  @ApiResponse({ status: 200, description: 'Centro de custo atualizado', type: CostCenterResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Centro de custo atualizado',
+    type: CostCenterResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Centro de custo não encontrado' })
   @ApiResponse({ status: 409, description: 'Código já cadastrado para esta filial' })
   update(

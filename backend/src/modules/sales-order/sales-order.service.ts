@@ -96,8 +96,7 @@ export class SalesOrderService {
         items: {
           create: dto.items.map((item) => {
             const qty = roundQuantity(item.quantity);
-            const unitPrice =
-              item.unitPrice !== undefined ? roundCurrency(item.unitPrice) : null;
+            const unitPrice = item.unitPrice !== undefined ? roundCurrency(item.unitPrice) : null;
             const total = unitPrice !== null ? roundCurrency(qty * unitPrice) : null;
             return {
               productId: item.productId,
@@ -151,7 +150,10 @@ export class SalesOrderService {
         where,
         skip,
         take: limit,
-        include: { customer: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
+        include: {
+          customer: true,
+          items: { include: { product: { include: { unitOfMeasurement: true } } } },
+        },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.salesOrder.count({ where }),
@@ -169,7 +171,10 @@ export class SalesOrderService {
   async findOne(id: string, user?: any): Promise<SalesOrderResponseDto> {
     const so = await this.prisma.salesOrder.findFirst({
       where: { id, deletedAt: null },
-      include: { customer: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
+      include: {
+        customer: true,
+        items: { include: { product: { include: { unitOfMeasurement: true } } } },
+      },
     });
     if (!so) throw new NotFoundException('Pedido de venda não encontrado');
     if (user) {
@@ -193,9 +198,7 @@ export class SalesOrderService {
       validateBranchAccess(user.branchId, user.role, undefined, existing.branchId);
     }
     if (existing.status !== SalesOrderStatus.DRAFT) {
-      throw new BadRequestException(
-        'Só é possível editar pedidos em status Rascunho',
-      );
+      throw new BadRequestException('Só é possível editar pedidos em status Rascunho');
     }
 
     const updateData: Prisma.SalesOrderUpdateInput = {};
@@ -215,8 +218,7 @@ export class SalesOrderService {
       updateData.items = {
         create: dto.items.map((item) => {
           const qty = roundQuantity(item.quantity);
-          const unitPrice =
-            item.unitPrice !== undefined ? roundCurrency(item.unitPrice) : null;
+          const unitPrice = item.unitPrice !== undefined ? roundCurrency(item.unitPrice) : null;
           const total = unitPrice !== null ? roundCurrency(qty * unitPrice) : null;
           return {
             productId: item.productId,
@@ -231,7 +233,10 @@ export class SalesOrderService {
     const updated = await this.prisma.salesOrder.update({
       where: { id },
       data: updateData,
-      include: { customer: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
+      include: {
+        customer: true,
+        items: { include: { product: { include: { unitOfMeasurement: true } } } },
+      },
     });
     return this.mapToResponse(updated);
   }
@@ -245,9 +250,7 @@ export class SalesOrderService {
       validateBranchAccess(user.branchId, user.role, undefined, existing.branchId);
     }
     if (existing.status !== SalesOrderStatus.DRAFT) {
-      throw new BadRequestException(
-        'Só é possível excluir pedidos em status Rascunho',
-      );
+      throw new BadRequestException('Só é possível excluir pedidos em status Rascunho');
     }
     await this.prisma.salesOrder.update({
       where: { id },
@@ -263,7 +266,10 @@ export class SalesOrderService {
   ): Promise<SalesOrderResponseDto> {
     const order = await this.prisma.salesOrder.findFirst({
       where: { id, deletedAt: null },
-      include: { customer: true, items: { include: { product: { include: { unitOfMeasurement: true } } } } },
+      include: {
+        customer: true,
+        items: { include: { product: { include: { unitOfMeasurement: true } } } },
+      },
     });
     if (!order) throw new NotFoundException('Pedido de venda não encontrado');
     if (user) {
@@ -276,10 +282,7 @@ export class SalesOrderService {
       throw new BadRequestException('Pedido já foi faturado');
     }
 
-    const totalAmount = order.items.reduce(
-      (s, i) => s + Number(i.total ?? 0),
-      0,
-    );
+    const totalAmount = order.items.reduce((s, i) => s + Number(i.total ?? 0), 0);
     if (totalAmount <= 0) {
       throw new BadRequestException('Pedido sem valor para faturar');
     }
@@ -288,9 +291,7 @@ export class SalesOrderService {
     const deductStock = dto.deductStock === true;
 
     if (deductStock) {
-      const warehouse = await this.stockService.getCompanyDefaultWarehouse(
-        order.companyId,
-      );
+      const warehouse = await this.stockService.getCompanyDefaultWarehouse(order.companyId);
       for (const item of order.items) {
         const qty = Number(item.quantity);
         if (qty <= 0) continue;
@@ -370,22 +371,20 @@ export class SalesOrderService {
   }
 
   private mapToResponse(so: any): SalesOrderResponseDto {
-    const items: SalesOrderItemResponseDto[] = (so.items || []).map(
-      (i: any) => ({
-        id: i.id,
-        salesOrderId: i.salesOrderId,
-        productId: i.productId,
-        productName: i.product?.name,
-        productCode: i.product?.code,
-        productUnit: i.product?.unitOfMeasurement?.code ?? i.product?.unit ?? undefined,
-        quantity: Number(i.quantity),
-        quantityInvoiced: Number(i.quantityInvoiced),
-        unitPrice: i.unitPrice != null ? Number(i.unitPrice) : undefined,
-        total: i.total != null ? Number(i.total) : undefined,
-        createdAt: i.createdAt,
-        updatedAt: i.updatedAt,
-      }),
-    );
+    const items: SalesOrderItemResponseDto[] = (so.items || []).map((i: any) => ({
+      id: i.id,
+      salesOrderId: i.salesOrderId,
+      productId: i.productId,
+      productName: i.product?.name,
+      productCode: i.product?.code,
+      productUnit: i.product?.unitOfMeasurement?.code ?? i.product?.unit ?? undefined,
+      quantity: Number(i.quantity),
+      quantityInvoiced: Number(i.quantityInvoiced),
+      unitPrice: i.unitPrice != null ? Number(i.unitPrice) : undefined,
+      total: i.total != null ? Number(i.total) : undefined,
+      createdAt: i.createdAt,
+      updatedAt: i.updatedAt,
+    }));
     const totalAmount = items.reduce((s, i) => s + (i.total ?? 0), 0);
     return {
       id: so.id,

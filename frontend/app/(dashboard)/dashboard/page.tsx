@@ -951,11 +951,11 @@ export default function DashboardPage() {
                       <Badge
                         variant="outline"
                         className={cn(
-                          order.status === 'COMPLETED' && 'text-green-700 border-green-300 bg-green-50 dark:bg-green-950 dark:border-green-800',
-                          order.status === 'IN_PROGRESS' && 'text-blue-700 border-blue-300 bg-blue-50 dark:bg-blue-950 dark:border-blue-800',
-                          order.status === 'OPEN' && 'text-yellow-700 border-yellow-300 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800',
-                          order.status === 'PAUSED' && 'text-amber-700 border-amber-300 bg-amber-50 dark:bg-amber-950 dark:border-amber-800',
-                          order.status === 'CANCELLED' && 'text-muted-foreground',
+                          order.status === 'COMPLETED' && 'text-green-700 border-green-300 bg-green-50 dark:!bg-green-950 dark:!text-green-100 dark:border-green-800',
+                          order.status === 'IN_PROGRESS' && 'text-blue-700 border-blue-300 bg-blue-50 dark:!bg-blue-950 dark:!text-blue-100 dark:border-blue-800',
+                          order.status === 'OPEN' && 'text-yellow-700 border-yellow-300 bg-yellow-50 dark:!bg-yellow-950 dark:!text-yellow-100 dark:border-yellow-800',
+                          order.status === 'PAUSED' && 'text-amber-700 border-amber-300 bg-amber-50 dark:!bg-amber-950 dark:!text-amber-100 dark:border-amber-800',
+                          order.status === 'CANCELLED' && 'text-muted-foreground dark:!bg-gray-800 dark:!text-gray-100 dark:border-gray-700',
                         )}
                       >
                         {order.status === 'COMPLETED' && 'Concluída'}

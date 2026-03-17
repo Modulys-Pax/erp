@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { VehicleMarkingService } from './vehicle-marking.service';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { createMockPrismaService, PrismaMock } from '../../shared/testing/prisma.mock';
@@ -104,7 +104,9 @@ describe('VehicleMarkingService', () => {
       prisma.vehicle.findFirst.mockResolvedValue(null);
 
       await expect(service.create(createDto)).rejects.toThrow(NotFoundException);
-      await expect(service.create(createDto)).rejects.toThrow('Um ou mais veículos não foram encontrados.');
+      await expect(service.create(createDto)).rejects.toThrow(
+        'Um ou mais veículos não foram encontrados.',
+      );
     });
 
     it('deve lançar NotFoundException quando filial não existe', async () => {
@@ -113,6 +115,18 @@ describe('VehicleMarkingService', () => {
 
       await expect(service.create(createDto)).rejects.toThrow(NotFoundException);
       await expect(service.create(createDto)).rejects.toThrow('Filial não encontrada');
+    });
+
+    it('deve lançar BadRequestException quando km informado e menor que o atual', async () => {
+      prisma.vehicle.findMany.mockResolvedValue([mockVehicle]);
+      prisma.branch.findFirst.mockResolvedValue(mockBranch);
+
+      await expect(service.create({ ...createDto, km: 49000 })).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.create({ ...createDto, km: 49000 })).rejects.toThrow(
+        /não pode ser menor que a maior quilometragem atual dos veículos/,
+      );
     });
   });
 

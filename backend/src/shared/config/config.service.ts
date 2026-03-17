@@ -22,7 +22,7 @@ export const ConfigService = {
     },
     jwt: {
       secret: process.env.JWT_SECRET || 'change-me-in-production',
-      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+      expiresIn: process.env.JWT_EXPIRES_IN || process.env.JWT_EXPIRATION || '7d',
     },
     app: {
       port: parseInt(process.env.PORT || '3001', 10),
@@ -38,7 +38,7 @@ export const databaseConfig = registerAs('database', () => ({
 
 export const jwtConfig = registerAs('jwt', () => ({
   secret: process.env.JWT_SECRET || 'change-me-in-production',
-  expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  expiresIn: process.env.JWT_EXPIRES_IN || process.env.JWT_EXPIRATION || '7d',
 }));
 
 export const appConfig = registerAs('app', () => ({

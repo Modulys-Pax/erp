@@ -157,7 +157,7 @@ export class BranchService {
     const codeNormalized = updateBranchDto.code?.trim();
     const codeChanged =
       codeNormalized !== undefined && codeNormalized !== (existingBranch.code?.trim() ?? null);
-    const codeToCheck = codeNormalized !== undefined ? (codeNormalized || null) : null;
+    const codeToCheck = codeNormalized !== undefined ? codeNormalized || null : null;
     if (codeChanged && codeToCheck !== null) {
       const companyId = updateBranchDto.companyId || existingBranch.companyId;
       const branchWithCode = await this.prisma.branch.findFirst({

@@ -31,11 +31,6 @@ export class FinancialController {
     @CurrentUser() user: any,
   ): Promise<ResultByPeriodResponseDto> {
     const effectiveBranchId = getBranchId(branchId, user);
-    return this.financialService.getResultByPeriod(
-      effectiveBranchId,
-      month,
-      year,
-      costCenterId,
-    );
+    return this.financialService.getResultByPeriod(effectiveBranchId, month, year, costCenterId);
   }
 }

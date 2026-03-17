@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toastErrorFromException, toastSuccess } from '@/lib/utils';
 import Link from 'next/link';
+import { ACTIVE_STATUS_COLORS } from '@/lib/constants/status.constants';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,7 +93,7 @@ export default function RolesPage() {
         
         if (isAdmin) {
           return (
-            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+            <Badge className={ACTIVE_STATUS_COLORS.active}>
               Acesso total
             </Badge>
           );
@@ -110,11 +111,7 @@ export default function RolesPage() {
       header: 'Status',
       render: (role: Role) => (
         <Badge
-          className={
-            role.active
-              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-          }
+          className={role.active ? ACTIVE_STATUS_COLORS.active : ACTIVE_STATUS_COLORS.inactive}
         >
           {role.active ? 'Ativo' : 'Inativo'}
         </Badge>

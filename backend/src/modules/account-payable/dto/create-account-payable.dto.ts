@@ -66,20 +66,27 @@ export class CreateAccountPayableDto {
   @ApiProperty({
     description: 'Número do documento (NF, etc)',
     example: 'NF-001234',
-    required: false,
   })
   @IsString({ message: 'Número do documento deve ser uma string' })
-  @IsOptional()
-  documentNumber?: string;
+  @IsNotEmpty({ message: 'Número do documento é obrigatório' })
+  documentNumber: string;
 
   @ApiProperty({
     description: 'Observações',
     example: 'Pagamento parcelado em 3x',
-    required: false,
   })
   @IsString({ message: 'Observações deve ser uma string' })
+  @IsNotEmpty({ message: 'Observações são obrigatórias' })
+  notes: string;
+
+  @ApiProperty({
+    description: 'Remetente da nota (obrigatório se não informar fornecedor)',
+    example: 'Empresa XYZ Ltda',
+    required: false,
+  })
+  @IsString({ message: 'Remetente deve ser uma string' })
   @IsOptional()
-  notes?: string;
+  remetente?: string;
 
   @ApiProperty({
     description: 'ID da empresa',

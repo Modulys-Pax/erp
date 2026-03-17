@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toastErrorFromException, toastSuccess } from '@/lib/utils';
+import { ACTIVE_STATUS_COLORS } from '@/lib/constants/status.constants';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,11 +68,7 @@ export default function CostCentersPage() {
       header: 'Status',
       render: (row: CostCenter) => (
         <Badge
-          className={
-            row.active
-              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-          }
+          className={row.active ? ACTIVE_STATUS_COLORS.active : ACTIVE_STATUS_COLORS.inactive}
         >
           {row.active ? 'Ativo' : 'Inativo'}
         </Badge>

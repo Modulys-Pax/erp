@@ -121,3 +121,47 @@ export function isValidUUID(id: string): boolean {
   const cuidRegex = /^c[a-z0-9]{24,}$/i;
   return uuidRegex.test(id) || cuidRegex.test(id);
 }
+
+/**
+ * Garante que a nova quilometragem nunca retroceda em relação ao valor atual.
+ * Regra de domínio: só o cadastro inicial do veículo pode partir de qualquer KM >= 0.
+ */
+export function validateNonDecreasingKm(
+  newKm: number,
+  currentKm: number | null | undefined,
+  context: string = 'neste fluxo',
+): void {
+  if (currentKm == null) {
+    return;
+  }
+
+  const previousKm = Number(currentKm);
+  if (newKm < previousKm) {
+    throw new BadRequestException(
+      `A quilometragem informada (${newKm}) não pode ser menor que a quilometragem atual (${previousKm}) ${context}.`,
+    );
+  }
+}
+
+/**
+ * Variante para operações em combo de veículos (1..N): bloqueia se a nova KM
+ * for menor que a maior KM atual entre os veículos envolvidos.
+ */
+export function validateNonDecreasingKmForVehicles(
+  newKm: number,
+  currentKms: Array<number | null | undefined>,
+  context: string = 'neste fluxo',
+): void {
+  const validKms = currentKms.filter((km): km is number => km != null).map((km) => Number(km));
+
+  if (validKms.length === 0) {
+    return;
+  }
+
+  const highestCurrentKm = Math.max(...validKms);
+  if (newKm < highestCurrentKm) {
+    throw new BadRequestException(
+      `A quilometragem informada (${newKm}) não pode ser menor que a maior quilometragem atual dos veículos (${highestCurrentKm}) ${context}.`,
+    );
+  }
+}

@@ -131,7 +131,7 @@ const navigationGroups: NavigationGroup[] = [
       { name: 'Centros de Custo', href: '/cost-centers', icon: LayoutGrid, permission: 'cost-centers.view' },
       { name: 'Marcas de Veículos', href: '/vehicle-brands', icon: Truck, permission: 'vehicle-brands.view' },
       { name: 'Modelos de Veículos', href: '/vehicle-models', icon: Truck, permission: 'vehicle-models.view' },
-      { name: 'Cargos', href: '/roles', icon: ShieldCheck, permission: 'roles.view' },
+      { name: 'Permissões', href: '/roles', icon: ShieldCheck, permission: 'roles.view' },
       { name: 'Unidades de Medida', href: '/units-of-measurement', icon: Ruler, permission: 'units.view' },
       { name: 'Auditoria', href: '/audit', icon: ShieldCheck, permission: 'audit.view' },
     ],

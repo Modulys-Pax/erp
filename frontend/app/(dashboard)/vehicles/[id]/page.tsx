@@ -47,6 +47,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { formatDateTime } from '@/lib/utils/date';
 import { toastSuccess, toastErrorFromException } from '@/lib/utils';
+import { MAINTENANCE_DUE_STATUS_COLORS } from '@/lib/constants/status.constants';
 
 const PLATE_TYPE_LABELS: Record<VehiclePlateType, string> = {
   CAVALO: 'Cavalo',
@@ -60,26 +61,36 @@ const vehicleSchema = z.object({
     type: z.enum(VEHICLE_PLATE_TYPES as unknown as [string, ...string[]]),
     plate: z.string().min(1, 'Placa é obrigatória'),
   }),
-    brandId: z.string().uuid('Selecione uma marca').optional().or(z.literal('')),
-    modelId: z.string().uuid('Selecione um modelo').optional().or(z.literal('')),
-    year: z.coerce.number().int().min(1900).max(2100).optional().or(z.nan()),
-    color: z.string().optional(),
-    chassis: z.string().optional(),
-    renavam: z.string().optional(),
-    currentKm: z.coerce.number().int().min(0).optional().or(z.nan()),
-    status: z.enum(['ACTIVE', 'MAINTENANCE', 'STOPPED']).optional(),
-    companyId: z.string().uuid('Selecione uma empresa'),
-    branchId: z.string().uuid('Selecione uma filial').optional().or(z.literal('')),
-    active: z.boolean(),
-    replacementItems: z
-      .array(
-        z.object({
-          name: z.string().optional(),
-          replaceEveryKm: z.coerce.number().int().min(1, 'Troca em KM deve ser pelo menos 1').optional().or(z.nan()),
-        }),
-      )
-      .optional()
-      .default([]),
+  brandId: z.string().uuid('Selecione uma marca'),
+  modelId: z.string().uuid('Selecione um modelo'),
+  year: z.coerce
+    .number({ invalid_type_error: 'Informe o ano do veículo' })
+    .int('Ano deve ser um número inteiro')
+    .min(1900, 'Ano inválido')
+    .max(2100, 'Ano inválido'),
+  color: z.string().min(1, 'Cor é obrigatória'),
+  chassis: z.string().min(1, 'Chassi é obrigatório'),
+  renavam: z.string().min(1, 'RENAVAM é obrigatório'),
+  currentKm: z.coerce
+    .number({ invalid_type_error: 'Informe a quilometragem atual' })
+    .int('Quilometragem deve ser um número inteiro')
+    .min(0, 'Quilometragem não pode ser negativa'),
+  status: z.enum(['ACTIVE', 'MAINTENANCE', 'STOPPED']),
+  companyId: z.string().uuid('Selecione uma empresa'),
+  branchId: z.string().uuid('Selecione uma filial'),
+  active: z.boolean(),
+  replacementItems: z
+    .array(
+      z.object({
+        name: z.string().min(1, 'Nome do item é obrigatório'),
+        replaceEveryKm: z.coerce
+          .number({ invalid_type_error: 'Troca em KM é obrigatória' })
+          .int('Troca em KM deve ser um número inteiro')
+          .min(1, 'Troca em KM deve ser pelo menos 1'),
+      }),
+    )
+    .optional()
+    .default([]),
 });
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
@@ -289,22 +300,22 @@ export default function EditVehiclePage() {
     const submitData: UpdateVehicleDto = {
       plate: { type: data.plate.type as VehiclePlateType, plate: data.plate.plate.trim() },
       replacementItems:
-        data.replacementItems?.filter((r) => r.name?.trim())?.map((r) => ({
-          name: r.name!.trim(),
-          replaceEveryKm: Number(r.replaceEveryKm),
-        })) ?? [],
+        data.replacementItems && data.replacementItems.length > 0
+          ? data.replacementItems.map((r) => ({
+              name: r.name.trim(),
+              replaceEveryKm: Number(r.replaceEveryKm),
+            }))
+          : [],
       companyId: DEFAULT_COMPANY_ID,
-      brandId: data.brandId || undefined,
-      modelId: data.modelId || undefined,
-      year: isNaN(data.year as number) ? undefined : data.year,
-      color: data.color || undefined,
-      chassis: data.chassis || undefined,
-      renavam: data.renavam || undefined,
-      currentKm: isNaN(data.currentKm as number)
-        ? undefined
-        : data.currentKm,
-      status: data.status || undefined,
-      branchId: isAdmin ? (effectiveBranchId || undefined) : (vehicle?.branchId || undefined),
+      brandId: data.brandId,
+      modelId: data.modelId,
+      year: data.year,
+      color: data.color,
+      chassis: data.chassis,
+      renavam: data.renavam,
+      currentKm: data.currentKm,
+      status: data.status,
+      branchId: isAdmin ? effectiveBranchId || vehicle?.branchId : vehicle?.branchId,
     };
     updateMutation.mutate(submitData);
   };
@@ -681,7 +692,7 @@ export default function EditVehiclePage() {
                         {item.status === 'ok' && (
                           <Badge
                             variant="secondary"
-                            className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            className={MAINTENANCE_DUE_STATUS_COLORS.ok}
                           >
                             No prazo
                           </Badge>
@@ -689,7 +700,7 @@ export default function EditVehiclePage() {
                         {item.status === 'warning' && (
                           <Badge
                             variant="secondary"
-                            className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                            className={MAINTENANCE_DUE_STATUS_COLORS.warning}
                           >
                             Próximo de trocar
                           </Badge>
@@ -697,7 +708,7 @@ export default function EditVehiclePage() {
                         {item.status === 'due' && (
                           <Badge
                             variant="secondary"
-                            className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                            className={MAINTENANCE_DUE_STATUS_COLORS.due}
                           >
                             Trocar agora
                           </Badge>

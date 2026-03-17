@@ -34,9 +34,18 @@ import {
 import { PaginatedResponseDto } from '../../shared/dto/paginated-response.dto';
 import { Prisma } from '@prisma/client';
 import { DEFAULT_COMPANY_ID } from '../../shared/constants/company.constants';
-import { calculateRiskAdditionAmount, getRiskAdditionDisplayName } from '../../shared/constants/risk-addition.constants';
+import {
+  calculateRiskAdditionAmount,
+  getRiskAdditionDisplayName,
+} from '../../shared/constants/risk-addition.constants';
 import { validateBranchAccess } from '../../shared/utils/branch-access.util';
 import { WalletService } from '../wallet/wallet.service';
+
+function parseDateOrUndefined(value?: string): Date | undefined {
+  if (!value) return undefined;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? undefined : d;
+}
 
 @Injectable()
 export class AccountPayableService {
@@ -84,6 +93,14 @@ export class AccountPayableService {
       throw new NotFoundException('Filial não encontrada');
     }
 
+    const hasSupplier = !!createDto.supplierId?.trim();
+    const hasRemetente = !!createDto.remetente?.trim();
+    if (!hasSupplier && !hasRemetente) {
+      throw new BadRequestException(
+        'Informe o fornecedor ou o remetente. A nota deve vir de algum lugar.',
+      );
+    }
+
     const accountPayable = await this.prisma.accountPayable.create({
       data: {
         description: createDto.description,
@@ -93,8 +110,9 @@ export class AccountPayableService {
         originId: createDto.originId,
         documentNumber: createDto.documentNumber,
         notes: createDto.notes,
-        supplierId: createDto.supplierId ?? undefined,
-        costCenterId: createDto.costCenterId ?? undefined,
+        remetente: createDto.remetente?.trim() || null,
+        supplierId: createDto.supplierId?.trim() || null,
+        ...(createDto.costCenterId && { costCenterId: createDto.costCenterId }),
         companyId: companyId,
         branchId: createDto.branchId,
         status: 'PENDING',
@@ -146,10 +164,12 @@ export class AccountPayableService {
     if (startDate || endDate) {
       where.dueDate = {};
       if (startDate) {
-        where.dueDate.gte = new Date(startDate);
+        const parsedStart = parseDateOrUndefined(startDate);
+        if (parsedStart) where.dueDate.gte = parsedStart;
       }
       if (endDate) {
-        where.dueDate.lte = new Date(endDate);
+        const parsedEnd = parseDateOrUndefined(endDate);
+        if (parsedEnd) where.dueDate.lte = parsedEnd;
       }
     }
 
@@ -234,6 +254,18 @@ export class AccountPayableService {
       throw new BadRequestException('Não é possível editar conta a pagar já paga');
     }
 
+    const finalSupplierId =
+      updateDto.supplierId !== undefined ? updateDto.supplierId : existingAccount.supplierId;
+    const finalRemetente =
+      updateDto.remetente !== undefined ? updateDto.remetente : existingAccount.remetente;
+    const hasSupplier = !!finalSupplierId?.trim();
+    const hasRemetente = !!finalRemetente?.trim();
+    if (!hasSupplier && !hasRemetente) {
+      throw new BadRequestException(
+        'Informe o fornecedor ou o remetente. A nota deve vir de algum lugar.',
+      );
+    }
+
     const accountPayable = await this.prisma.accountPayable.update({
       where: { id },
       data: {
@@ -250,8 +282,13 @@ export class AccountPayableService {
           documentNumber: updateDto.documentNumber,
         }),
         ...(updateDto.notes !== undefined && { notes: updateDto.notes }),
+        ...(updateDto.remetente !== undefined && {
+          remetente: updateDto.remetente?.trim() || null,
+        }),
         ...(updateDto.supplierId !== undefined && { supplierId: updateDto.supplierId ?? null }),
-        ...(updateDto.costCenterId !== undefined && { costCenterId: updateDto.costCenterId ?? null }),
+        ...(updateDto.costCenterId !== undefined && {
+          costCenterId: updateDto.costCenterId ?? null,
+        }),
       },
     });
 
@@ -398,11 +435,16 @@ export class AccountPayableService {
     };
     if (startDate || endDate) {
       where.dueDate = {};
-      if (startDate) where.dueDate.gte = new Date(startDate);
+      if (startDate) {
+        const parsedStart = parseDateOrUndefined(startDate);
+        if (parsedStart) where.dueDate.gte = parsedStart;
+      }
       if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        where.dueDate.lte = end;
+        const parsedEnd = parseDateOrUndefined(endDate);
+        if (parsedEnd) {
+          parsedEnd.setHours(23, 59, 59, 999);
+          where.dueDate.lte = parsedEnd;
+        }
       }
     }
 
@@ -432,7 +474,7 @@ export class AccountPayableService {
         items,
       });
     }
-    groups.sort((a, b) => (b.total - a.total));
+    groups.sort((a, b) => b.total - a.total);
 
     return { groups, totalAmount };
   }
@@ -527,16 +569,23 @@ export class AccountPayableService {
     if (startDate || endDate) {
       const dateFilter: any = {};
       if (startDate) {
-        dateFilter.gte = new Date(startDate);
+        const parsedStart = parseDateOrUndefined(startDate);
+        if (parsedStart) dateFilter.gte = parsedStart;
       }
       if (endDate) {
-        const endDateTime = new Date(endDate);
-        endDateTime.setHours(23, 59, 59, 999);
-        dateFilter.lte = endDateTime;
+        const parsedEnd = parseDateOrUndefined(endDate);
+        if (parsedEnd) {
+          parsedEnd.setHours(23, 59, 59, 999);
+          dateFilter.lte = parsedEnd;
+        }
       }
       const dateField = filterDateType === 'createdAt' ? 'createdAt' : 'dueDate';
-      payableWhere[dateField] = dateFilter;
-      receivableWhere[dateField] = dateFilter;
+      // Se as strings vierem inválidas, dateFilter pode ficar vazio.
+      // Nesse caso, não aplicamos filtro para evitar query inválida.
+      if (Object.keys(dateFilter).length > 0) {
+        payableWhere[dateField] = dateFilter;
+        receivableWhere[dateField] = dateFilter;
+      }
     }
 
     // Calcular totais de contas a pagar por status ("pendentes" = PENDING + OVERDUE)
@@ -753,14 +802,21 @@ export class AccountPayableService {
     if (startDate || endDate) {
       const dateFilter: any = {};
       if (startDate) {
-        dateFilter.gte = new Date(startDate);
+        const parsedStart = parseDateOrUndefined(startDate);
+        if (parsedStart) dateFilter.gte = parsedStart;
       }
       if (endDate) {
-        const endDateTime = new Date(endDate);
-        endDateTime.setHours(23, 59, 59, 999);
-        dateFilter.lte = endDateTime;
+        const parsedEnd = parseDateOrUndefined(endDate);
+        if (parsedEnd) {
+          parsedEnd.setHours(23, 59, 59, 999);
+          dateFilter.lte = parsedEnd;
+        }
       }
-      basePayableWhere.dueDate = dateFilter;
+      // Se as strings vierem inválidas, o dateFilter pode ficar vazio.
+      // Nesse caso, não aplicamos filtro de dueDate.
+      if (Object.keys(dateFilter).length > 0) {
+        basePayableWhere.dueDate = dateFilter;
+      }
     }
 
     // Filtro para lista paginada (inclui status se fornecido)
@@ -997,7 +1053,10 @@ export class AccountPayableService {
         employee.insalubrityDegree,
         monthlySalary,
       );
-      const riskAdditionLabel = getRiskAdditionDisplayName(employee.riskAdditionType, employee.insalubrityDegree);
+      const riskAdditionLabel = getRiskAdditionDisplayName(
+        employee.riskAdditionType,
+        employee.insalubrityDegree,
+      );
 
       // Verificar se já existe conta a pagar
       const existing = existingMap.get(employee.id);
@@ -1076,9 +1135,10 @@ export class AccountPayableService {
 
       // Criar descrição detalhada
       let description = `Folha de Pagamento - ${employee.name} - ${monthName}/${processDto.referenceYear}`;
-      const salaryPart = riskAdditionAmount > 0 && riskAdditionLabel
-        ? `Salário: R$ ${monthlySalary.toFixed(2)} + ${riskAdditionLabel}: R$ ${riskAdditionAmount.toFixed(2)}`
-        : `Salário: R$ ${monthlySalary.toFixed(2)}`;
+      const salaryPart =
+        riskAdditionAmount > 0 && riskAdditionLabel
+          ? `Salário: R$ ${monthlySalary.toFixed(2)} + ${riskAdditionLabel}: R$ ${riskAdditionAmount.toFixed(2)}`
+          : `Salário: R$ ${monthlySalary.toFixed(2)}`;
       if (benefitDetails.length > 0) {
         const benefitsSummary = benefitDetails
           .map((b) => `${b.benefitName}: R$ ${b.amount.toFixed(2)}`)
@@ -1183,7 +1243,10 @@ export class AccountPayableService {
         employee.insalubrityDegree,
         monthlySalary,
       );
-      const riskAdditionLabel = getRiskAdditionDisplayName(employee.riskAdditionType, employee.insalubrityDegree);
+      const riskAdditionLabel = getRiskAdditionDisplayName(
+        employee.riskAdditionType,
+        employee.insalubrityDegree,
+      );
       const existing = existingMap.get(employee.id);
 
       if (existing) {
@@ -1280,6 +1343,7 @@ export class AccountPayableService {
       originId: account.originId,
       documentNumber: account.documentNumber,
       notes: account.notes,
+      remetente: account.remetente ?? undefined,
       supplierId: account.supplierId ?? undefined,
       supplierName: account.supplier?.name ?? undefined,
       costCenterId: account.costCenterId ?? undefined,

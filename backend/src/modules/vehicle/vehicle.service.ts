@@ -22,6 +22,7 @@ import { Prisma } from '@prisma/client';
 import { DEFAULT_COMPANY_ID } from '../../shared/constants/company.constants';
 import { getPrimaryPlate } from '../../shared/utils/vehicle-plate.util';
 import { validateBranchAccess } from '../../shared/utils/branch-access.util';
+import { validateNonDecreasingKm } from '../../shared/utils/validation.util';
 
 @Injectable()
 export class VehicleService {
@@ -78,7 +79,9 @@ export class VehicleService {
       },
     });
     if (existingPlate) {
-      throw new ConflictException(`Placa ${plateItem.plate} já cadastrada para esta empresa/filial`);
+      throw new ConflictException(
+        `Placa ${plateItem.plate} já cadastrada para esta empresa/filial`,
+      );
     }
 
     const {
@@ -203,7 +206,10 @@ export class VehicleService {
   /**
    * Lista todas as placas cadastradas na filial (para seleção de composição em manutenção, marcação, etc.)
    */
-  async getPlatesByBranch(branchId: string | undefined, user?: any): Promise<{ plate: string; type: VehiclePlateType }[]> {
+  async getPlatesByBranch(
+    branchId: string | undefined,
+    user?: any,
+  ): Promise<{ plate: string; type: VehiclePlateType }[]> {
     if (!branchId) {
       return [];
     }
@@ -296,7 +302,9 @@ export class VehicleService {
         },
       });
       if (existingPlate) {
-        throw new ConflictException(`Placa ${plateItem.plate} já cadastrada para esta empresa/filial`);
+        throw new ConflictException(
+          `Placa ${plateItem.plate} já cadastrada para esta empresa/filial`,
+        );
       }
       await this.prisma.vehiclePlate.deleteMany({ where: { vehicleId: id } });
       await this.prisma.vehiclePlate.create({
@@ -328,6 +336,14 @@ export class VehicleService {
     const kmChanged =
       updateVehicleDto.currentKm !== undefined &&
       updateVehicleDto.currentKm !== existingVehicle.currentKm;
+
+    if (updateVehicleDto.currentKm !== undefined) {
+      validateNonDecreasingKm(
+        updateVehicleDto.currentKm,
+        existingVehicle.currentKm,
+        'na atualizacao do veiculo',
+      );
+    }
 
     // Excluir campos que não devem ser atualizados (plate e replacementItems já tratados acima)
     const {
@@ -415,13 +431,11 @@ export class VehicleService {
       throw new NotFoundException('Veículo não encontrado');
     }
 
-    // Validar que a nova KM não é menor que a anterior (currentKm pode ser 0 ou null)
-    const currentKmNum = vehicle.currentKm != null ? Number(vehicle.currentKm) : null;
-    if (currentKmNum != null && updateKmDto.currentKm < currentKmNum) {
-      throw new BadRequestException(
-        `A nova quilometragem (${updateKmDto.currentKm}) não pode ser menor que a anterior (${currentKmNum})`,
-      );
-    }
+    validateNonDecreasingKm(
+      updateKmDto.currentKm,
+      vehicle.currentKm,
+      'na atualizacao de quilometragem do veiculo',
+    );
 
     const updatedVehicle = await this.prisma.vehicle.update({
       where: { id },
@@ -468,6 +482,14 @@ export class VehicleService {
     const validStatuses = ['ACTIVE', 'MAINTENANCE', 'STOPPED'];
     if (!validStatuses.includes(updateStatusDto.status)) {
       throw new BadRequestException('Status inválido');
+    }
+
+    if (updateStatusDto.km !== undefined) {
+      validateNonDecreasingKm(
+        updateStatusDto.km,
+        vehicle.currentKm,
+        'na atualizacao de status do veiculo',
+      );
     }
 
     const updatedVehicle = await this.prisma.vehicle.update({
@@ -608,7 +630,7 @@ export class VehicleService {
 
       // Calcular custos
       let vehicleMaterialsCost = 0;
-      let vehicleServicesCost = 0;
+      const vehicleServicesCost = 0;
       let vehicleOtherCost = 0; // Custos diretos (sem materials/services detalhados)
       let vehiclePeriodCost = 0;
       let vehiclePeriodOrders = 0;
@@ -616,7 +638,9 @@ export class VehicleService {
       for (const order of orders) {
         // Calcular custos da ordem atual (apenas materiais; serviços são descritivos)
         let orderMaterialsCost = 0;
-        const orderWithIncludes = order as typeof order & { materials?: { totalCost?: unknown; unitCost?: unknown; quantity?: unknown }[] };
+        const orderWithIncludes = order as typeof order & {
+          materials?: { totalCost?: unknown; unitCost?: unknown; quantity?: unknown }[];
+        };
 
         // Custo de materiais da ordem
         for (const material of orderWithIncludes.materials || []) {
@@ -696,7 +720,9 @@ export class VehicleService {
     let globalTotalServicesCost = 0;
 
     for (const order of allOrdersForSummary) {
-      const orderWithIncludes = order as typeof order & { materials?: { totalCost?: unknown; unitCost?: unknown; quantity?: unknown }[] };
+      const orderWithIncludes = order as typeof order & {
+        materials?: { totalCost?: unknown; unitCost?: unknown; quantity?: unknown }[];
+      };
       let orderMaterialsCost = 0;
 
       for (const material of orderWithIncludes.materials || []) {
@@ -748,9 +774,7 @@ export class VehicleService {
   }
 
   private mapToResponse(vehicle: any): VehicleResponseDto {
-    const plates = vehicle.plate
-      ? [{ type: vehicle.plate.type, plate: vehicle.plate.plate }]
-      : [];
+    const plates = vehicle.plate ? [{ type: vehicle.plate.type, plate: vehicle.plate.plate }] : [];
     const replacementItems = (vehicle.replacementItems ?? []).map(
       (ri: { id: string; name: string; replaceEveryKm: number }) => ({
         id: ri.id,

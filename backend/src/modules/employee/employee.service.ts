@@ -22,7 +22,10 @@ import {
   INSS_MAX_CONTRIBUTION_2025,
   INSS_MAX_SALARY_2025,
 } from '../../shared/utils/tax-calculator';
-import { calculateRiskAdditionAmount, getRiskAdditionDisplayName } from '../../shared/constants/risk-addition.constants';
+import {
+  calculateRiskAdditionAmount,
+  getRiskAdditionDisplayName,
+} from '../../shared/constants/risk-addition.constants';
 
 @Injectable()
 export class EmployeeService {
@@ -342,7 +345,10 @@ export class EmployeeService {
       pageMonthlyBenefits += costs.totalBenefits;
       pageMonthlyTaxes += costs.totalTaxes;
 
-      const riskAdditionLabel = getRiskAdditionDisplayName(employee.riskAdditionType, employee.insalubrityDegree);
+      const riskAdditionLabel = getRiskAdditionDisplayName(
+        employee.riskAdditionType,
+        employee.insalubrityDegree,
+      );
       employeeCosts.push({
         employeeId: employee.id,
         employeeName: employee.name,
@@ -361,14 +367,24 @@ export class EmployeeService {
     // Calcular totais de TODOS os funcionários para o summary (incluindo adicionais de risco)
     const allEmployeesForSummary = await this.prisma.employee.findMany({
       where,
-      select: { id: true, branchId: true, monthlySalary: true, riskAdditionType: true, insalubrityDegree: true },
+      select: {
+        id: true,
+        branchId: true,
+        monthlySalary: true,
+        riskAdditionType: true,
+        insalubrityDegree: true,
+      },
     });
 
     let totalMonthlySalaries = 0;
     let totalMonthlyTaxes = 0;
     for (const emp of allEmployeesForSummary) {
       const baseSalary = emp.monthlySalary ? Number(emp.monthlySalary) : 0;
-      const riskAdd = calculateRiskAdditionAmount(emp.riskAdditionType, emp.insalubrityDegree, baseSalary);
+      const riskAdd = calculateRiskAdditionAmount(
+        emp.riskAdditionType,
+        emp.insalubrityDegree,
+        baseSalary,
+      );
       totalMonthlySalaries += baseSalary + riskAdd;
       const gross = baseSalary + riskAdd;
       totalMonthlyTaxes += calculateEmployerINSS(gross) + calculateFGTS(gross);
@@ -528,7 +544,10 @@ export class EmployeeService {
 
     const totalMonthlyCost = grossSalary + totalBenefits + totalTaxes;
 
-    const riskAdditionLabel = getRiskAdditionDisplayName(employee.riskAdditionType, employee.insalubrityDegree);
+    const riskAdditionLabel = getRiskAdditionDisplayName(
+      employee.riskAdditionType,
+      employee.insalubrityDegree,
+    );
     return {
       employeeId: employee.id,
       employeeName: employee.name,

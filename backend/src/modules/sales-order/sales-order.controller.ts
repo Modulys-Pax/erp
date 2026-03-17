@@ -75,10 +75,7 @@ export class SalesOrderController {
   @RequirePermission('sales-orders.view')
   @ApiOperation({ summary: 'Buscar pedido por ID' })
   @ApiResponse({ status: 200, type: SalesOrderResponseDto })
-  findOne(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ): Promise<SalesOrderResponseDto> {
+  findOne(@Param('id') id: string, @CurrentUser() user: any): Promise<SalesOrderResponseDto> {
     return this.salesOrderService.findOne(id, user);
   }
 

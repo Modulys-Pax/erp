@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
@@ -22,7 +18,7 @@ export class SupplierService {
     userId?: string,
     user?: any,
   ): Promise<SupplierResponseDto> {
-    if (user) {
+    if (user && createSupplierDto.branchId != null) {
       validateBranchAccess(user.branchId, user.role, createSupplierDto.branchId, undefined);
     }
 
@@ -33,21 +29,24 @@ export class SupplierService {
       throw new NotFoundException('Empresa não encontrada');
     }
 
-    const branch = await this.prisma.branch.findFirst({
-      where: {
-        id: createSupplierDto.branchId,
-        companyId: createSupplierDto.companyId,
-        deletedAt: null,
-      },
-    });
-    if (!branch) {
-      throw new NotFoundException('Filial não encontrada');
+    if (createSupplierDto.branchId != null) {
+      const branch = await this.prisma.branch.findFirst({
+        where: {
+          id: createSupplierDto.branchId,
+          companyId: createSupplierDto.companyId,
+          deletedAt: null,
+        },
+      });
+      if (!branch) {
+        throw new NotFoundException('Filial não encontrada');
+      }
     }
 
     try {
       const supplier = await this.prisma.supplier.create({
         data: {
           ...createSupplierDto,
+          branchId: createSupplierDto.branchId ?? null,
           createdBy: userId,
         },
       });
@@ -71,7 +70,7 @@ export class SupplierService {
 
     const where: Prisma.SupplierWhereInput = {
       companyId,
-      ...(branchId ? { branchId } : {}),
+      ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}),
       ...(includeDeleted ? {} : { deletedAt: null }),
     };
 
@@ -115,7 +114,7 @@ export class SupplierService {
     if (!existing) {
       throw new NotFoundException('Fornecedor não encontrado');
     }
-    if (user) {
+    if (user && existing.branchId != null) {
       validateBranchAccess(user.branchId, user.role, existing.branchId, undefined);
     }
 
@@ -140,7 +139,7 @@ export class SupplierService {
     if (!supplier) {
       throw new NotFoundException('Fornecedor não encontrado');
     }
-    if (user) {
+    if (user && supplier.branchId != null) {
       validateBranchAccess(user.branchId, user.role, supplier.branchId, undefined);
     }
     await this.prisma.supplier.update({

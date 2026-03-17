@@ -150,10 +150,7 @@ export class VehicleController {
     description: 'ID da filial',
   })
   @ApiResponse({ status: 200, description: 'Lista de placas (plate, type) da filial' })
-  getPlatesByBranch(
-    @Query('branchId') branchId: string | undefined,
-    @CurrentUser() user: any,
-  ) {
+  getPlatesByBranch(@Query('branchId') branchId: string | undefined, @CurrentUser() user: any) {
     return this.vehicleService.getPlatesByBranch(branchId, user);
   }
 

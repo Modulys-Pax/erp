@@ -29,6 +29,9 @@ export class FiscalDocumentResponseDto {
   branchId: string;
 
   @ApiPropertyOptional()
+  remetente?: string;
+
+  @ApiPropertyOptional()
   supplierId?: string;
 
   @ApiPropertyOptional()

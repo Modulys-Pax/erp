@@ -20,7 +20,8 @@ export class MaintenanceLabelProductResponseDto {
   nextChangeKm: number;
 
   @ApiProperty({
-    description: 'Indica se o produto foi trocado nesta etiqueta (true) ou apenas exibido com valor atual (false)',
+    description:
+      'Indica se o produto foi trocado nesta etiqueta (true) ou apenas exibido com valor atual (false)',
     example: true,
   })
   updatedInThisLabel: boolean;

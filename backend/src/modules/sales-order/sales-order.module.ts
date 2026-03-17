@@ -6,11 +6,7 @@ import { StockModule } from '../stock/stock.module';
 import { AccountReceivableModule } from '../account-receivable/account-receivable.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    forwardRef(() => StockModule),
-    forwardRef(() => AccountReceivableModule),
-  ],
+  imports: [PrismaModule, forwardRef(() => StockModule), forwardRef(() => AccountReceivableModule)],
   controllers: [SalesOrderController],
   providers: [SalesOrderService],
   exports: [SalesOrderService],

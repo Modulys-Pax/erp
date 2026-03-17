@@ -1,11 +1,4 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsUUID,
-  IsNumber,
-  IsOptional,
-  Min,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsUUID, IsNumber, IsOptional, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreatePurchaseOrderItemDto {

@@ -41,6 +41,10 @@ function randomDecimal(min: number, max: number, decimals = 2): Prisma.Decimal {
   return new Prisma.Decimal(value.toFixed(decimals));
 }
 
+// Volume mínimo "grande" para a seed (pedido do usuário).
+// Pode ser sobrescrito via env `SEED_VOLUME_MIN`.
+const SEED_VOLUME_MIN = parseInt(process.env.SEED_VOLUME_MIN || '30', 10);
+
 async function main() {
   console.log('🌱 Iniciando seed completo...\n');
 
@@ -69,6 +73,14 @@ async function main() {
   await prisma.maintenanceService.deleteMany();
   await prisma.maintenanceWorker.deleteMany();
   await prisma.maintenanceOrder.deleteMany();
+  // Módulos adicionais para "mega seed"
+  await prisma.maintenanceLabelReplacementItem.deleteMany();
+  await prisma.maintenanceLabelVehicle.deleteMany();
+  await prisma.maintenanceLabel.deleteMany();
+  await prisma.vehicleMarkingVehicle.deleteMany();
+  await prisma.vehicleMarking.deleteMany();
+  await prisma.vehicleReplacementItem.deleteMany();
+  await prisma.vehicleDocument.deleteMany();
   await prisma.vehicleStatusHistory.deleteMany();
   await prisma.vehicle.deleteMany();
   await prisma.employee.deleteMany();
@@ -78,6 +90,8 @@ async function main() {
   await prisma.costCenter.deleteMany();
   await prisma.bankStatementItem.deleteMany();
   await prisma.bankStatement.deleteMany();
+  await prisma.balanceAdjustment.deleteMany();
+  await prisma.branchBalance.deleteMany();
   await prisma.branch.deleteMany();
   await prisma.company.deleteMany();
   await prisma.refreshToken.deleteMany();
@@ -506,7 +520,7 @@ export function validateDefaultCompanyId(): void {
 
   const createdEmployees: Employee[] = [];
   for (const branch of createdBranches) {
-    const employeesPerBranch = randomInt(5, 8);
+    const employeesPerBranch = randomInt(SEED_VOLUME_MIN, SEED_VOLUME_MIN + 5);
     for (let i = 0; i < employeesPerBranch; i++) {
       const name = employeesNames[Math.floor(Math.random() * employeesNames.length)];
       const cpf = `${randomInt(100, 999)}.${randomInt(100, 999)}.${randomInt(100, 999)}-${randomInt(10, 99)}`;
@@ -676,7 +690,7 @@ export function validateDefaultCompanyId(): void {
     const colors = ['Branco', 'Azul', 'Vermelho', 'Prata', 'Preto', 'Amarelo'];
     const statuses = ['ACTIVE', 'ACTIVE', 'ACTIVE', 'MAINTENANCE', 'STOPPED'] as const; // Mais ativos
     for (const branch of createdBranches) {
-      const vehiclesPerBranch = randomInt(5, 8);
+      const vehiclesPerBranch = randomInt(SEED_VOLUME_MIN, SEED_VOLUME_MIN + 10);
       for (let i = 1; i <= vehiclesPerBranch; i++) {
         const plate = `${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}-${randomInt(1000, 9999)}`;
         
@@ -728,6 +742,168 @@ export function validateDefaultCompanyId(): void {
     }
     console.log(`✅ ${createdVehicles.length} veículos criados\n`);
   }
+
+  // ============================================
+  // TROCA POR KM + MARCAÇÕES + ETIQUETAS
+  // ============================================
+  // Garante dados completos para as telas de manutenção por quilometragem.
+  console.log('🧩 Criando itens de troca por KM, marcações e etiquetas...');
+
+  const createdByUserId = createdUsers[0]?.id ?? undefined;
+
+  const replacementItemNamePool = [
+    'Óleo Motor 15W40',
+    'Filtro de Óleo',
+    'Filtro de Ar',
+    'Pastilha de Freio',
+    'Disco de Freio',
+    'Pneu 275/80R22.5',
+    'Bateria 12V 200Ah',
+    'Radiador',
+    'Correia Dentada',
+    'Vela de Ignição',
+    'Fluido de Freio',
+  ];
+
+  const vehicleReplacementItemsByVehicleId = new Map<
+    string,
+    Array<{ id: string; replaceEveryKm: number }>
+  >();
+
+  // 1) Itens configurados por veículo (troca por KM).
+  for (const vehicle of createdVehicles) {
+    const count = randomInt(3, 6);
+    const selectedNames = new Set<string>();
+
+    while (selectedNames.size < count) {
+      const name = replacementItemNamePool[
+        Math.floor(Math.random() * replacementItemNamePool.length)
+      ];
+      selectedNames.add(name);
+    }
+
+    for (const name of selectedNames) {
+      const replaceEveryKm = randomInt(8000, 60000);
+      const item = await prisma.vehicleReplacementItem.create({
+        data: {
+          vehicleId: vehicle.id,
+          name,
+          replaceEveryKm,
+          createdAt: new Date(),
+        },
+      });
+
+      const list = vehicleReplacementItemsByVehicleId.get(vehicle.id) ?? [];
+      list.push({ id: item.id, replaceEveryKm });
+      vehicleReplacementItemsByVehicleId.set(vehicle.id, list);
+    }
+  }
+
+  // 2) Marcações de chegada (KM crescente) + histórico.
+  const markingsPerVehicle = 2;
+  for (const vehicle of createdVehicles) {
+    let lastKm = vehicle.currentKm ?? 0;
+
+    for (let i = 0; i < markingsPerVehicle; i++) {
+      const nextKm = lastKm + randomInt(5000, 25000);
+
+      await prisma.vehicleMarking.create({
+        data: {
+          km: nextKm,
+          companyId: DEFAULT_COMPANY_ID,
+          branchId: vehicle.branchId,
+          createdBy: createdByUserId,
+          vehicles: {
+            create: [{ vehicleId: vehicle.id }],
+          },
+        },
+      });
+
+      await prisma.vehicle.update({
+        where: { id: vehicle.id },
+        data: { currentKm: nextKm },
+      });
+
+      await prisma.vehicleStatusHistory.create({
+        data: {
+          vehicleId: vehicle.id,
+          status: vehicle.status ?? 'ACTIVE',
+          km: nextKm,
+          notes: 'Atualizado via marcação (seed)',
+          createdBy: createdByUserId,
+        },
+      });
+
+      vehicle.currentKm = nextKm;
+      lastKm = nextKm;
+    }
+  }
+
+  // 3) Etiquetas de manutenção (uma por veículo) com lastChangeKm variado.
+  let createdMaintenanceLabels = 0;
+  let createdLabelReplacementItems = 0;
+
+  for (const vehicle of createdVehicles) {
+    const referenceKm = vehicle.currentKm ?? 0;
+    const replacementItems =
+      vehicleReplacementItemsByVehicleId.get(vehicle.id) ?? [];
+    if (replacementItems.length === 0) continue;
+
+    const label = await prisma.maintenanceLabel.create({
+      data: {
+        companyId: DEFAULT_COMPANY_ID,
+        branchId: vehicle.branchId,
+        createdBy: createdByUserId,
+        vehicles: {
+          create: { vehicleId: vehicle.id },
+        },
+      },
+    });
+
+    for (const ri of replacementItems) {
+      const replaceEveryKm = ri.replaceEveryKm;
+      const roll = Math.random();
+
+      let lastChangeKm: number;
+      if (roll < 0.18) {
+        const delta = randomInt(100, Math.max(200, Math.floor(replaceEveryKm * 0.2)));
+        // due: referenceKm >= lastChangeKm + replaceEveryKm
+        lastChangeKm = referenceKm - replaceEveryKm - delta;
+      } else if (roll < 0.50) {
+        // warning
+        const xMax = Math.max(1, Math.floor(replaceEveryKm * 0.1));
+        const x = randomInt(1, xMax);
+        lastChangeKm = referenceKm - replaceEveryKm + x;
+      } else {
+        // ok
+        const xMin = Math.max(2, Math.floor(replaceEveryKm * 0.1) + 1);
+        const xMax = Math.max(xMin + 1, Math.floor(replaceEveryKm * 0.6));
+        const x = randomInt(xMin, xMax);
+        lastChangeKm = referenceKm - replaceEveryKm + x;
+      }
+
+      if (!Number.isFinite(lastChangeKm)) lastChangeKm = referenceKm;
+      lastChangeKm = Math.max(0, Math.floor(lastChangeKm));
+
+      await prisma.maintenanceLabelReplacementItem.create({
+        data: {
+          maintenanceLabelId: label.id,
+          vehicleReplacementItemId: ri.id,
+          lastChangeKm,
+          updatedInThisLabel: Math.random() < 0.4,
+          createdBy: createdByUserId,
+        },
+      });
+
+      createdLabelReplacementItems++;
+    }
+
+    createdMaintenanceLabels++;
+  }
+
+  console.log(
+    `✅ Etiquetas criadas: ${createdMaintenanceLabels} (itens: ${createdLabelReplacementItems})\n`,
+  );
 
   // ============================================
   // ALMOXARIFADOS E ESTOQUE
@@ -786,8 +962,16 @@ export function validateDefaultCompanyId(): void {
   // ============================================
   console.log('🔧 Criando ordens de manutenção...');
 
+  const seedCreatedBy = createdUsers[0]?.id ?? undefined;
+
   const maintenanceTypes = ['PREVENTIVE', 'CORRECTIVE'] as const;
-  const maintenanceStatuses = ['OPEN', 'IN_PROGRESS', 'COMPLETED', 'PAUSED'] as const;
+  const maintenanceStatuses = [
+    'OPEN',
+    'IN_PROGRESS',
+    'PAUSED',
+    'COMPLETED',
+    'CANCELLED',
+  ] as const;
 
   const createdMaintenanceOrders: MaintenanceOrder[] = [];
   let orderNumber = 1;
@@ -796,11 +980,17 @@ export function validateDefaultCompanyId(): void {
     const branchVehicles = createdVehicles.filter((v) => v.branchId === branch.id);
     const branchEmployees = createdEmployees.filter((e) => e.branchId === branch.id);
 
-    const ordersPerBranch = randomInt(8, 12);
-    for (let i = 0; i < ordersPerBranch && i < branchVehicles.length; i++) {
-        const vehicle = branchVehicles[i];
+    const ordersPerBranch = randomInt(SEED_VOLUME_MIN, SEED_VOLUME_MIN + 10);
+    for (let i = 0; i < ordersPerBranch; i++) {
+        const vehicle = branchVehicles[Math.floor(Math.random() * branchVehicles.length)];
+        if (!vehicle) continue;
         const type = maintenanceTypes[Math.floor(Math.random() * maintenanceTypes.length)];
         const status = maintenanceStatuses[Math.floor(Math.random() * maintenanceStatuses.length)];
+
+        const kmAtEntry =
+          vehicle.currentKm != null
+            ? vehicle.currentKm + randomInt(500, 20000)
+            : randomInt(50000, 400000);
 
         const maintenanceOrder = await prisma.maintenanceOrder.create({
           data: {
@@ -808,7 +998,8 @@ export function validateDefaultCompanyId(): void {
             vehicles: { create: [{ vehicleId: vehicle.id }] },
             type,
             status,
-            kmAtEntry: vehicle.currentKm ? vehicle.currentKm - randomInt(1000, 10000) : randomInt(50000, 400000),
+            // KM não pode regredir (a OM entra com KM >= KM atual do veículo).
+            kmAtEntry,
             description: type === 'PREVENTIVE' ? 'Manutenção preventiva programada' : 'Manutenção corretiva - reparo necessário',
             observations: 'Ordem de manutenção criada via seed',
             companyId: DEFAULT_COMPANY_ID,
@@ -854,6 +1045,7 @@ export function validateDefaultCompanyId(): void {
         const branchProducts = createdProducts.filter(
           (p) => p.branchId === branch.id,
         );
+        let orderTotalCost = 0;
         if (branchProducts.length > 0 && (status === 'COMPLETED' || status === 'IN_PROGRESS')) {
           const materialsCount = randomInt(2, 5);
           const selectedProducts = branchProducts.slice(0, materialsCount);
@@ -895,7 +1087,17 @@ export function validateDefaultCompanyId(): void {
                 totalCost: totalCost,
               },
             });
+
+            orderTotalCost += Number(totalCost);
           }
+        }
+
+        // Persistir totalCost no registro (usado por financeiro/relatórios).
+        if (orderTotalCost > 0) {
+          await prisma.maintenanceOrder.update({
+            where: { id: maintenanceOrder.id },
+            data: { totalCost: new Prisma.Decimal(orderTotalCost) },
+          });
         }
 
         // Adicionar timeline
@@ -908,14 +1110,80 @@ export function validateDefaultCompanyId(): void {
             },
           });
         }
+        if (status === 'PAUSED') {
+          await prisma.maintenanceTimeline.create({
+            data: {
+              maintenanceOrderId: maintenanceOrder.id,
+              event: 'PAUSED',
+              notes: 'Ordem de manutenção pausada',
+              createdBy: seedCreatedBy,
+            },
+          });
+        }
         if (status === 'COMPLETED') {
           await prisma.maintenanceTimeline.create({
             data: {
               maintenanceOrderId: maintenanceOrder.id,
               event: 'COMPLETED',
               notes: 'Manutenção concluída com sucesso',
+              createdBy: seedCreatedBy,
             },
           });
+        }
+
+        if (status === 'CANCELLED') {
+          await prisma.maintenanceTimeline.create({
+            data: {
+              maintenanceOrderId: maintenanceOrder.id,
+              event: 'CANCELLED',
+              notes: 'Ordem de manutenção cancelada',
+              createdBy: seedCreatedBy,
+            },
+          });
+        }
+
+        // COMPLETED/CANCELLED: impacto direto no veículo (KM e status).
+        if (status === 'COMPLETED' || status === 'CANCELLED') {
+          await prisma.vehicle.update({
+            where: { id: vehicle.id },
+            data: { status: 'ACTIVE', currentKm: kmAtEntry },
+          });
+
+          await prisma.vehicleStatusHistory.create({
+            data: {
+              vehicleId: vehicle.id,
+              maintenanceOrderId: maintenanceOrder.id,
+              status: 'ACTIVE',
+              km: kmAtEntry,
+              notes:
+                status === 'COMPLETED'
+                  ? `Ordem de manutenção ${maintenanceOrder.orderNumber} concluída`
+                  : `Ordem de manutenção ${maintenanceOrder.orderNumber} cancelada`,
+              createdBy: seedCreatedBy,
+            },
+          });
+
+          // Mantém coerência mínima na memória para próximas OM do mesmo veículo.
+          vehicle.currentKm = kmAtEntry;
+          vehicle.status = 'ACTIVE';
+
+          // Conta a pagar só quando concluído e com custo.
+          if (status === 'COMPLETED' && orderTotalCost > 0) {
+            await prisma.accountPayable.create({
+              data: {
+                description: `Manutenção ${maintenanceOrder.orderNumber} - Veículo`,
+                amount: new Prisma.Decimal(orderTotalCost),
+                dueDate: new Date(),
+                originType: 'MAINTENANCE',
+                originId: maintenanceOrder.id,
+                vehicleId: vehicle.id,
+                companyId: DEFAULT_COMPANY_ID,
+                branchId: branch.id,
+                status: 'PENDING',
+                createdBy: seedCreatedBy,
+              },
+            });
+          }
         }
       }
   }
@@ -931,7 +1199,7 @@ export function validateDefaultCompanyId(): void {
   for (const branch of createdBranches) {
     const branchProducts = createdProducts.filter((p) => p.branchId === branch.id);
 
-    const movementsPerBranch = randomInt(20, 30);
+    const movementsPerBranch = randomInt(SEED_VOLUME_MIN, SEED_VOLUME_MIN + 10);
     for (let i = 0; i < movementsPerBranch; i++) {
         const product = branchProducts[Math.floor(Math.random() * branchProducts.length)];
         const quantity = randomInt(1, 20);
@@ -960,6 +1228,624 @@ export function validateDefaultCompanyId(): void {
   console.log(`✅ ${createdMovements.length} movimentações de estoque criadas\n`);
 
   // ============================================
+  // TRIPS + CADASTROS (FORNECEDORES/CLIENTES/CENTROS) + DESPESAS
+  // ============================================
+  console.log('🧾 Criando fornecedores, clientes, centros de custo, trips e despesas...');
+
+  const createdSuppliers: any[] = [];
+  const createdCustomers: any[] = [];
+  const createdCostCenters: any[] = [];
+
+  const suppliersNamePool = [
+    'Transportadora Alfa',
+    'Logística Norte',
+    'Comercial Sul',
+    'Distribuição Central',
+    'Auto Parts BR',
+    'Serviços Rodoviários',
+  ];
+
+  const customersNamePool = [
+    'Indústria Horizonte',
+    'Comercial Aurora',
+    'Empresa Atlântico',
+    'Logix Soluções',
+    'Alimentação Sabor',
+    'Agro Verde',
+  ];
+
+  for (const branch of createdBranches) {
+    const branchCodeSafe = (branch.code ?? branch.id).toLowerCase();
+    const suppliersPerBranch = SEED_VOLUME_MIN;
+    const customersPerBranch = SEED_VOLUME_MIN;
+    const costCentersPerBranch = SEED_VOLUME_MIN;
+
+    for (let i = 0; i < suppliersPerBranch; i++) {
+      const name = `${suppliersNamePool[i % suppliersNamePool.length]} ${branch.code} ${i + 1}`;
+      const supplier = await prisma.supplier.create({
+        data: {
+          name,
+          document: `${randomInt(10, 99)}.${randomInt(100, 999)}.${randomInt(100, 999)}/${randomInt(
+            10,
+            99,
+          )}-${randomInt(10, 99)}`,
+          email: `supplier.${branchCodeSafe}.${i + 1}@example.com`,
+          phone: `+55 ${randomInt(11, 99)} ${randomInt(9000, 9999)}-${randomInt(
+            1000,
+            9999,
+          )}`,
+          address: `Rua ${i + 1} - ${branch.name}`,
+          city: 'São Paulo',
+          state: 'SP',
+          zipCode: `0${randomInt(10, 99)}.${randomInt(10, 99)}-${randomInt(10, 99)}`,
+          companyId: DEFAULT_COMPANY_ID,
+          branchId: branch.id,
+          active: true,
+          createdBy: createdByUserId,
+        },
+      });
+      createdSuppliers.push(supplier);
+    }
+
+    for (let i = 0; i < customersPerBranch; i++) {
+      const name = `${customersNamePool[i % customersNamePool.length]} ${branch.code} ${i + 1}`;
+      const customer = await prisma.customer.create({
+        data: {
+          name,
+          document: `${randomInt(100, 999)}.${randomInt(100, 999)}.${randomInt(100, 999)}-${randomInt(
+            10,
+            99,
+          )}`,
+          email: `customer.${branchCodeSafe}.${i + 1}@example.com`,
+          phone: `+55 ${randomInt(11, 99)} ${randomInt(9000, 9999)}-${randomInt(
+            1000,
+            9999,
+          )}`,
+          address: `Av. ${i + 1} - ${branch.name}`,
+          city: 'São Paulo',
+          state: 'SP',
+          zipCode: `0${randomInt(10, 99)}.${randomInt(10, 99)}-${randomInt(10, 99)}`,
+          companyId: DEFAULT_COMPANY_ID,
+          branchId: branch.id,
+          active: true,
+          createdBy: createdByUserId,
+        },
+      });
+      createdCustomers.push(customer);
+    }
+
+    for (let i = 0; i < costCentersPerBranch; i++) {
+      const code = `CC-${branch.code}-${String(i + 1).padStart(3, '0')}`;
+      const cc = await prisma.costCenter.create({
+        data: {
+          code,
+          name: `Centro de custo ${branch.code} ${i + 1}`,
+          companyId: DEFAULT_COMPANY_ID,
+          branchId: branch.id,
+          active: true,
+          createdBy: createdByUserId,
+        },
+      });
+      createdCostCenters.push(cc);
+    }
+  }
+
+  console.log(
+    `✅ Cadastros criados (Fornecedores: ${createdSuppliers.length}, Clientes: ${createdCustomers.length}, CC: ${createdCostCenters.length})`,
+  );
+
+  // Tipos de despesa de trip (já são criados antes; aqui apenas carregamos para usar).
+  const createdTripExpenseTypes = await prisma.tripExpenseType.findMany({
+    where: { companyId: DEFAULT_COMPANY_ID },
+  });
+
+  // Trips + despesas
+  const createdTrips: any[] = [];
+  for (const branch of createdBranches) {
+    const branchVehicles = createdVehicles.filter((v) => v.branchId === branch.id);
+    const branchEmployees = createdEmployees.filter((e) => e.branchId === branch.id);
+    const branchCustomers = createdCustomers.filter((c) => c.branchId === branch.id);
+    const branchTripTypes = createdTripExpenseTypes.filter((t) => t.branchId === branch.id);
+    const branchCostCenters = createdCostCenters.filter((c) => c.branchId === branch.id);
+
+    if (!branchVehicles.length || !branchEmployees.length || !branchCustomers.length) {
+      continue;
+    }
+
+    const drivers = branchEmployees.filter((e) =>
+      (e.position ?? '').toLowerCase().includes('motor'),
+    );
+
+    const tripsPerBranch = SEED_VOLUME_MIN;
+    for (let i = 0; i < tripsPerBranch; i++) {
+      const customer = branchCustomers[Math.floor(Math.random() * branchCustomers.length)];
+      const selectedDrivers = drivers.length ? drivers : branchEmployees;
+      const driver =
+        selectedDrivers[
+          Math.floor(Math.random() * selectedDrivers.length)
+        ];
+      if (!driver) continue;
+
+      const comboSize = randomInt(1, Math.min(3, branchVehicles.length));
+      const vehicleIds = new Set<string>();
+      while (vehicleIds.size < comboSize) {
+        vehicleIds.add(
+          branchVehicles[Math.floor(Math.random() * branchVehicles.length)].id,
+        );
+      }
+      const vehicleIdsList = Array.from(vehicleIds);
+      const primaryVehicleId = vehicleIdsList[0];
+
+      const origin = `Origem ${branch.code} ${randomInt(1, 2000)}`;
+      const destination = `Destino ${branch.code} ${randomInt(1, 2000)}`;
+      const freightValue = randomDecimal(8000, 45000);
+
+      const status: any = Math.random() < 0.7 ? 'COMPLETED' : 'IN_PROGRESS';
+      const scheduledDepartureAt = randomDate(new Date(2024, 0, 1), new Date());
+      const scheduledArrivalAt = new Date(scheduledDepartureAt);
+      scheduledArrivalAt.setHours(
+        scheduledArrivalAt.getHours() + randomInt(4, 48),
+      );
+
+      const actualDepartureAt = status === 'COMPLETED' ? scheduledDepartureAt : null;
+      const actualArrivalAt = status === 'COMPLETED' ? scheduledArrivalAt : null;
+
+      const trip = await prisma.trip.create({
+        data: {
+          customerId: customer.id,
+          vehicleId: primaryVehicleId,
+          driverId: driver.id,
+          origin,
+          destination,
+          freightValue,
+          status,
+          scheduledDepartureAt,
+          scheduledArrivalAt,
+          actualDepartureAt,
+          actualArrivalAt,
+          notes: 'Trip criada via seed',
+          companyId: DEFAULT_COMPANY_ID,
+          branchId: branch.id,
+          createdBy: createdByUserId,
+        },
+      });
+
+      // CR (account receivable) prevista/realizada
+      const arDueDate = scheduledArrivalAt;
+      const arStatus: any = status === 'COMPLETED' ? 'RECEIVED' : 'PLANNED';
+
+      const ar = await prisma.accountReceivable.create({
+        data: {
+          description: `Frete: ${origin} -> ${destination}`,
+          amount: freightValue,
+          dueDate: arDueDate,
+          receiptDate: status === 'COMPLETED' ? scheduledArrivalAt : null,
+          status: arStatus,
+          originType: 'TRIP',
+          originId: trip.id,
+          documentNumber: `TR-${randomInt(1000, 9999)}`,
+          notes: 'Conta a receber criada via seed (trip)',
+          customerId: customer.id,
+          companyId: DEFAULT_COMPANY_ID,
+          branchId: branch.id,
+          createdBy: createdByUserId,
+        },
+      });
+
+      await prisma.trip.update({
+        where: { id: trip.id },
+        data: { accountReceivableId: ar.id },
+      });
+
+      await (prisma as any).tripVehicle.createMany({
+        data: vehicleIdsList.map((vehicleId: string) => ({
+          tripId: trip.id,
+          vehicleId,
+        })),
+      });
+
+      const tripExpensesCount = randomInt(2, 5);
+      for (let j = 0; j < tripExpensesCount; j++) {
+        const type = branchTripTypes[Math.floor(Math.random() * branchTripTypes.length)];
+        const expenseAmount = randomDecimal(150, 5000);
+        const expenseDate = randomDate(new Date(2024, 0, 1), new Date());
+
+        const maybeCc =
+          branchCostCenters.length && Math.random() < 0.6
+            ? branchCostCenters[
+                Math.floor(Math.random() * branchCostCenters.length)
+              ].id
+            : null;
+
+        const accountPayable = await prisma.accountPayable.create({
+          data: {
+            description: `Despesa viagem ${origin} -> ${destination} - ${type.name}`,
+            amount: expenseAmount,
+            dueDate: expenseDate,
+            status: 'PENDING',
+            originType: 'TRIP',
+            originId: trip.id,
+            documentNumber: `CP-${randomInt(1000, 9999)}`,
+            notes: 'Conta a pagar criada via seed (trip expense)',
+            vehicleId: primaryVehicleId,
+            costCenterId: maybeCc ?? undefined,
+            companyId: DEFAULT_COMPANY_ID,
+            branchId: branch.id,
+            createdBy: createdByUserId,
+          },
+        });
+
+        await prisma.tripExpense.create({
+          data: {
+            tripId: trip.id,
+            tripExpenseTypeId: type.id,
+            amount: expenseAmount,
+            description: `Despesa: ${type.name}`,
+            expenseDate,
+            vehicleId: primaryVehicleId,
+            accountPayableId: accountPayable.id,
+            costCenterId: maybeCc ?? undefined,
+            companyId: DEFAULT_COMPANY_ID,
+            branchId: branch.id,
+            createdBy: createdByUserId,
+          },
+        });
+      }
+
+      createdTrips.push(trip);
+    }
+  }
+
+  console.log(`✅ Trips criadas: ${createdTrips.length}`);
+
+  // ============================================
+  // PEDIDOS DE COMPRA/VENDA + DOCUMENTOS FISCAIS
+  // ============================================
+  console.log('📦 Criando pedidos de compra e pedidos de venda...');
+
+  // PurchaseOrder (recebidos)
+  const createdPurchaseOrders: any[] = [];
+  for (const branch of createdBranches) {
+    const branchSuppliers = createdSuppliers.filter((s) => s.branchId === branch.id);
+    const branchProducts = createdProducts.filter((p) => p.branchId === branch.id);
+    const defaultWarehouse = createdWarehouses.find((w) => w.branchId === branch.id);
+
+    if (!branchSuppliers.length || !branchProducts.length || !defaultWarehouse) continue;
+
+    let poSeq = 1;
+    const purchaseOrdersPerBranch = SEED_VOLUME_MIN;
+    for (let i = 0; i < purchaseOrdersPerBranch; i++) {
+      const supplier = branchSuppliers[Math.floor(Math.random() * branchSuppliers.length)];
+      const number = `PC-${String(poSeq).padStart(3, '0')}`;
+
+      const itemsCount = randomInt(2, 3);
+      const items: any[] = [];
+      let receivedTotalValue = 0;
+
+      for (let j = 0; j < itemsCount; j++) {
+        const product = branchProducts[Math.floor(Math.random() * branchProducts.length)];
+        const unitPriceNumber = Number((product as any).unitPrice ?? 0) || randomInt(10, 500);
+        const quantity = randomInt(3, 12);
+
+        const unitPrice = new Prisma.Decimal(unitPriceNumber);
+        const total = new Prisma.Decimal(unitPriceNumber * quantity);
+        receivedTotalValue += Number(total);
+
+        items.push({
+          productId: product.id,
+          quantity: new Prisma.Decimal(quantity),
+          quantityReceived: new Prisma.Decimal(quantity),
+          unitPrice,
+          total,
+        });
+      }
+
+      const po = await prisma.purchaseOrder.create({
+        data: {
+          number,
+          supplierId: supplier.id,
+          companyId: DEFAULT_COMPANY_ID,
+          branchId: branch.id,
+          expectedDeliveryDate: randomDate(new Date(), new Date(2026, 11, 31)),
+          status: 'RECEIVED',
+          notes: 'Pedido de compra via seed',
+          createdBy: createdByUserId,
+          items: {
+            create: items.map((it) => ({
+              productId: it.productId,
+              quantity: it.quantity,
+              quantityReceived: it.quantityReceived,
+              unitPrice: it.unitPrice,
+              total: it.total,
+            })),
+          },
+        },
+      });
+
+      // Estoque (ENTRY) + média custo + conta a pagar + documento fiscal
+      for (const it of items) {
+        await prisma.stockMovement.create({
+          data: {
+            type: 'ENTRY',
+            productId: it.productId,
+            quantity: it.quantity,
+            unitCost: it.unitPrice,
+            totalCost: it.total,
+            documentNumber: po.number,
+            notes: 'Recebimento pedido de compra via seed',
+            purchaseOrderId: po.id,
+            companyId: DEFAULT_COMPANY_ID,
+            branchId: branch.id,
+            createdBy: createdByUserId,
+          },
+        });
+
+        const existingStock = await prisma.stock.findUnique({
+          where: {
+            productId_warehouseId: {
+              productId: it.productId,
+              warehouseId: defaultWarehouse.id,
+            },
+          },
+        });
+
+        if (existingStock) {
+          const currentQty = Number(existingStock.quantity);
+          const currentAvg = Number(existingStock.averageCost);
+          const entryQty = Number(it.quantity);
+          const entryTotal = Number(it.total);
+
+          const newQty = currentQty + entryQty;
+          const newAvg = newQty > 0 ? (currentQty * currentAvg + entryTotal) / newQty : 0;
+
+          await prisma.stock.update({
+            where: {
+              productId_warehouseId: {
+                productId: it.productId,
+                warehouseId: defaultWarehouse.id,
+              },
+            },
+            data: {
+              quantity: new Prisma.Decimal(newQty),
+              averageCost: new Prisma.Decimal(newAvg),
+              updatedAt: new Date(),
+              createdBy: createdByUserId,
+            },
+          });
+        } else {
+          await prisma.stock.create({
+            data: {
+              productId: it.productId,
+              warehouseId: defaultWarehouse.id,
+              quantity: it.quantity,
+              averageCost: it.unitPrice,
+              companyId: DEFAULT_COMPANY_ID,
+              branchId: branch.id,
+              createdBy: createdByUserId,
+            },
+          });
+        }
+      }
+
+      const accountPayable = await prisma.accountPayable.create({
+        data: {
+          description: `Pedido de compra ${po.number} - ${supplier.name}`,
+          amount: new Prisma.Decimal(receivedTotalValue),
+          dueDate: randomDate(new Date(), new Date(2026, 11, 31)),
+          status: 'PENDING',
+          originType: 'PURCHASE_ORDER',
+          originId: po.id,
+          documentNumber: po.number,
+          notes: 'Conta a pagar gerada via seed (PC recebida)',
+          supplierId: supplier.id,
+          companyId: DEFAULT_COMPANY_ID,
+          branchId: branch.id,
+          createdBy: createdByUserId,
+        },
+      });
+
+      if (Math.random() < 0.5) {
+        await prisma.fiscalDocument.create({
+          data: {
+            type: 'ENTRY',
+            number: `NF-${randomInt(1000, 9999)}-${branch.code ?? branch.id}`,
+            series: '1',
+            issueDate: randomDate(new Date(2024, 0, 1), new Date()),
+            totalAmount: new Prisma.Decimal(receivedTotalValue),
+            status: 'REGISTERED',
+            companyId: DEFAULT_COMPANY_ID,
+            branchId: branch.id,
+            supplierId: supplier.id,
+            accountPayableId: accountPayable.id,
+            notes: 'Documento fiscal via seed',
+            createdBy: createdByUserId,
+          },
+        });
+      }
+
+      createdPurchaseOrders.push(po);
+      poSeq++;
+    }
+  }
+
+  // SalesOrder (faturados/DELIVERED)
+  const createdSalesOrders: any[] = [];
+  for (const branch of createdBranches) {
+    const branchCustomers = createdCustomers.filter((c) => c.branchId === branch.id);
+    const branchProducts = createdProducts.filter((p) => p.branchId === branch.id);
+    const defaultWarehouse = createdWarehouses.find((w) => w.branchId === branch.id);
+
+    if (!branchCustomers.length || !branchProducts.length || !defaultWarehouse) continue;
+
+    // Carrega estoque atual do almoxarifado padrão para evitar estoque negativo.
+    const branchStockRows = await prisma.stock.findMany({
+      where: {
+        branchId: branch.id,
+        warehouseId: defaultWarehouse.id,
+        quantity: { gt: 0 },
+      },
+      include: { product: true },
+    });
+
+    let soSeq = 1;
+    const salesOrdersPerBranch = SEED_VOLUME_MIN;
+    for (let i = 0; i < salesOrdersPerBranch; i++) {
+      const customer = branchCustomers[Math.floor(Math.random() * branchCustomers.length)];
+      const number = `PV-${String(soSeq).padStart(3, '0')}`;
+      const orderDate = randomDate(new Date(2024, 0, 1), new Date());
+
+      const itemsCount = randomInt(2, 3);
+      const items: any[] = [];
+      let totalAmount = 0;
+
+      // Trabalha com cópia dos estoques em memória (para reduzir chamadas).
+      const stockPool = branchStockRows.filter((s) => Number(s.quantity) > 0);
+      for (let j = 0; j < itemsCount; j++) {
+        if (!stockPool.length) break;
+        const rowIdx = Math.floor(Math.random() * stockPool.length);
+        const stockRow = stockPool[rowIdx];
+        const available = Number(stockRow.quantity);
+        if (available <= 0) continue;
+
+        const maxQty = Math.max(1, Math.min(5, available));
+        const qty = randomInt(1, maxQty);
+
+        const unitPriceNumber = Number((stockRow.product as any).unitPrice ?? 0) || Number(stockRow.averageCost) || randomInt(10, 500);
+        const itemTotal = new Prisma.Decimal(unitPriceNumber * qty);
+        totalAmount += Number(itemTotal);
+
+        items.push({
+          productId: stockRow.productId,
+          quantity: new Prisma.Decimal(qty),
+          unitPrice: new Prisma.Decimal(unitPriceNumber),
+          total: itemTotal,
+        });
+
+        // Atualiza in-memory
+        stockRow.quantity = new Prisma.Decimal(available - qty);
+      }
+
+      if (!items.length) continue;
+
+      const so = await prisma.salesOrder.create({
+        data: {
+          number,
+          customerId: customer.id,
+          companyId: DEFAULT_COMPANY_ID,
+          branchId: branch.id,
+          orderDate,
+          status: 'DELIVERED',
+          notes: 'Pedido de venda via seed',
+          createdBy: createdByUserId,
+          items: {
+            create: items.map((it) => ({
+              productId: it.productId,
+              quantity: it.quantity,
+              unitPrice: it.unitPrice,
+              total: it.total,
+              quantityInvoiced: it.quantity,
+            })),
+          },
+        },
+      });
+
+      // CR para o faturamento
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 30);
+      const accountReceivableStatus = Math.random() < 0.3 ? 'RECEIVED' : 'PENDING';
+
+      const ar = await prisma.accountReceivable.create({
+        data: {
+          description: `Pedido de venda ${so.number} - ${customer.name}`,
+          amount: new Prisma.Decimal(totalAmount),
+          dueDate,
+          receiptDate: accountReceivableStatus === 'RECEIVED' ? new Date() : null,
+          status: accountReceivableStatus,
+          originType: 'SALE_ORDER',
+          originId: so.id,
+          documentNumber: so.number,
+          notes: 'Conta a receber gerada via seed (faturamento PV)',
+          customerId: customer.id,
+          companyId: DEFAULT_COMPANY_ID,
+          branchId: branch.id,
+          createdBy: createdByUserId,
+        },
+      });
+
+      // Movimentações de saída + baixa de estoque (EXIT)
+      for (const it of items) {
+        const qty = Number(it.quantity);
+        await prisma.stockMovement.create({
+          data: {
+            type: 'EXIT',
+            productId: it.productId,
+            quantity: new Prisma.Decimal(qty),
+            documentNumber: so.number,
+            notes: 'Faturamento pedido de venda via seed',
+            salesOrderId: so.id,
+            companyId: DEFAULT_COMPANY_ID,
+            branchId: branch.id,
+            createdBy: createdByUserId,
+          },
+        });
+
+        // Atualiza estoque a partir do valor atual no banco (evita inconsistência por estoque "em memória").
+        const existingStock = await prisma.stock.findUnique({
+          where: {
+            productId_warehouseId: {
+              productId: it.productId,
+              warehouseId: defaultWarehouse.id,
+            },
+          },
+        });
+
+        if (existingStock) {
+          const currentQty = Number(existingStock.quantity);
+          const newQty = currentQty - qty;
+          await prisma.stock.update({
+            where: {
+              productId_warehouseId: {
+                productId: it.productId,
+                warehouseId: defaultWarehouse.id,
+              },
+            },
+            data: {
+              quantity: new Prisma.Decimal(newQty),
+              updatedAt: new Date(),
+            },
+          });
+        }
+      }
+
+      if (Math.random() < 0.5) {
+        await prisma.fiscalDocument.create({
+          data: {
+            type: 'EXIT',
+            number: `NF-${randomInt(1000, 9999)}-${branch.code ?? branch.id}`,
+            series: '1',
+            issueDate: randomDate(new Date(2024, 0, 1), new Date()),
+            totalAmount: new Prisma.Decimal(totalAmount),
+            status: 'REGISTERED',
+            companyId: DEFAULT_COMPANY_ID,
+            branchId: branch.id,
+            customerId: customer.id,
+            accountReceivableId: ar.id,
+            notes: 'Documento fiscal via seed',
+            createdBy: createdByUserId,
+          },
+        });
+      }
+
+      createdSalesOrders.push(so);
+      soSeq++;
+    }
+  }
+
+  console.log(
+    `✅ Pedidos criados (PC: ${createdPurchaseOrders.length}, PV: ${createdSalesOrders.length})`,
+  );
+
+  // ============================================
   // TRANSAÇÕES FINANCEIRAS
   // ============================================
   console.log('💵 Criando transações financeiras...');
@@ -970,7 +1856,7 @@ export function validateDefaultCompanyId(): void {
   const createdTransactions: FinancialTransaction[] = [];
 
   for (const branch of createdBranches) {
-    const transactionsPerBranch = randomInt(15, 25);
+    const transactionsPerBranch = randomInt(SEED_VOLUME_MIN, SEED_VOLUME_MIN + 10);
 
     for (let i = 0; i < transactionsPerBranch; i++) {
       const type = transactionTypes[Math.floor(Math.random() * transactionTypes.length)];
@@ -993,6 +1879,96 @@ export function validateDefaultCompanyId(): void {
     }
   }
   console.log(`✅ ${createdTransactions.length} transações financeiras criadas\n`);
+
+  // ============================================
+  // CARTEIRA / SALDO DA FILIAL (BranchBalance) + EXTRATO (BankStatement)
+  // ============================================
+  console.log('🏦 Criando extratos bancários e saldo da filial...');
+
+  for (const branch of createdBranches) {
+    const balance = randomDecimal(50000, 250000);
+
+    const branchBalance = await prisma.branchBalance.create({
+      data: {
+        branchId: branch.id,
+        balance,
+      },
+    });
+
+    // Saldo inicial
+    await prisma.balanceAdjustment.create({
+      data: {
+        branchBalanceId: branchBalance.id,
+        previousBalance: new Prisma.Decimal(0),
+        newBalance: balance,
+        adjustmentType: 'INITIAL_BALANCE',
+        reason: 'Saldo inicial via seed',
+        createdBy: createdByUserId,
+      },
+    });
+
+    const adjustmentsCount = randomInt(2, 4);
+    let lastBalance = Number(balance);
+
+    for (let i = 0; i < adjustmentsCount; i++) {
+      const delta = Number(randomDecimal(5000, 30000));
+      const isIncrease = Math.random() < 0.55;
+      const nextBalance = isIncrease ? lastBalance + delta : Math.max(0, lastBalance - delta);
+
+      await prisma.balanceAdjustment.create({
+        data: {
+          branchBalanceId: branchBalance.id,
+          previousBalance: new Prisma.Decimal(lastBalance),
+          newBalance: new Prisma.Decimal(nextBalance),
+          adjustmentType: isIncrease ? 'MANUAL_ADJUSTMENT' : 'CORRECTION',
+          reason: 'Ajuste via seed',
+          createdBy: createdByUserId,
+        },
+      });
+
+      lastBalance = nextBalance;
+    }
+
+    await prisma.branchBalance.update({
+      where: { branchId: branch.id },
+      data: { balance: new Prisma.Decimal(lastBalance) },
+    });
+
+    const referenceMonth = randomInt(1, 12);
+    const referenceYear = randomInt(2024, 2026);
+
+    const statement = await prisma.bankStatement.create({
+      data: {
+        branchId: branch.id,
+        description: `Extrato bancário ${branch.name}`,
+        referenceMonth,
+        referenceYear,
+        createdBy: createdByUserId,
+      },
+    });
+
+    const branchTx = createdTransactions.filter((t) => t.branchId === branch.id);
+    if (!branchTx.length) continue;
+
+    const itemsPerBranch = SEED_VOLUME_MIN;
+    for (let i = 0; i < itemsPerBranch; i++) {
+      const tx = branchTx[Math.floor(Math.random() * branchTx.length)];
+      const type = tx.type === 'INCOME' ? 'CREDIT' : 'DEBIT';
+
+      await prisma.bankStatementItem.create({
+        data: {
+          bankStatementId: statement.id,
+          transactionDate: tx.transactionDate,
+          amount: tx.amount,
+          description: tx.description ?? undefined,
+          type,
+          financialTransactionId: tx.id,
+        },
+      });
+    }
+  }
+
+  console.log('✅ Extratos e saldo criados.\n');
 
   // ============================================
   // CONTAS A PAGAR

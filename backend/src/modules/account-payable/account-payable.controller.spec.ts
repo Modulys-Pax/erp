@@ -43,6 +43,9 @@ describe('AccountPayableController', () => {
         dueDate: '2024-01-30',
         branchId: 'branch-1',
         companyId: 'company-1',
+        documentNumber: 'NF-001',
+        notes: 'Pagamento de fornecedor',
+        costCenterId: 'cc-1',
       };
       mockService.create.mockResolvedValue(mockAccount);
 

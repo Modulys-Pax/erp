@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
@@ -20,11 +16,7 @@ import { validateBranchAccess } from '../../shared/utils/branch-access.util';
 export class TripService {
   constructor(private prisma: PrismaService) {}
 
-  async create(
-    createDto: CreateTripDto,
-    userId?: string,
-    user?: any,
-  ): Promise<TripResponseDto> {
+  async create(createDto: CreateTripDto, userId?: string, user?: any): Promise<TripResponseDto> {
     const companyId = DEFAULT_COMPANY_ID;
 
     if (user) {
@@ -109,7 +101,15 @@ export class TripService {
         data: { accountReceivableId: cr.id },
       });
 
-      await (tx as unknown as { tripVehicle: { createMany: (args: { data: { tripId: string; vehicleId: string }[] }) => Promise<unknown> } }).tripVehicle.createMany({
+      await (
+        tx as unknown as {
+          tripVehicle: {
+            createMany: (args: {
+              data: { tripId: string; vehicleId: string }[];
+            }) => Promise<unknown>;
+          };
+        }
+      ).tripVehicle.createMany({
         data: createDto.vehicleIds.map((vehicleId) => ({
           tripId: created.id,
           vehicleId,
@@ -148,10 +148,7 @@ export class TripService {
     const where: Prisma.TripWhereInput = { deletedAt: null };
     if (branchId) where.branchId = branchId;
     if (vehicleId) {
-      (where as any).OR = [
-        { vehicleId },
-        { vehicles: { some: { vehicleId } } },
-      ];
+      (where as any).OR = [{ vehicleId }, { vehicles: { some: { vehicleId } } }];
     }
     if (customerId) where.customerId = customerId;
     if (status) where.status = status as any;
@@ -161,27 +158,17 @@ export class TripService {
       if (startDate) {
         const start = new Date(startDate);
         dateConditions.push({
-          OR: [
-            { scheduledDepartureAt: { gte: start } },
-            { scheduledArrivalAt: { gte: start } },
-          ],
+          OR: [{ scheduledDepartureAt: { gte: start } }, { scheduledArrivalAt: { gte: start } }],
         });
       }
       if (endDate) {
         const end = new Date(endDate);
         dateConditions.push({
-          OR: [
-            { scheduledDepartureAt: { lte: end } },
-            { scheduledArrivalAt: { lte: end } },
-          ],
+          OR: [{ scheduledDepartureAt: { lte: end } }, { scheduledArrivalAt: { lte: end } }],
         });
       }
       if (dateConditions.length > 0) {
-        const existingAnd = Array.isArray(where.AND)
-          ? where.AND
-          : where.AND
-            ? [where.AND]
-            : [];
+        const existingAnd = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
         where.AND = [...existingAnd, ...dateConditions];
       }
     }
@@ -224,8 +211,7 @@ export class TripService {
   /** Lucro = valor do frete - soma das despesas. Margem % = (lucro / frete) * 100 */
   private computeTripFinancials(trip: { freightValue: any; expenses?: { amount: any }[] }) {
     const freight = Number(trip.freightValue);
-    const totalExpenses =
-      trip.expenses?.reduce((s, e) => s + Number(e.amount), 0) ?? 0;
+    const totalExpenses = trip.expenses?.reduce((s, e) => s + Number(e.amount), 0) ?? 0;
     const profit = Math.max(0, freight - totalExpenses);
     const marginPercent = freight > 0 ? (profit / freight) * 100 : 0;
     return { totalExpenses, profit, marginPercent };
@@ -296,10 +282,7 @@ export class TripService {
     return this.mapExpenseToResponse(created);
   }
 
-  async findExpensesByTrip(
-    tripId: string,
-    user?: any,
-  ): Promise<TripExpenseResponseDto[]> {
+  async findExpensesByTrip(tripId: string, user?: any): Promise<TripExpenseResponseDto[]> {
     const trip = await this.prisma.trip.findFirst({
       where: { id: tripId, deletedAt: null },
     });
@@ -383,14 +366,10 @@ export class TripService {
           : {}),
       },
     });
-    const maintenanceCosts = maintenanceCp.reduce(
-      (s, ap) => s + Number(ap.amount),
-      0,
-    );
+    const maintenanceCosts = maintenanceCp.reduce((s, ap) => s + Number(ap.amount), 0);
 
     const profit = revenue - tripExpensesSum - maintenanceCosts;
-    const marginPercent =
-      revenue > 0 ? (profit / revenue) * 100 : 0;
+    const marginPercent = revenue > 0 ? (profit / revenue) * 100 : 0;
 
     return {
       vehicleId,
@@ -402,11 +381,7 @@ export class TripService {
     };
   }
 
-  async removeExpense(
-    tripId: string,
-    expenseId: string,
-    user?: any,
-  ): Promise<void> {
+  async removeExpense(tripId: string, expenseId: string, user?: any): Promise<void> {
     const trip = await this.prisma.trip.findFirst({
       where: { id: tripId, deletedAt: null },
     });
@@ -446,8 +421,7 @@ export class TripService {
       validateBranchAccess(user.branchId, user.role, existing.branchId, undefined);
     }
 
-    const becameCompleted =
-      updateDto.status === 'COMPLETED' && existing.status !== 'COMPLETED';
+    const becameCompleted = updateDto.status === 'COMPLETED' && existing.status !== 'COMPLETED';
 
     const trip = await this.prisma.$transaction(async (tx) => {
       if (becameCompleted && existing.accountReceivableId) {
@@ -461,17 +435,21 @@ export class TripService {
         if (updateDto.vehicleIds.length < 1 || updateDto.vehicleIds.length > 4) {
           throw new BadRequestException('Selecione entre 1 e 4 placas');
         }
-        const txPrisma = tx as unknown as { tripVehicle: { deleteMany: (args: { where: { tripId: string } }) => Promise<unknown>; createMany: (args: { data: { tripId: string; vehicleId: string }[] }) => Promise<unknown> } };
+        const txPrisma = tx as unknown as {
+          tripVehicle: {
+            deleteMany: (args: { where: { tripId: string } }) => Promise<unknown>;
+            createMany: (args: {
+              data: { tripId: string; vehicleId: string }[];
+            }) => Promise<unknown>;
+          };
+        };
         await txPrisma.tripVehicle.deleteMany({ where: { tripId: id } });
         await txPrisma.tripVehicle.createMany({
           data: updateDto.vehicleIds.map((vehicleId) => ({ tripId: id, vehicleId })),
         });
       }
 
-      const primaryVehicleId =
-        updateDto.vehicleIds?.length
-          ? updateDto.vehicleIds[0]
-          : undefined;
+      const primaryVehicleId = updateDto.vehicleIds?.length ? updateDto.vehicleIds[0] : undefined;
 
       const updated = await tx.trip.update({
         where: { id },
@@ -499,9 +477,7 @@ export class TripService {
               : null,
           }),
           ...(updateDto.actualArrivalAt !== undefined && {
-            actualArrivalAt: updateDto.actualArrivalAt
-              ? new Date(updateDto.actualArrivalAt)
-              : null,
+            actualArrivalAt: updateDto.actualArrivalAt ? new Date(updateDto.actualArrivalAt) : null,
           }),
           ...(updateDto.notes !== undefined && { notes: updateDto.notes }),
         },
@@ -563,10 +539,7 @@ export class TripService {
     return this.mapExpenseTypeToResponse(created);
   }
 
-  async findAllExpenseTypes(
-    branchId?: string,
-    user?: any,
-  ): Promise<TripExpenseTypeResponseDto[]> {
+  async findAllExpenseTypes(branchId?: string, user?: any): Promise<TripExpenseTypeResponseDto[]> {
     const companyId = DEFAULT_COMPANY_ID;
     if (user && branchId) {
       validateBranchAccess(user.branchId, user.role, branchId, undefined);
@@ -590,9 +563,7 @@ export class TripService {
           : [];
     const vehiclePlates =
       t.vehicles?.length > 0
-        ? t.vehicles
-            .map((v: any) => v.vehicle?.plate?.plate)
-            .filter(Boolean)
+        ? t.vehicles.map((v: any) => v.vehicle?.plate?.plate).filter(Boolean)
         : t.vehicle?.plate?.plate
           ? [t.vehicle.plate.plate]
           : [];
@@ -624,8 +595,7 @@ export class TripService {
   }
 
   private mapToDetailResponse(t: any): TripDetailResponseDto {
-    const { totalExpenses, profit, marginPercent } =
-      this.computeTripFinancials(t);
+    const { totalExpenses, profit, marginPercent } = this.computeTripFinancials(t);
     return {
       ...this.mapToResponse(t),
       totalExpenses,

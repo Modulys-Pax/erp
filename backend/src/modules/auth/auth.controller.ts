@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -14,6 +15,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
+  @Throttle({ default: { limit: 12, ttl: 60000 } })
   @ApiOperation({ summary: 'Realizar login' })
   @ApiResponse({
     status: 200,
@@ -26,6 +28,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @Throttle({ default: { limit: 45, ttl: 60000 } })
   @ApiOperation({ summary: 'Renovar token de acesso' })
   @ApiResponse({
     status: 200,

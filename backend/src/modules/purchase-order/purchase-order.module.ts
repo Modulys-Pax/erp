@@ -6,11 +6,7 @@ import { StockModule } from '../stock/stock.module';
 import { AccountPayableModule } from '../account-payable/account-payable.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    forwardRef(() => StockModule),
-    forwardRef(() => AccountPayableModule),
-  ],
+  imports: [PrismaModule, forwardRef(() => StockModule), forwardRef(() => AccountPayableModule)],
   controllers: [PurchaseOrderController],
   providers: [PurchaseOrderService],
   exports: [PurchaseOrderService],

@@ -9,13 +9,7 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiQuery,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { FiscalDocumentService } from './fiscal-document.service';
 import { CreateFiscalDocumentDto } from './dto/create-fiscal-document.dto';
 import { UpdateFiscalDocumentDto } from './dto/update-fiscal-document.dto';

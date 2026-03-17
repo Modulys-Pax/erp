@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toastErrorFromException, toastSuccess } from '@/lib/utils';
+import { ACTIVE_STATUS_COLORS } from '@/lib/constants/status.constants';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -149,11 +150,7 @@ export default function BenefitsPage() {
       header: 'Status',
       render: (benefit: Benefit) => (
         <Badge
-          className={
-            benefit.active
-              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-          }
+          className={benefit.active ? ACTIVE_STATUS_COLORS.active : ACTIVE_STATUS_COLORS.inactive}
         >
           {benefit.active ? 'Ativo' : 'Inativo'}
         </Badge>

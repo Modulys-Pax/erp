@@ -118,11 +118,20 @@ export class AccountPayableController {
   ): Promise<AccountPayableSummaryResponseDto> {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 15;
+
+    // Robustez: às vezes a UI pode enviar `endDate` com valor de `status` (ex: endDate=OVERDUE).
+    // Se `status` não foi enviado e `endDate` bater com um status válido, tratamos como status.
+    const validStatuses = ['PENDING', 'OVERDUE', 'PAID', 'CANCELLED'] as const;
+    const endDateLooksLikeStatus =
+      !status && endDate && (validStatuses as readonly string[]).includes(endDate);
+    const effectiveStatus = endDateLooksLikeStatus ? endDate : status;
+    const effectiveEndDate = endDateLooksLikeStatus ? undefined : endDate;
+
     return this.accountPayableService.getAccountPayableSummary(
       branchId,
       startDate,
-      endDate,
-      status,
+      effectiveEndDate,
+      effectiveStatus,
       pageNum,
       limitNum,
       user,
@@ -308,6 +317,41 @@ export class AccountPayableController {
     @Query('endDate') endDate?: string,
   ): Promise<AccountPayableResponseDto[]> {
     return this.accountPayableService.findAll(companyId, branchId, status, startDate, endDate);
+  }
+
+  @Get('report/by-supplier')
+  @RequirePermission('accounts-payable.view')
+  @ApiOperation({ summary: 'Relatório de contas a pagar agrupadas por fornecedor' })
+  @ApiQuery({
+    name: 'branchId',
+    required: false,
+    type: String,
+    description: 'Filtrar por filial (se omitido, admin pode ver todas; não-admin vê a própria filial)',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    type: String,
+    description: 'Data inicial de vencimento (ISO string)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    type: String,
+    description: 'Data final de vencimento (ISO string)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Relatório agrupado por fornecedor',
+    type: ReportBySupplierResponseDto,
+  })
+  getReportBySupplier(
+    @Query('branchId') branchId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @CurrentUser() user?: any,
+  ): Promise<ReportBySupplierResponseDto> {
+    return this.accountPayableService.getReportBySupplier(branchId, startDate, endDate, user);
   }
 
   @Get(':id')

@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toastErrorFromException, toastSuccess } from '@/lib/utils';
+import { ACTIVE_STATUS_COLORS } from '@/lib/constants/status.constants';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -133,11 +134,7 @@ export default function FiscalDocumentsPage() {
       header: 'Status',
       render: (row: FiscalDocument) => (
         <Badge
-          className={
-            row.status === 'REGISTERED'
-              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-              : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-          }
+          className={row.status === 'REGISTERED' ? ACTIVE_STATUS_COLORS.active : ACTIVE_STATUS_COLORS.inactive}
         >
           {row.status === 'REGISTERED' ? 'Registrado' : 'Cancelado'}
         </Badge>

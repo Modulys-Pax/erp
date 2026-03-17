@@ -201,7 +201,9 @@ export class AccountReceivableService {
         }),
         ...(updateDto.notes !== undefined && { notes: updateDto.notes }),
         ...(updateDto.customerId !== undefined && { customerId: updateDto.customerId ?? null }),
-        ...(updateDto.costCenterId !== undefined && { costCenterId: updateDto.costCenterId ?? null }),
+        ...(updateDto.costCenterId !== undefined && {
+          costCenterId: updateDto.costCenterId ?? null,
+        }),
       },
     });
 

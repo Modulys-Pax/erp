@@ -271,6 +271,14 @@ describe('VehicleService', () => {
         'Filial não encontrada',
       );
     });
+
+    it('deve lançar BadRequestException quando currentKm retrocede no update', async () => {
+      prisma.vehicle.findFirst.mockResolvedValue(mockVehicle);
+
+      await expect(service.update('vehicle-123', { currentKm: 40000 })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
   });
 
   describe('remove', () => {
@@ -346,6 +354,14 @@ describe('VehicleService', () => {
 
       await expect(
         service.updateStatus('vehicle-123', { status: 'INVALID' as any }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('deve lançar BadRequestException quando km do status retrocede', async () => {
+      prisma.vehicle.findFirst.mockResolvedValue(mockVehicle);
+
+      await expect(
+        service.updateStatus('vehicle-123', { status: 'MAINTENANCE', km: 40000 }),
       ).rejects.toThrow(BadRequestException);
     });
   });

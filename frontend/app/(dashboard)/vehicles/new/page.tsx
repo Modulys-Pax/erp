@@ -32,24 +32,31 @@ const vehicleSchema = z.object({
     type: z.enum(VEHICLE_PLATE_TYPES as unknown as [string, ...string[]]),
     plate: z.string().min(1, 'Placa é obrigatória'),
   }),
-  brandId: z.string().uuid('Selecione uma marca').optional().or(z.literal('')),
-  modelId: z.string().uuid('Selecione um modelo').optional().or(z.literal('')),
-  year: z.coerce.number().int().min(1900).max(2100).optional().or(z.nan()),
-  color: z.string().optional(),
-  chassis: z.string().optional(),
-  renavam: z.string().optional(),
+  brandId: z.string().uuid('Selecione uma marca'),
+  modelId: z.string().uuid('Selecione um modelo'),
+  year: z.coerce
+    .number({ invalid_type_error: 'Informe o ano do veículo' })
+    .int('Ano deve ser um número inteiro')
+    .min(1900, 'Ano inválido')
+    .max(2100, 'Ano inválido'),
+  color: z.string().min(1, 'Cor é obrigatória'),
+  chassis: z.string().min(1, 'Chassi é obrigatório'),
+  renavam: z.string().min(1, 'RENAVAM é obrigatório'),
   currentKm: z.coerce
     .number({ invalid_type_error: 'Informe a quilometragem atual' })
     .int('Quilometragem deve ser um número inteiro')
     .min(0, 'Quilometragem não pode ser negativa'),
-  status: z.enum(['ACTIVE', 'MAINTENANCE', 'STOPPED']).optional(),
-  branchId: z.string().uuid('Selecione uma filial').optional(),
+  status: z.enum(['ACTIVE', 'MAINTENANCE', 'STOPPED']),
+  branchId: z.string().uuid('Selecione uma filial'),
   active: z.boolean().default(true),
   replacementItems: z
     .array(
       z.object({
-        name: z.string().optional(),
-        replaceEveryKm: z.coerce.number().int().min(1, 'Troca em KM deve ser pelo menos 1').optional().or(z.nan()),
+        name: z.string().min(1, 'Nome do item é obrigatório'),
+        replaceEveryKm: z.coerce
+          .number({ invalid_type_error: 'Troca em KM é obrigatória' })
+          .int('Troca em KM deve ser um número inteiro')
+          .min(1, 'Troca em KM deve ser pelo menos 1'),
       }),
     )
     .optional()
@@ -125,13 +132,11 @@ export default function NewVehiclePage() {
     const submitData: CreateVehicleDto = {
       plate: { type: data.plate.type as VehiclePlateType, plate: data.plate.plate.trim() },
       replacementItems:
-        data.replacementItems?.filter((r) => r.name?.trim()).length
-          ? data.replacementItems
-              .filter((r) => r.name?.trim())
-              .map((r) => ({
-                name: r.name!.trim(),
-                replaceEveryKm: Number(r.replaceEveryKm),
-              }))
+        data.replacementItems && data.replacementItems.length > 0
+          ? data.replacementItems.map((r) => ({
+              name: r.name.trim(),
+              replaceEveryKm: Number(r.replaceEveryKm),
+            }))
           : undefined,
       companyId: DEFAULT_COMPANY_ID,
       brandId: data.brandId || undefined,
@@ -191,7 +196,7 @@ export default function NewVehiclePage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <Label className="text-sm text-muted-foreground">
-                Itens para troca por KM (opcional)
+                Itens para troca por KM
               </Label>
               <Button
                 type="button"

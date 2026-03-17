@@ -7,6 +7,8 @@ import {
   requireNotDeleted,
   getEffectiveCompanyId,
   isValidUUID,
+  validateNonDecreasingKm,
+  validateNonDecreasingKmForVehicles,
   ERROR_MESSAGES,
   DEFAULT_COMPANY_ID,
 } from './validation.util';
@@ -166,6 +168,42 @@ describe('validation.util', () => {
     it('deve rejeitar UUID malformado', () => {
       expect(isValidUUID('550e8400-e29b-41d4-a716')).toBe(false);
       expect(isValidUUID('550e8400e29b41d4a716446655440000')).toBe(false);
+    });
+  });
+
+  describe('validateNonDecreasingKm', () => {
+    it('nao deve lancar erro quando km aumenta', () => {
+      expect(() => validateNonDecreasingKm(60000, 50000)).not.toThrow();
+    });
+
+    it('nao deve lancar erro quando km permanece igual', () => {
+      expect(() => validateNonDecreasingKm(50000, 50000)).not.toThrow();
+    });
+
+    it('nao deve lancar erro quando km atual e nulo', () => {
+      expect(() => validateNonDecreasingKm(100, null)).not.toThrow();
+    });
+
+    it('deve lancar BadRequestException quando nova km retrocede', () => {
+      expect(() => validateNonDecreasingKm(49999, 50000)).toThrow(BadRequestException);
+      expect(() => validateNonDecreasingKm(49999, 50000)).toThrow(
+        'não pode ser menor que a quilometragem atual',
+      );
+    });
+  });
+
+  describe('validateNonDecreasingKmForVehicles', () => {
+    it('nao deve lancar erro quando nova km e maior que todas as atuais', () => {
+      expect(() => validateNonDecreasingKmForVehicles(51000, [50000, 50500, 50900])).not.toThrow();
+    });
+
+    it('deve lancar BadRequestException quando nova km e menor que a maior atual', () => {
+      expect(() => validateNonDecreasingKmForVehicles(50999, [50000, 51000, 49000])).toThrow(
+        BadRequestException,
+      );
+      expect(() => validateNonDecreasingKmForVehicles(50999, [50000, 51000, 49000])).toThrow(
+        'não pode ser menor que a maior quilometragem atual dos veículos',
+      );
     });
   });
 });

@@ -120,7 +120,10 @@ export class WalletController {
   ): Promise<CashFlowProjectionDto> {
     const effectiveBranchId = getBranchId(branchId, user);
     const months = monthsStr ? parseInt(monthsStr, 10) : 6;
-    return this.walletService.getCashFlowProjection(effectiveBranchId, Math.min(Math.max(months, 1), 24));
+    return this.walletService.getCashFlowProjection(
+      effectiveBranchId,
+      Math.min(Math.max(months, 1), 24),
+    );
   }
 
   @Get('history')

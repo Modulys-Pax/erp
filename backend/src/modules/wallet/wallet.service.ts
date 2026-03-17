@@ -303,10 +303,7 @@ export class WalletService {
    * Fluxo de caixa projetado: próximos N meses com saldo inicial, recebimentos previstos (CR pendentes),
    * pagamentos previstos (CP pendentes) e saldo projetado final por mês.
    */
-  async getCashFlowProjection(
-    branchId: string,
-    months = 6,
-  ): Promise<CashFlowProjectionDto> {
+  async getCashFlowProjection(branchId: string, months = 6): Promise<CashFlowProjectionDto> {
     const branch = await this.prisma.branch.findFirst({
       where: { id: branchId, deletedAt: null },
     });

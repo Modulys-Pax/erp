@@ -176,6 +176,7 @@ export default function AccountsReceivablePage() {
             <SearchableSelect
               options={[
                 { value: '', label: 'Todos os status' },
+                { value: 'PLANNED', label: 'Planejada' },
                 { value: 'PENDING', label: 'Pendente' },
                 { value: 'RECEIVED', label: 'Recebida' },
                 { value: 'CANCELLED', label: 'Cancelada' },

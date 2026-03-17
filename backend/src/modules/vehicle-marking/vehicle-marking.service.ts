@@ -7,6 +7,7 @@ import { Prisma } from '@prisma/client';
 import { DEFAULT_COMPANY_ID } from '../../shared/constants/company.constants';
 import { getPrimaryPlate } from '../../shared/utils/vehicle-plate.util';
 import { validateBranchAccess } from '../../shared/utils/branch-access.util';
+import { validateNonDecreasingKmForVehicles } from '../../shared/utils/validation.util';
 
 @Injectable()
 export class VehicleMarkingService {
@@ -41,6 +42,12 @@ export class VehicleMarkingService {
     if (vehicles.length !== createVehicleMarkingDto.vehicleIds.length) {
       throw new NotFoundException('Um ou mais veículos não foram encontrados.');
     }
+
+    validateNonDecreasingKmForVehicles(
+      createVehicleMarkingDto.km,
+      vehicles.map((vehicle) => vehicle.currentKm),
+      'na marcacao de chegada',
+    );
 
     // Verificar se filial existe
     const branch = await this.prisma.branch.findFirst({

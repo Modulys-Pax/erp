@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { TRIP_STATUS_COLORS } from '@/lib/constants/status.constants';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
   Dialog,
@@ -33,10 +34,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toastSuccess, toastErrorFromException } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/currency';
 import { formatDate } from '@/lib/utils/date';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, MoreHorizontal } from 'lucide-react';
 import { Can } from '@/components/auth/permission-gate';
 
 const schema = z.object({
@@ -227,14 +234,6 @@ export default function TripDetailPage() {
     );
   }
 
-  const statusBadgeClass: Record<string, string> = {
-    DRAFT: 'bg-slate-100 text-slate-800',
-    SCHEDULED: 'bg-blue-100 text-blue-800',
-    IN_PROGRESS: 'bg-amber-100 text-amber-800',
-    COMPLETED: 'bg-green-100 text-green-800',
-    CANCELLED: 'bg-red-100 text-red-800',
-  };
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -252,7 +251,7 @@ export default function TripDetailPage() {
               Voltar
             </Link>
           </Button>
-          <Badge className={statusBadgeClass[trip.status] ?? ''}>
+          <Badge className={TRIP_STATUS_COLORS[trip.status] ?? ''}>
             {getTripStatusLabel(trip.status)}
           </Badge>
         </div>
@@ -439,21 +438,31 @@ export default function TripDetailPage() {
                     </td>
                     <td className="py-2">
                       <Can permission="trips.update">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => {
-                            if (
-                              confirm(
-                                'Remover esta despesa? A Conta a Pagar será desvinculada da viagem.'
-                              )
-                            )
-                              removeExpenseMutation.mutate(exp.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  if (
+                                    confirm(
+                                      'Remover esta despesa? A Conta a Pagar será desvinculada da viagem.'
+                                    )
+                                  )
+                                    removeExpenseMutation.mutate(exp.id);
+                                }}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </Can>
                     </td>
                   </tr>

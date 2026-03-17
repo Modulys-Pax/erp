@@ -11,7 +11,7 @@ export interface Supplier {
   state?: string;
   zipCode?: string;
   companyId: string;
-  branchId: string;
+  branchId?: string | null;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -29,7 +29,7 @@ export interface CreateSupplierDto {
   state?: string;
   zipCode?: string;
   companyId: string;
-  branchId: string;
+  branchId?: string | null;
   active?: boolean;
 }
 

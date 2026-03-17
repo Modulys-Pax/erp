@@ -9,6 +9,7 @@ import {
   AccountPayable,
 } from '@/lib/api/account-payable';
 import { formatCurrency } from '@/lib/utils/currency';
+import { PAYROLL_STATUS_COLORS } from '@/lib/constants/status.constants';
 import { useEffectiveBranch } from '@/lib/hooks/use-effective-branch';
 import { PageHeader } from '@/components/layout/page-header';
 import { SectionCard } from '@/components/ui/section-card';
@@ -222,21 +223,21 @@ export default function PayrollPage() {
     switch (status) {
       case 'PENDING':
         return (
-          <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+          <Badge className={PAYROLL_STATUS_COLORS.PENDING}>
             <Clock className="h-3 w-3 mr-1" />
             Pendente
           </Badge>
         );
       case 'PAID':
         return (
-          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+          <Badge className={PAYROLL_STATUS_COLORS.PAID}>
             <CheckCircle className="h-3 w-3 mr-1" />
             Pago
           </Badge>
         );
       case 'CANCELLED':
         return (
-          <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+          <Badge className={PAYROLL_STATUS_COLORS.CANCELLED}>
             <AlertTriangle className="h-3 w-3 mr-1" />
             Cancelado
           </Badge>
@@ -250,21 +251,21 @@ export default function PayrollPage() {
     switch (status) {
       case 'created':
         return (
-          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+          <Badge className={PAYROLL_STATUS_COLORS.created}>
             <Clock className="h-3 w-3 mr-1" />
             A processar
           </Badge>
         );
       case 'already_exists':
         return (
-          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+          <Badge className={PAYROLL_STATUS_COLORS.already_exists}>
             <CheckCircle className="h-3 w-3 mr-1" />
             Já processado
           </Badge>
         );
       case 'skipped_no_salary':
         return (
-          <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+          <Badge className={PAYROLL_STATUS_COLORS.skipped_no_salary}>
             <AlertTriangle className="h-3 w-3 mr-1" />
             Sem salário base
           </Badge>

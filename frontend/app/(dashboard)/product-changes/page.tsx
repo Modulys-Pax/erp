@@ -132,7 +132,10 @@ export default function ProductChangesPage() {
                       </Badge>
                     ))}
                     {label.products.length > 3 && (
-                      <Badge variant="outline" className="bg-gray-50">
+                      <Badge
+                        variant="outline"
+                        className="bg-gray-50 text-gray-800 dark:!bg-gray-800 dark:!text-gray-100 border-gray-200 dark:border-gray-700"
+                      >
                         +{label.products.length - 3}
                       </Badge>
                     )}

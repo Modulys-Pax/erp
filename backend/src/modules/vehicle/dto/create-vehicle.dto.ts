@@ -16,7 +16,8 @@ import { VehicleReplacementItemDto } from './vehicle-replacement-item.dto';
 
 export class CreateVehicleDto {
   @ApiProperty({
-    description: 'Placa do veículo (uma por registro). Tipo: CAVALO, PRIMEIRA_CARRETA, DOLLY ou SEGUNDA_CARRETA.',
+    description:
+      'Placa do veículo (uma por registro). Tipo: CAVALO, PRIMEIRA_CARRETA, DOLLY ou SEGUNDA_CARRETA.',
     type: VehiclePlateItemDto,
     example: { type: 'CAVALO', plate: 'ABC1D23' },
   })

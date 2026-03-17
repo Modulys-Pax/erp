@@ -26,8 +26,14 @@ import {
 } from '@/components/ui/dialog';
 import { DataTable } from '@/components/ui/data-table';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toastErrorFromException, toastSuccess } from '@/lib/utils';
-import { FileText, Upload, Download, Trash2, Edit } from 'lucide-react';
+import { FileText, Upload, Download, Trash2, Edit, MoreHorizontal } from 'lucide-react';
 import { formatDate } from '@/lib/utils/date';
 
 const documentTypeLabels: Record<VehicleDocumentType, string> = {
@@ -227,29 +233,32 @@ export default function VehicleDocumentsPage() {
       header: 'Ações',
       className: 'text-right',
       render: (doc: VehicleDocument) => (
-        <div className="flex justify-end gap-2">
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={() => handleDownload(doc)}
-          >
-            <Download className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={() => handleEdit(doc)}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            variant="destructive"
-            onClick={() => handleDelete(doc.id)}
-            disabled={deleteMutation.isPending}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleDownload(doc)}>
+                <Download className="mr-2 h-4 w-4" />
+                Baixar
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleEdit(doc)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleDelete(doc.id)}
+                className="text-destructive"
+                disabled={deleteMutation.isPending}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       ),
     },

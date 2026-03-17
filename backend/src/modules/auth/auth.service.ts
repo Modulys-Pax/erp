@@ -61,8 +61,10 @@ export class AuthService {
     const refreshToken = await this.generateRefreshToken(user.id);
 
     // Extrair permissões do cargo
-    const permissions = (user.role as { permissions?: { permission: { name: string } }[] }).permissions
-      ?.map((rp) => rp.permission.name) ?? [];
+    const permissions =
+      (user.role as { permissions?: { permission: { name: string } }[] }).permissions?.map(
+        (rp) => rp.permission.name,
+      ) ?? [];
 
     // Retornar resposta com permissões
     return {
@@ -131,8 +133,9 @@ export class AuthService {
     });
 
     const permissions = userWithPermissions?.role
-      ? (userWithPermissions.role as { permissions?: { permission: { name: string } }[] }).permissions
-        ?.map((rp) => rp.permission.name) ?? []
+      ? ((
+          userWithPermissions.role as { permissions?: { permission: { name: string } }[] }
+        ).permissions?.map((rp) => rp.permission.name) ?? [])
       : [];
 
     // Gerar novos tokens

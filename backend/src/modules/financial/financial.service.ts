@@ -117,18 +117,26 @@ export class FinancialService {
       });
       const ccMap = new Map(costCenters.map((c) => [c.id, `${c.code} - ${c.name}`]));
       const incomeByCcMap = new Map(
-        (incomeByCc ?? []).map((g) => [g.costCenterId ?? 'NULL', g._sum.amount ? Number(g._sum.amount) : 0]),
+        (incomeByCc ?? []).map((g) => [
+          g.costCenterId ?? 'NULL',
+          g._sum.amount ? Number(g._sum.amount) : 0,
+        ]),
       );
       const expenseByCcMap = new Map(
-        (expenseByCc ?? []).map((g) => [g.costCenterId ?? 'NULL', g._sum.amount ? Number(g._sum.amount) : 0]),
+        (expenseByCc ?? []).map((g) => [
+          g.costCenterId ?? 'NULL',
+          g._sum.amount ? Number(g._sum.amount) : 0,
+        ]),
       );
       const keys = new Set([...incomeByCcMap.keys(), ...expenseByCcMap.keys()]);
-      byCostCenterList = [...keys].map((key) => {
-        const inc = incomeByCcMap.get(key) ?? 0;
-        const exp = expenseByCcMap.get(key) ?? 0;
-        const label = key === 'NULL' ? 'Sem centro de custo' : ccMap.get(key) ?? key;
-        return { key, label, amount: inc - exp };
-      }).filter((x) => x.amount !== 0);
+      byCostCenterList = [...keys]
+        .map((key) => {
+          const inc = incomeByCcMap.get(key) ?? 0;
+          const exp = expenseByCcMap.get(key) ?? 0;
+          const label = key === 'NULL' ? 'Sem centro de custo' : (ccMap.get(key) ?? key);
+          return { key, label, amount: inc - exp };
+        })
+        .filter((x) => x.amount !== 0);
     }
 
     return {

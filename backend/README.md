@@ -35,7 +35,16 @@ npm run start:prod
 ## Endpoints
 
 - Health Check: `GET /health`
-- Swagger: `GET /docs`
+- Swagger: `GET /docs` (somente fora de `NODE_ENV=production`, ou com `SWAGGER_ENABLED=true`)
+
+## Segurança (produção)
+
+- **JWT_SECRET**: obrigatório, mínimo 32 caracteres; valores padrão de exemplo fazem a aplicação **não subir**.
+- **Helmet**: headers HTTP endurecidos (CSP desligado na API para compatibilidade com Swagger em dev).
+- **Rate limit**: global por IP (~180 req/min, ajustável via `THROTTLE_GLOBAL_LIMIT`); login/refresh mais restritos; `/health` sem limite.
+- **Body JSON**: limite padrão `2mb` (`JSON_BODY_LIMIT`); uploads grandes continuam via multipart/Multer.
+
+Ver `.env.example` para variáveis relacionadas.
 
 ## Estrutura
 
@@ -47,7 +56,8 @@ src/
 │   ├── config/       # Configurações
 │   ├── guards/       # Guards (JWT, etc)
 │   ├── decorators/   # Decorators customizados
-│   └── interceptors/ # Interceptors
+│   ├── interceptors/ # Interceptors
+│   └── security/     # Validação de ambiente na subida
 ├── main.ts           # Entry point
 └── app.module.ts     # Módulo raiz
 ```

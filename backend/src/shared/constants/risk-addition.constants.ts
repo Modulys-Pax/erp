@@ -17,9 +17,9 @@ export const MINIMUM_WAGE_2025 = 1518.0;
 
 /** Percentuais de insalubridade por grau (sobre o salário mínimo) */
 export const INSALUBRITY_PERCENT_BY_DEGREE: Record<InsalubrityDegree, number> = {
-  MINIMO: 0.1,  // 10%  -> R$ 151,80
-  MEDIO: 0.2,   // 20%  -> R$ 303,60
-  MAXIMO: 0.4,  // 40%  -> R$ 607,20
+  MINIMO: 0.1, // 10%  -> R$ 151,80
+  MEDIO: 0.2, // 20%  -> R$ 303,60
+  MAXIMO: 0.4, // 40%  -> R$ 607,20
 };
 
 /** Valores mensais aproximados do adicional de insalubridade (2025) */
@@ -50,7 +50,11 @@ export function calculateRiskAdditionAmount(
   if (riskAdditionType === 'PERICULOSIDADE') {
     return monthlySalary * PERICULOSITY_PERCENT;
   }
-  if (riskAdditionType === 'INSALUBRIDADE' && insalubrityDegree && insalubrityDegree in INSALUBRITY_MONTHLY_VALUE_2025) {
+  if (
+    riskAdditionType === 'INSALUBRIDADE' &&
+    insalubrityDegree &&
+    insalubrityDegree in INSALUBRITY_MONTHLY_VALUE_2025
+  ) {
     return INSALUBRITY_MONTHLY_VALUE_2025[insalubrityDegree as InsalubrityDegree];
   }
   return 0;
@@ -73,7 +77,11 @@ export function getRiskAdditionDisplayName(
 ): string {
   if (!riskAdditionType) return '';
   if (riskAdditionType === 'PERICULOSIDADE') return 'Periculosidade';
-  if (riskAdditionType === 'INSALUBRIDADE' && insalubrityDegree && insalubrityDegree in INSALUBRITY_DEGREE_LABELS) {
+  if (
+    riskAdditionType === 'INSALUBRIDADE' &&
+    insalubrityDegree &&
+    insalubrityDegree in INSALUBRITY_DEGREE_LABELS
+  ) {
     return `Insalubridade (${INSALUBRITY_DEGREE_LABELS[insalubrityDegree as InsalubrityDegree]})`;
   }
   return 'Insalubridade';

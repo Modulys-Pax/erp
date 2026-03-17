@@ -43,7 +43,6 @@ const maintenanceSchema = z.object({
     .refine((v) => v !== undefined && v >= 0, {
       message: 'Informe uma quilometragem válida',
     }),
-  description: z.string().optional(),
   observations: z.string().optional(),
   companyId: z.string().uuid('Selecione uma empresa').optional(),
   branchId: z.string().uuid('Selecione uma filial').optional().or(z.literal('')),
@@ -57,6 +56,20 @@ const maintenanceSchema = z.object({
 });
 
 type MaintenanceFormData = z.infer<typeof maintenanceSchema>;
+
+function countCompositionByType(selectedIds: string[], vehicles: any[]) {
+  return selectedIds.reduce(
+    (acc, id) => {
+      const vehicle = vehicles.find((v) => v.id === id);
+      const plateType = vehicle?.plates?.[0]?.type;
+      if (plateType === 'CAVALO') acc.cavalo += 1;
+      if (plateType === 'DOLLY') acc.dolly += 1;
+      if (plateType === 'PRIMEIRA_CARRETA' || plateType === 'SEGUNDA_CARRETA') acc.carretas += 1;
+      return acc;
+    },
+    { cavalo: 0, dolly: 0, carretas: 0 },
+  );
+}
 
 export default function NewMaintenancePage() {
   const router = useRouter();
@@ -154,6 +167,24 @@ export default function NewMaintenancePage() {
       alert('Por favor, selecione pelo menos 1 placa');
       return;
     }
+    if (data.vehicleIds.length > 4) {
+      alert('Selecione no máximo 4 placas');
+      return;
+    }
+
+    const composition = countCompositionByType(data.vehicleIds, vehicles);
+    if (composition.cavalo > 1) {
+      alert('Composição inválida: permitido no máximo 1 cavalo.');
+      return;
+    }
+    if (composition.dolly > 1) {
+      alert('Composição inválida: permitido no máximo 1 dolly.');
+      return;
+    }
+    if (composition.carretas > 2) {
+      alert('Composição inválida: permitido no máximo 2 carretas.');
+      return;
+    }
 
     if (!data.type) {
       alert('Por favor, selecione um tipo de manutenção');
@@ -175,7 +206,6 @@ export default function NewMaintenancePage() {
         data.kmAtEntry != null && data.kmAtEntry !== undefined && !Number.isNaN(Number(data.kmAtEntry))
           ? Math.round(Number(data.kmAtEntry))
           : undefined,
-      description: data.description,
       observations: data.observations,
       companyId: DEFAULT_COMPANY_ID,
       branchId: finalBranchId,
@@ -225,7 +255,7 @@ export default function NewMaintenancePage() {
                   Placas (1 a 4) *
                 </Label>
                 <p className="text-xs text-muted-foreground mb-2">
-                  Selecione as placas que compõem o veículo nesta manutenção (cavalo, carretas, dolly)
+                  Selecione de 1 a 4 placas. Limites: até 1 cavalo, até 2 carretas e até 1 dolly.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {selectedVehicleIds.map((vid) => {
@@ -267,9 +297,21 @@ export default function NewMaintenancePage() {
                       value=""
                       onChange={(value) => {
                         if (value && !selectedVehicleIds.includes(value)) {
-                          setValue('vehicleIds', [...selectedVehicleIds, value], {
-                            shouldValidate: true,
-                          });
+                          const nextSelected = [...selectedVehicleIds, value];
+                          const composition = countCompositionByType(nextSelected, vehicles);
+                          if (composition.cavalo > 1) {
+                            alert('Composição inválida: permitido no máximo 1 cavalo.');
+                            return;
+                          }
+                          if (composition.dolly > 1) {
+                            alert('Composição inválida: permitido no máximo 1 dolly.');
+                            return;
+                          }
+                          if (composition.carretas > 2) {
+                            alert('Composição inválida: permitido no máximo 2 carretas.');
+                            return;
+                          }
+                          setValue('vehicleIds', nextSelected, { shouldValidate: true });
                         }
                       }}
                       placeholder="+ Adicionar placa..."
@@ -323,18 +365,6 @@ export default function NewMaintenancePage() {
                   <p className="text-sm text-destructive mt-1">{errors.kmAtEntry.message}</p>
                 )}
               </div>
-            </div>
-
-            <div>
-              <Label htmlFor="description" className="text-sm text-muted-foreground mb-2">
-                Descrição
-              </Label>
-              <Textarea
-                id="description"
-                {...register('description')}
-                rows={3}
-                className="rounded-xl"
-              />
             </div>
 
             <div>
