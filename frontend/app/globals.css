@@ -143,6 +143,60 @@
   .padding-default {
     @apply p-6;
   }
+
+  /**
+   * Fundo da tela de login: grade técnica + gradientes suaves (tons primary).
+   * Sem imagens externas — contraste estável em light/dark e alinhado ao design system.
+   */
+  /* Modo claro: mais presença de azul (primary) nos cantos — escuro continua em .dark .login-page-bg */
+  .login-page-bg {
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(ellipse 125% 90% at 50% -38%, hsl(var(--primary) / 0.2), transparent 58%),
+      radial-gradient(ellipse 95% 80% at 0% 0%, hsl(var(--primary) / 0.16), transparent 65%),
+      radial-gradient(ellipse 95% 80% at 100% 0%, hsl(var(--primary) / 0.16), transparent 65%),
+      radial-gradient(ellipse 90% 75% at 0% 100%, hsl(var(--primary) / 0.14), transparent 62%),
+      radial-gradient(ellipse 90% 75% at 100% 100%, hsl(var(--primary) / 0.14), transparent 62%),
+      linear-gradient(to right, hsl(var(--border) / 0.55) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.55) 1px, transparent 1px);
+    background-size:
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      40px 40px,
+      40px 40px;
+    background-position:
+      center,
+      center,
+      center,
+      center,
+      center,
+      0 0,
+      0 0;
+  }
+
+  .dark .login-page-bg {
+    background-image:
+      radial-gradient(ellipse 120% 85% at 50% -35%, hsl(var(--primary) / 0.2), transparent 58%),
+      radial-gradient(ellipse 65% 50% at 100% 100%, hsl(var(--primary) / 0.14), transparent 55%),
+      radial-gradient(ellipse 55% 45% at 0% 85%, hsl(var(--muted-foreground) / 0.1), transparent 55%),
+      linear-gradient(to right, hsl(var(--border) / 0.45) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.45) 1px, transparent 1px);
+    background-size:
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      40px 40px,
+      40px 40px;
+    background-position:
+      center,
+      center,
+      center,
+      0 0,
+      0 0;
+  }
 }
 
 /* Badge Tipo manutenção: forçar cor do texto (evitar branco herdado em fundo claro) */

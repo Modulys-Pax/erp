@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect, useMemo } from 'react';
+import { APP_DISPLAY_NAME } from '@/lib/constants/branding.constants';
 
 interface NavigationItem {
   name: string;
@@ -246,7 +247,7 @@ export function Sidebar({
       <div className="px-4 py-4 border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between gap-2 mb-3">
           <h1 className="text-lg font-semibold text-foreground truncate">
-            ERP Transporte
+            {APP_DISPLAY_NAME}
           </h1>
           {/* Botão fechar mobile */}
           {isMobile && onClose && (
