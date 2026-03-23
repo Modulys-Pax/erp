@@ -90,7 +90,7 @@ describe('RoleController', () => {
 
   describe('create', () => {
     it('deve criar um cargo', async () => {
-      const createDto = { name: 'New Role', permissionIds: [] };
+      const createDto = { name: 'New Role', permissions: [] };
       mockRoleService.create.mockResolvedValue(mockRole);
 
       const result = await controller.create(createDto, mockCurrentUser);

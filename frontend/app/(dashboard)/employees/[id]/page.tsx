@@ -272,6 +272,19 @@ export default function EditEmployeePage() {
     updateMutation.mutate(submitData);
   };
 
+  // Hooks abaixo devem rodar em todo render (antes de qualquer return) — ver regras dos hooks
+  const hasSystemAccess = watch('hasSystemAccess');
+  const roleId = watch('roleId');
+  const selectedRoleForCargo =
+    hasSystemAccess && roleId ? roles.find((r) => r.id === roleId) : null;
+
+  // Quando "acesso ao sistema" estiver marcado, validar campos de acesso para exibir mensagens de erro
+  useEffect(() => {
+    if (hasSystemAccess) {
+      void trigger(['systemEmail', 'password', 'roleId']);
+    }
+  }, [hasSystemAccess, trigger]);
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -299,18 +312,6 @@ export default function EditEmployeePage() {
       </div>
     );
   }
-
-  const hasSystemAccess = watch('hasSystemAccess');
-  const roleId = watch('roleId');
-  const selectedRoleForCargo =
-    hasSystemAccess && roleId ? roles.find((r) => r.id === roleId) : null;
-
-  // Quando "acesso ao sistema" estiver marcado, validar campos de acesso para exibir mensagens de erro
-  useEffect(() => {
-    if (hasSystemAccess) {
-      trigger(['systemEmail', 'password', 'roleId']);
-    }
-  }, [hasSystemAccess, trigger]);
 
   return (
     <div className="space-y-6">

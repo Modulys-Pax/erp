@@ -209,27 +209,15 @@ describe('RoleService', () => {
       ).rejects.toThrow(/Permissões não encontradas/);
     });
 
-    it('deve criar cargo sem permissões', async () => {
+    it('deve lançar BadRequestException quando cargo não tiver permissões', async () => {
       const dtoSemPermissoes = { name: 'VIEWER', description: 'Apenas visualização' };
 
-      prisma.role.findFirst
-        .mockResolvedValueOnce(null) // Verificação de nome
-        .mockResolvedValueOnce({ ...mockRole, name: 'VIEWER', permissions: [] }); // findOne
-      prisma.$transaction.mockImplementation(async (callback) => {
-        const tx = {
-          role: {
-            create: jest.fn().mockResolvedValue({ ...mockRole, name: 'VIEWER' }),
-          },
-          rolePermission: {
-            createMany: jest.fn(),
-          },
-        };
-        return callback(tx);
-      });
+      prisma.role.findFirst.mockResolvedValueOnce(null); // Verificação de nome
 
-      const result = await service.create(dtoSemPermissoes);
-
-      expect(result.name).toBe('VIEWER');
+      await expect(service.create(dtoSemPermissoes)).rejects.toThrow(BadRequestException);
+      await expect(service.create(dtoSemPermissoes)).rejects.toThrow(
+        'Informe ao menos uma permissão para o cargo',
+      );
     });
   });
 

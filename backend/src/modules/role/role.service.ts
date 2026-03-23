@@ -97,8 +97,13 @@ export class RoleService {
       throw new ConflictException('Nome do cargo já cadastrado');
     }
 
-    // Validar permissões se fornecidas
+    // Validar permissões: cargo não pode ser cadastrado sem ao menos 1 permissão
+    // (exceto o cargo ADMIN, que possui bypass automático de autorização)
+    const isAdminRole = createRoleDto.name?.toUpperCase() === 'ADMIN';
     const permissionNames = createRoleDto.permissions || [];
+    if (!isAdminRole && permissionNames.length === 0) {
+      throw new BadRequestException('Informe ao menos uma permissão para o cargo');
+    }
     let permissionIds: string[] = [];
 
     if (permissionNames.length > 0) {
@@ -181,6 +186,10 @@ export class RoleService {
     let permissionIds: string[] | undefined;
 
     if (permissionNames !== undefined) {
+      const isAdminRole = role?.name?.toUpperCase() === 'ADMIN';
+      if (!isAdminRole && permissionNames.length === 0) {
+        throw new BadRequestException('Informe ao menos uma permissão para o cargo');
+      }
       if (permissionNames.length > 0) {
         // Sincronizar permissões primeiro
         await this.syncPermissions();

@@ -7,6 +7,24 @@
 // STATUS DE VEÍCULOS
 // =============================================================================
 
+// Padronização das cores de status (sem fundos claros)
+const STATUS_BLUE =
+  'bg-blue-500 !text-blue-800 dark:!bg-blue-900 dark:!text-blue-200';
+const STATUS_YELLOW =
+  'bg-yellow-500 !text-yellow-800 dark:!bg-amber-900 dark:!text-amber-200';
+const STATUS_AMBER =
+  'bg-amber-500 !text-amber-800 dark:!bg-amber-900 dark:!text-amber-200';
+const STATUS_GREEN =
+  'bg-green-500 !text-green-800 dark:!bg-green-900 dark:!text-green-200';
+const STATUS_RED =
+  'bg-red-500 !text-red-800 dark:!bg-red-900 dark:!text-red-200';
+const STATUS_SLATE =
+  'bg-slate-500 !text-slate-800 dark:!bg-slate-700 dark:!text-slate-100';
+const STATUS_ORANGE =
+  'bg-orange-500 !text-orange-800 dark:!bg-orange-900 dark:!text-orange-200';
+const STATUS_PURPLE =
+  'bg-purple-500 !text-purple-800 dark:!bg-purple-900 dark:!text-purple-200';
+
 export const VEHICLE_STATUS = {
   ACTIVE: 'ACTIVE',
   MAINTENANCE: 'MAINTENANCE',
@@ -22,9 +40,9 @@ export const VEHICLE_STATUS_LABELS: Record<VehicleStatus, string> = {
 };
 
 export const VEHICLE_STATUS_COLORS: Record<VehicleStatus, string> = {
-  ACTIVE: 'bg-blue-100 text-blue-800 dark:!bg-blue-900 dark:!text-blue-200',
-  MAINTENANCE: 'bg-yellow-100 text-yellow-800 dark:!bg-yellow-900 dark:!text-yellow-200',
-  STOPPED: 'bg-slate-200 !text-slate-900 dark:!bg-slate-700 dark:!text-slate-100',
+  ACTIVE: STATUS_BLUE,
+  MAINTENANCE: STATUS_YELLOW,
+  STOPPED: STATUS_SLATE,
 };
 
 export const VEHICLE_STATUS_ICON_COLORS: Record<VehicleStatus, string> = {
@@ -56,11 +74,11 @@ export const MAINTENANCE_STATUS_LABELS: Record<MaintenanceStatus, string> = {
 };
 
 export const MAINTENANCE_STATUS_COLORS: Record<MaintenanceStatus, string> = {
-  OPEN: 'bg-blue-100 !text-blue-800 dark:bg-blue-900 dark:!text-blue-200',
-  IN_PROGRESS: 'bg-yellow-100 !text-yellow-800 dark:!bg-yellow-900/90 dark:!text-yellow-100',
-  PAUSED: 'bg-amber-100 !text-amber-800 dark:bg-amber-900 dark:!text-amber-200',
-  COMPLETED: 'bg-green-100 !text-green-800 dark:bg-green-900 dark:!text-green-200',
-  CANCELLED: 'bg-red-100 !text-red-800 dark:bg-red-900 dark:!text-red-200',
+  OPEN: STATUS_BLUE,
+  IN_PROGRESS: STATUS_YELLOW,
+  PAUSED: STATUS_AMBER,
+  COMPLETED: STATUS_GREEN,
+  CANCELLED: STATUS_RED,
 };
 
 export const MAINTENANCE_STATUS_ICON_COLORS: Record<MaintenanceStatus, string> = {
@@ -88,8 +106,8 @@ export const MAINTENANCE_TYPE_LABELS: Record<MaintenanceType, string> = {
 };
 
 export const MAINTENANCE_TYPE_COLORS: Record<MaintenanceType, string> = {
-  PREVENTIVE: 'bg-emerald-100 dark:bg-emerald-900/90',
-  CORRECTIVE: 'bg-amber-100 dark:bg-amber-900/90',
+  PREVENTIVE: 'bg-green-500 dark:bg-green-900/90',
+  CORRECTIVE: 'bg-amber-500 dark:bg-amber-900/90',
 };
 
 /** Cor do texto em hex + !important para nunca ser sobrescrita por tema/pai */
@@ -117,9 +135,9 @@ export const MAINTENANCE_DUE_STATUS_LABELS: Record<MaintenanceDueStatus, string>
 };
 
 export const MAINTENANCE_DUE_STATUS_COLORS: Record<MaintenanceDueStatus, string> = {
-  ok: 'bg-green-100 text-green-800 dark:bg-green-900 dark:!text-green-200',
-  warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:!text-yellow-200',
-  due: 'bg-red-100 text-red-800 dark:bg-red-900 dark:!text-red-200',
+  ok: STATUS_GREEN,
+  warning: STATUS_YELLOW,
+  due: STATUS_RED,
 };
 
 // =============================================================================
@@ -127,8 +145,8 @@ export const MAINTENANCE_DUE_STATUS_COLORS: Record<MaintenanceDueStatus, string>
 // =============================================================================
 
 export const ACTIVE_STATUS_COLORS = {
-  active: 'bg-green-100 text-green-800 dark:!bg-green-900 dark:!text-green-200',
-  inactive: 'bg-red-100 text-red-800 dark:!bg-red-900 dark:!text-red-200',
+  active: STATUS_GREEN,
+  inactive: STATUS_RED,
 };
 
 // =============================================================================
@@ -156,9 +174,9 @@ export const STOCK_LEVEL_COLORS: Record<StockLevel, string> = {
 };
 
 export const STOCK_LEVEL_BG_COLORS: Record<StockLevel, string> = {
-  ok: 'bg-green-100 dark:bg-green-900/30',
-  low: 'bg-yellow-100 dark:bg-yellow-900/30',
-  critical: 'bg-red-100 dark:bg-red-900/30',
+  ok: 'bg-green-500 dark:bg-green-900/30',
+  low: 'bg-yellow-500 dark:bg-yellow-900/30',
+  critical: 'bg-red-500 dark:bg-red-900/30',
 };
 
 /**
@@ -193,8 +211,8 @@ export const STOCK_MOVEMENT_TYPE_COLORS: Record<StockMovementType, string> = {
 };
 
 export const STOCK_MOVEMENT_TYPE_BG_COLORS: Record<StockMovementType, string> = {
-  ENTRY: 'bg-green-100 text-green-800 dark:bg-green-900 dark:!text-green-200',
-  EXIT: 'bg-red-100 text-red-800 dark:bg-red-900 dark:!text-red-200',
+  ENTRY: STATUS_GREEN,
+  EXIT: STATUS_RED,
 };
 
 // =============================================================================
@@ -240,14 +258,10 @@ export const ACCOUNT_PAYABLE_STATUS_LABELS: Record<AccountPayableStatus, string>
 };
 
 export const ACCOUNT_PAYABLE_STATUS_COLORS: Record<AccountPayableStatus, string> = {
-  PENDING:
-    'bg-yellow-100 text-yellow-800 dark:bg-amber-900/90 dark:text-amber-100 border border-transparent',
-  OVERDUE:
-    'bg-red-100 text-red-800 dark:bg-red-900/90 dark:text-red-100 border border-transparent',
-  PAID:
-    'bg-green-100 text-green-800 dark:bg-emerald-900/90 dark:text-emerald-100 border border-transparent',
-  CANCELLED:
-    'bg-red-100 text-red-700 dark:bg-red-950/90 dark:text-red-200 border border-transparent',
+  PENDING: STATUS_YELLOW,
+  OVERDUE: STATUS_RED,
+  PAID: STATUS_GREEN,
+  CANCELLED: STATUS_RED,
 };
 
 // =============================================================================
@@ -271,14 +285,10 @@ export const ACCOUNT_RECEIVABLE_STATUS_LABELS: Record<AccountReceivableStatus, s
 };
 
 export const ACCOUNT_RECEIVABLE_STATUS_COLORS: Record<AccountReceivableStatus, string> = {
-  PENDING:
-    'bg-yellow-100 !text-yellow-950 dark:!bg-amber-900/95 dark:!text-amber-50 border border-transparent',
-  RECEIVED:
-    'bg-green-100 !text-green-950 dark:!bg-emerald-900/95 dark:!text-emerald-50 border border-transparent',
-  CANCELLED:
-    'bg-red-100 !text-red-950 dark:!bg-red-900/95 dark:!text-red-50 border border-transparent',
-  PLANNED:
-    'bg-blue-100 !text-blue-950 dark:!bg-blue-900/95 dark:!text-blue-50 border border-transparent',
+  PENDING: STATUS_YELLOW,
+  RECEIVED: STATUS_GREEN,
+  CANCELLED: STATUS_RED,
+  PLANNED: STATUS_BLUE,
 };
 
 // =============================================================================
@@ -304,16 +314,11 @@ export const VACATION_STATUS_LABELS: Record<VacationStatus, string> = {
 };
 
 export const VACATION_STATUS_COLORS: Record<VacationStatus, string> = {
-  PLANNED:
-    'bg-blue-100 !text-blue-950 dark:!bg-blue-900/90 dark:!text-blue-100 border border-transparent',
-  APPROVED:
-    'bg-green-100 text-green-800 dark:bg-emerald-900/90 dark:text-emerald-100 border border-transparent',
-  IN_PROGRESS:
-    'bg-yellow-100 text-yellow-800 dark:bg-amber-900/90 dark:text-amber-100 border border-transparent',
-  COMPLETED:
-    'bg-gray-100 text-gray-800 dark:bg-gray-700/90 dark:text-gray-100 border border-transparent',
-  CANCELLED:
-    'bg-red-100 text-red-800 dark:bg-red-900/90 dark:text-red-100 border border-transparent',
+  PLANNED: STATUS_BLUE,
+  APPROVED: STATUS_GREEN,
+  IN_PROGRESS: STATUS_YELLOW,
+  COMPLETED: STATUS_SLATE,
+  CANCELLED: STATUS_RED,
 };
 
 // =============================================================================
@@ -337,10 +342,10 @@ export const EXPENSE_TYPE_LABELS: Record<ExpenseTypeEnum, string> = {
 };
 
 export const EXPENSE_TYPE_COLORS: Record<ExpenseTypeEnum, string> = {
-  TRANSPORT: '!bg-blue-100 !text-blue-800 dark:!bg-blue-900 dark:!text-blue-100',
-  MEAL: '!bg-orange-100 !text-orange-800 dark:!bg-orange-900 dark:!text-orange-100',
-  ACCOMMODATION: '!bg-purple-100 !text-purple-800 dark:!bg-purple-900 dark:!text-purple-100',
-  OTHER: '!bg-gray-100 !text-gray-800 dark:!bg-gray-800 dark:!text-gray-100',
+  TRANSPORT: STATUS_BLUE,
+  MEAL: STATUS_ORANGE,
+  ACCOMMODATION: STATUS_PURPLE,
+  OTHER: STATUS_SLATE,
 };
 
 // =============================================================================
@@ -348,12 +353,12 @@ export const EXPENSE_TYPE_COLORS: Record<ExpenseTypeEnum, string> = {
 // =============================================================================
 
 export const PAYROLL_STATUS_COLORS: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  PAID: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-  created: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  already_exists: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  skipped_no_salary: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
+  PENDING: STATUS_YELLOW,
+  PAID: STATUS_GREEN,
+  CANCELLED: STATUS_RED,
+  created: STATUS_BLUE,
+  already_exists: STATUS_GREEN,
+  skipped_no_salary: STATUS_SLATE,
 };
 
 // =============================================================================
@@ -379,16 +384,11 @@ export const PURCHASE_ORDER_STATUS_LABELS: Record<PurchaseOrderStatus, string> =
 };
 
 export const PURCHASE_ORDER_STATUS_COLORS: Record<PurchaseOrderStatus, string> = {
-  DRAFT:
-    'bg-gray-900 text-gray-50 dark:bg-gray-900 dark:text-gray-50 border border-transparent',
-  SENT:
-    'bg-blue-900 text-blue-50 dark:bg-blue-900 dark:text-blue-50 border border-transparent',
-  PARTIALLY_RECEIVED:
-    'bg-amber-900 text-amber-50 dark:bg-amber-900 dark:text-amber-50 border border-transparent',
-  RECEIVED:
-    'bg-green-900 text-green-50 dark:bg-green-900 dark:text-green-50 border border-transparent',
-  CANCELLED:
-    'bg-red-900 text-red-50 dark:bg-red-900 dark:text-red-50 border border-transparent',
+  DRAFT: STATUS_SLATE,
+  SENT: STATUS_BLUE,
+  PARTIALLY_RECEIVED: STATUS_YELLOW,
+  RECEIVED: STATUS_GREEN,
+  CANCELLED: STATUS_RED,
 };
 
 // =============================================================================
@@ -414,15 +414,11 @@ export const SALES_ORDER_STATUS_LABELS: Record<SalesOrderStatus, string> = {
 };
 
 export const SALES_ORDER_STATUS_COLORS: Record<SalesOrderStatus, string> = {
-  DRAFT: 'bg-gray-900 text-gray-50 dark:bg-gray-900 dark:text-gray-50 border border-transparent',
-  CONFIRMED:
-    'bg-blue-900 text-blue-50 dark:bg-blue-900 dark:text-blue-50 border border-transparent',
-  PARTIALLY_DELIVERED:
-    'bg-amber-900 text-amber-50 dark:bg-amber-900 dark:text-amber-50 border border-transparent',
-  DELIVERED:
-    'bg-green-900 text-green-50 dark:bg-green-900 dark:text-green-50 border border-transparent',
-  CANCELLED:
-    'bg-red-900 text-red-50 dark:bg-red-900 dark:text-red-50 border border-transparent',
+  DRAFT: STATUS_SLATE,
+  CONFIRMED: STATUS_BLUE,
+  PARTIALLY_DELIVERED: STATUS_YELLOW,
+  DELIVERED: STATUS_GREEN,
+  CANCELLED: STATUS_RED,
 };
 
 // =============================================================================
@@ -430,11 +426,11 @@ export const SALES_ORDER_STATUS_COLORS: Record<SalesOrderStatus, string> = {
 // =============================================================================
 
 export const TRIP_STATUS_COLORS: Record<string, string> = {
-  DRAFT: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200',
-  SCHEDULED: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  IN_PROGRESS: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
-  COMPLETED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  DRAFT: STATUS_SLATE,
+  SCHEDULED: STATUS_BLUE,
+  IN_PROGRESS: STATUS_YELLOW,
+  COMPLETED: STATUS_GREEN,
+  CANCELLED: STATUS_RED,
 };
 
 // =============================================================================

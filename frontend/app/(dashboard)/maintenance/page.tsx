@@ -195,9 +195,7 @@ export default function MaintenancePage() {
         return (
           <Badge
             variant="outline"
-            className={`${MAINTENANCE_STATUS_COLORS[order.status]} flex items-center gap-1 w-fit ${
-              isInProgress ? '!bg-yellow-200 !text-yellow-950 dark:!bg-yellow-800 dark:!text-yellow-50' : ''
-            }`}
+            className={`${MAINTENANCE_STATUS_COLORS[order.status]} flex items-center gap-1 w-fit`}
           >
             {order.status === 'OPEN' && <Clock className="h-3 w-3" />}
             {order.status === 'IN_PROGRESS' && <PlayCircle className="h-3 w-3" />}

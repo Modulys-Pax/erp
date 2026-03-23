@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { toastSuccess, toastErrorFromException, cn } from '@/lib/utils';
+import { toastSuccess, toastErrorFromException, toastError, cn } from '@/lib/utils';
 import {
   Collapsible,
   CollapsibleContent,
@@ -58,6 +58,8 @@ export default function NewRolePage() {
     },
   });
 
+  const roleNameUpper = (watch('name') ?? '').toUpperCase();
+
   // Buscar todas as permissões disponíveis
   const { data: permissionModules = [], isLoading: loadingPermissions } = useQuery({
     queryKey: ['permissions'],
@@ -77,6 +79,12 @@ export default function NewRolePage() {
   });
 
   const onSubmit = (data: RoleFormData) => {
+    const isAdmin = data.name.toUpperCase() === 'ADMIN';
+    if (!isAdmin && selectedPermissions.size === 0) {
+      toastError('Selecione ao menos uma permissão para o cargo');
+      return;
+    }
+
     const submitData: CreateRoleDto = {
       ...data,
       description: data.description || undefined,
@@ -320,7 +328,13 @@ export default function NewRolePage() {
           >
             Cancelar
           </Button>
-          <Button type="submit" disabled={createMutation.isPending}>
+          <Button
+            type="submit"
+            disabled={
+              createMutation.isPending ||
+              (roleNameUpper !== 'ADMIN' && selectedPermissions.size === 0)
+            }
+          >
             {createMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

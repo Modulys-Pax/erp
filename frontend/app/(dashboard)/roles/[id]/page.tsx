@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { toastSuccess, toastErrorFromException, cn } from '@/lib/utils';
+import { toastSuccess, toastErrorFromException, toastError, cn } from '@/lib/utils';
 import {
   Collapsible,
   CollapsibleContent,
@@ -102,6 +102,11 @@ export default function EditRolePage() {
   });
 
   const onSubmit = (data: RoleFormData) => {
+    if (!isAdmin && selectedPermissions.size === 0) {
+      toastError('Selecione ao menos uma permissão para o cargo');
+      return;
+    }
+
     const submitData: UpdateRoleDto = {
       ...data,
       description: data.description || undefined,
@@ -170,7 +175,7 @@ export default function EditRolePage() {
   };
 
   const isLoading = loadingRole || loadingPermissions;
-  const isAdmin = role?.name === 'ADMIN';
+  const isAdmin = role?.name === 'ADMIN' || role?.name === 'admin';
 
   if (isLoading) {
     return (
@@ -396,7 +401,13 @@ export default function EditRolePage() {
           >
             Cancelar
           </Button>
-          <Button type="submit" disabled={updateMutation.isPending}>
+          <Button
+            type="submit"
+            disabled={
+              updateMutation.isPending ||
+              (!isAdmin && selectedPermissions.size === 0)
+            }
+          >
             {updateMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
